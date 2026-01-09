@@ -1,0 +1,12 @@
+name: hybrid-vqe
+channels: 
+  - conda-forge
+  - defaults
+dependencies: 
+  - python=3.11
+  - qiskit
+  - pybind11
+  - mpi4py
+  - cupy
+  - cmake
+
