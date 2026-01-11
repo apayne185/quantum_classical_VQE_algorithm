@@ -27,3 +27,4 @@ stack.requires_gpu = True
 # triggers Dispatcher
 result = hpc_core.execute(stack)
 print(f"Stack returned result: {result}")
+print(f"Result VQE energy: {result.energy}")

@@ -6,12 +6,18 @@ class HPCHybridStack:
         self.use_gpu = use_gpu
 
     def run(self, circuit, parameters):
-        # 'Contract' object
+        # 'contract' object - stack_types.h
         workload = hpc_core.HybridWorkload()
         workload.num_qubits = circuit.num_qubits
         workload.parameters = list(parameters)
         workload.requires_gpu = self.use_gpu
         
-        # Call C++ Bridge
+        # call C++ Bridge
         result = hpc_core.execute(workload)
-        return result
+
+        print(f"--- Execution Report ---")
+        print(f"Target Path: {result.used_path}")
+        print(f"Wall Time:   {result.execution_time}s")
+        print(f"VQE Energy:  {result.energy}")
+
+        return result.energy
