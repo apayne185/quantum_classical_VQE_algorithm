@@ -1,6 +1,6 @@
 import sys
 import os
-# sys.path.append('./build')    # for C++ modile
+sys.path.append('./build/Release')    # for C++ modile
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
