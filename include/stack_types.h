@@ -8,12 +8,17 @@ struct HybridWorkload {
     int circuit_depth;
     bool requires_gpu;
     std::string backend_target;       // "simulator", "hpc_cluster", "qpu"
+    std::string circuit_qasm;
 };
 
 // both C++ disptacher and python bridge needed to agree on workload
 
 
-// double run_local_sim(HybridWorkload& wl);
-// double run_hpc_cluster(HybridWorkload& wl);
+struct StackResult {
+    double energy;       // vqe eigenvalue
+    double execution_time;             //for benchmarking
+    std::string success_msg;          // errors or status updates 
+    std::string used_path;             // cpu gpu or simulator
+}; 
 
-double route_workload(HybridWorkload& wl);
+StackResult route_workload(HybridWorkload& wl);

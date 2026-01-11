@@ -5,7 +5,7 @@
 namespace py = pybind11;
 
 // links Python call to C++ Dispatcher
-double execute(HybridWorkload wl) {
+StackResult execute(HybridWorkload wl) {
     return route_workload(wl);
 }
 
@@ -16,5 +16,12 @@ PYBIND11_MODULE(hpc_core, m) {
         .def_readwrite("parameters", &HybridWorkload::parameters)
         .def_readwrite("requires_gpu", &HybridWorkload::requires_gpu);
 
-    m.def("execute", &execute, "The main entry point for the hybrid stack");
+    py::class_<StackResult>(m, "StackResult")
+        .def_readwrite("energy", &StackResult::energy)
+        .def_readwrite("execution_time", &StackResult::execution_time)
+        .def_readwrite("success_msg", &StackResult::success_msg)
+        .def_readwrite("used_path", &StackResult::used_path);  
+    
+
+    m.def("execute", &execute, "Main entry point for hybrid stack");
 }
