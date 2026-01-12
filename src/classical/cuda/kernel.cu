@@ -1,3 +1,5 @@
+// currently placeholders, but Q state vector logic will be here in later phases
+
 __global__ void compute_energy_kernel(double* params, int n) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n) {

@@ -1,3 +1,7 @@
+/* Defines "Contract", allows Python UI/C++ engine to function together. Contains:
+ HybridWorkload - input packet for BE, 
+ StackResult - output packet for future performance analysis*/
+
 #pragma once
 #include <vector>
 #include <string>

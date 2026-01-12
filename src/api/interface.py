@@ -1,4 +1,4 @@
-# src/api/interface.py
+# The API, users interact with this class instead of C++, automates creation of object
 import hpc_core  #compiled C++ module
 
 class HPCHybridStack:

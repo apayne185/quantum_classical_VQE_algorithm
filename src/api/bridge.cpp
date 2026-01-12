@@ -1,3 +1,4 @@
+/*Uses pybind11 to expose C++ structures to Python*/
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>          // for std::vector conversion
 #include "stack_types.h"
@@ -20,9 +21,10 @@ StackResult execute(const HybridWorkload& wl) {
 }
 
 
+// maps C++ member variables to Python attributes 
 PYBIND11_MODULE(hpc_core, m) {
     py::class_<HybridWorkload>(m, "HybridWorkload")
-        .def(py::init<>())                              // allows python to do wl=hpc_core.H..W..()
+        .def(py::init<>())                              // allows python to do wl=hpc_core.HybridWorklod()
         .def_readwrite("num_qubits", &HybridWorkload::num_qubits)
         .def_readwrite("parameters", &HybridWorkload::parameters)
         .def_readwrite("circuit_depth", &HybridWorkload::circuit_depth)
