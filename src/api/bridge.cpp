@@ -23,6 +23,7 @@ PYBIND11_MODULE(hpc_core, m) {
     py::class_<StackResult>(m, "StackResult")
         .def_readwrite("energy", &StackResult::energy)
         .def_readwrite("execution_time", &StackResult::execution_time)
+        .def_readwrite("variance", &StackResult::variance)
         .def_readwrite("success_msg", &StackResult::success_msg)
         .def_readwrite("used_path", &StackResult::used_path);  
     

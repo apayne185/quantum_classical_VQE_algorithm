@@ -19,5 +19,6 @@ class HPCHybridStack:
         print(f"Target Path: {result.used_path}")
         print(f"Wall Time:   {result.execution_time}s")
         print(f"VQE Energy:  {result.energy}")
+        print(f"Variance:   {result.variance}")
 
         return result.energy
