@@ -17,6 +17,7 @@ struct HybridWorkload {
 struct StackResult {
     double energy;       // vqe eigenvalue
     double execution_time;             //for benchmarking
+    double variance;                   //for noise analysis
     std::string success_msg;          // errors or status updates 
     std::string used_path;             // cpu gpu or simulator
 }; 

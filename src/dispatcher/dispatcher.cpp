@@ -9,6 +9,7 @@ StackResult route_workload(HybridWorkload& wl) {
         // return 0.0; 
         res.energy = -1.137;    //placeholder vqe energy
         res.execution_time = 0.002;   //secs 
+        res.variance = 0.001;      //placeholder for noise
         res.success_msg = "Success";
         res.used_path = "Local Simulator"; 
     } else {   //logc for HPC
@@ -16,6 +17,7 @@ StackResult route_workload(HybridWorkload& wl) {
         // return 1.0; 
         res.energy = -1.137;    //placeholder vqe energy
         res.execution_time = 0.450;   // HPC latency included - placeholder
+        res.variance = 0.001;      //placeholder for noise
         res.success_msg = "Success";
         res.used_path = "HPC Cluster - GPU"; 
     }
