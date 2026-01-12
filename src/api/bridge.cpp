@@ -5,9 +5,20 @@
 namespace py = pybind11;
 
 // links Python call to C++ Dispatcher
-StackResult execute(HybridWorkload wl) {
-    return route_workload(wl);
+StackResult execute(const HybridWorkload& wl) {
+    try {
+        if (wl.circuit_qasm.empty()) {
+            throw std::runtime_error("Empty QASM string receieved");
+        }
+        return route_workload(const_cast<HybridWorkload&>(wl));
+
+    } catch(const std::exception& e){ 
+        PyErr_SetString(PyExc_RuntimeError, e.what());
+        throw py::error_already_set();
+    }
+    // return route_workload(wl);
 }
+
 
 PYBIND11_MODULE(hpc_core, m) {
     py::class_<HybridWorkload>(m, "HybridWorkload")
