@@ -1,3 +1,6 @@
+/*Routes tasks, if too small tasks stay on CPU (avoids cost of moving to GPU), but otherwise
+routes to the HPC path*/
+
 #include "stack_types.h"
 #include <iostream>
 
