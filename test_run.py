@@ -43,15 +43,17 @@ def prepare_workload(qc, params, backend='simulator'):
 
 
 hpc_core.init_mpi()
+rank = hpc_core.get_rank()       #if 0, master, else worker
+num_nodes = hpc_core.get_size()
 
 qc = FakeCircuit()
-params = [0.1, 0.2, 0.3]
+params = []
+if rank == 0:
+    params = [0.5, 0.5, 0.5, 0.5]     #only master node defines data
 stack = prepare_workload(qc, params)  
 
 # triggers Dispatcher
 result = hpc_core.execute(stack)
-rank = hpc_core.get_rank()       #if 0, master, else worker
-num_nodes = hpc_core.get_size()
 
 
 if rank ==0: 
