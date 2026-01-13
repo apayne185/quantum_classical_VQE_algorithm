@@ -15,10 +15,10 @@ class HPCHybridStack:
         # call C++ Bridge
         result = hpc_core.execute(workload)
 
-        print(f"--- Execution Report ---")
-        print(f"Target Path: {result.used_path}")
-        print(f"Wall Time:   {result.execution_time}s")
-        print(f"VQE Energy:  {result.energy}")
-        print(f"Variance:   {result.variance}")
+        # print(f"--- Execution Report ---")
+        # print(f"Target Path: {result.used_path}")
+        # print(f"Wall Time:   {result.execution_time}s")
+        # print(f"VQE Energy:  {result.energy}")
+        # print(f"Variance:   {result.variance}")
 
         return result.energy
