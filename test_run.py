@@ -1,8 +1,11 @@
+from qiskit import qasm3
 import sys
 import os
+
 sys.path.append('./build/Release')    # for C++ modile
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
+
 try:
     import hpc_core
     print("hpc_core imported.")
@@ -10,7 +13,6 @@ except ImportError as e:
     print(f"failed to import: {e}")
     sys.exit(1)
 
-from qiskit import qasm3
 
 
 
@@ -38,15 +40,28 @@ def prepare_workload(qc, params, backend='simulator'):
     return stack
 
 
+
+
+hpc_core.init_mpi()
+
 qc = FakeCircuit()
 params = [0.1, 0.2, 0.3]
 stack = prepare_workload(qc, params)  
 
 # triggers Dispatcher
 result = hpc_core.execute(stack)
-print(f"Stack returned result: {result}")
-print(f"Result VQE energy: {result.energy}")
-print(f"Result Variance: {result.variance}")
-print(f"Backend Used: {result.used_path}")
-print(f"Time Taken: {result.execution_time} ms")
-print(f"QCircuit: {stack.circuit_qasm}")
+rank = hpc_core.get_rank()       #if 0, master, else worker
+num_nodes = hpc_core.get_size()
+
+
+if rank ==0: 
+    print("\n----MASTER VQE REPORT-----")
+    print(f"Stack returned result: {result}")
+    print(f"Result VQE energy: {result.energy}")
+    print(f"Result Variance: {result.variance}")
+    print(f"Backend Used: {result.used_path}")
+    print(f"Time Taken: {result.execution_time} ms")
+    print(f"QCircuit: {stack.circuit_qasm}\n")
+    print(f"Nodes used: {num_nodes}")
+
+hpc_core.finalize_mpi()

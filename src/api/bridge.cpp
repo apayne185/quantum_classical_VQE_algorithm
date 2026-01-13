@@ -1,9 +1,36 @@
-/*Uses pybind11 to expose C++ structures to Python*/
+/*Uses pybind11 to expose C++ structures to Python - uses MPI foe API metadata*/
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>          // for std::vector conversion
 #include "stack_types.h"
+#include <mpi.h>
 
 namespace py = pybind11;
+
+int init_mpi(){
+    int provided;
+    // MPI_Init_thread(NULL, NULL, MPI_THREAD_SINGLE, &provided);
+    MPI_Init_thread(NULL, NULL, MPI_THREAD_FUNNELED, &provided);
+    return provided;
+}  
+
+void finalize_mpi(){    //for clean exits
+    MPI_Finalize();
+}
+
+// determines which node/rank we are in - needed to determine master v workers
+int get_rank() {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    return rank;
+}
+
+int get_size() {
+    int size;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    return size;
+}
+
+
 
 // links Python call to C++ Dispatcher
 StackResult execute(const HybridWorkload& wl) {
@@ -17,12 +44,16 @@ StackResult execute(const HybridWorkload& wl) {
         PyErr_SetString(PyExc_RuntimeError, e.what());
         throw py::error_already_set();
     }
-    // return route_workload(wl);
 }
+
+
 
 
 // maps C++ member variables to Python attributes 
 PYBIND11_MODULE(hpc_core, m) {
+    m.def("init_mpi", &init_mpi, "Initialize MPI environment");
+    m.def("finalize_mpi", &finalize_mpi, "Finalize MPI environment");
+
     py::class_<HybridWorkload>(m, "HybridWorkload")
         .def(py::init<>())                              // allows python to do wl=hpc_core.HybridWorklod()
         .def_readwrite("num_qubits", &HybridWorkload::num_qubits)
@@ -43,4 +74,6 @@ PYBIND11_MODULE(hpc_core, m) {
 
     m.def("execute", &execute, "Main entry point for hybrid stack");
     m.def("route_workload", &route_workload, "Core dispatcher function");
+    m.def("get_rank", &get_rank, "Get MPI rank of current process");
+    m.def("get_size", &get_size, "Get total number of MPI processes"); 
 }
