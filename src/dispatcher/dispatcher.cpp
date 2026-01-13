@@ -11,15 +11,22 @@ StackResult route_workload(HybridWorkload& wl) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     
+    //share param, qasm string length w all nodes
     int param_size = wl.parameters.size();
     MPI_Bcast(&param_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    int qasm_size = wl.circuit_qasm.size();   
+    MPI_Bcast(&qasm_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+
+    //resizes strings on worker nodes
     if (rank != 0) {
         wl.parameters.resize(param_size);
+        wl.parameters.resize(qasm_size);
     }
 
     // Shares numerical parameters - theta
     MPI_Bcast(wl.parameters.data(), param_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(const_cast<char*>(wl.circuit_qasm.data()), qasm_size, MPI_CHAR, 0, MPI_COMM_WORLD);
 
     if (rank ==0){
         std::cout << "[MASTER DISPATCHER] Distributing "<< wl.num_qubits << " qubits across " << size << " nodes." <<std::endl;
@@ -42,7 +49,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
         res.energy = global_energy;
         res.execution_time = 0.450;   // HPC latency included - placeholder
-        res.variance = 0.001;      //placeholder for noise
+        res.variance = 0.001;      //placeholder for future noise
         res.success_msg = "Success";
         res.used_path = "MPI + CUDA Distribued"; 
     }
