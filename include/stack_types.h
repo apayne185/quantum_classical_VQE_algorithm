@@ -16,6 +16,7 @@ struct HybridWorkload {
     bool requires_gpu;
     std::string backend_target;       // "simulator", "hpc_cluster", "qpu"
     std::string circuit_qasm;
+    int job_id;                   // for async tracking
 };
 
 // both C++ disptacher and python bridge needed to agree on workload
