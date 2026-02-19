@@ -1,18 +1,13 @@
 
 from qiskit import QuantumCircuit, transpile, QuantumRegister, ClassicalRegister
-# from qiskit.visualization import plot_histogram, visualize_transition
-# from qiskit.circuit.library import RealAmplitudes # Common VQE Ansantze
 from qiskit_aer import AerSimulator
-# from qiskit_aer.noise import NoiseModel
-# from qiskit_aer.primitives import Estimator 
-from qiskit_algorithms import VQE, NumPyMinimumEigensolver
+from qiskit_algorithms import NumPyMinimumEigensolver
 from qiskit_algorithms.optimizers import SPSA
 from qiskit.circuit.library import UGate
 from qiskit.quantum_info import SparsePauliOp, Operator
 
 import numpy as np
 import matplotlib.pyplot as plt
-# from scipy.optimize import minimize
 from random import random
 
 
@@ -30,6 +25,9 @@ def quantum_state_preparation(circuit, parameters):
     circuit.rz(parameters[0], 0) # parameter[0] = theta
     return circuit
 
+
+def callback(nfev, x_next, f_next, stepsize, accepted):
+    energy_history.append(f_next)
 
 
 def vqe_circuit(parameters, measure):
@@ -131,52 +129,52 @@ def vqe(parameters):
 
 
 
-shots = 8192
-backend = AerSimulator()
-
-#creating a,b,c,d from random real numbers bewtween [0,10]
-scale = 10
-a, b, c, d = (scale*random(), scale*random(), 
-              scale*random(), scale*random())
-H = hamiltonian_operator(a, b, c, d)
-
-exact_result = NumPyMinimumEigensolver()
-result = exact_result.compute_minimum_eigenvalue(operator=H)
-reference_energy = result.eigenvalue.real
-print('(Reference) The exact ground state energy is: {}'.format(reference_energy))
 
 
-H_gate = Operator(UGate(np.pi/2, 0, np.pi)).data   #hadamard gate 
-print("H_gate:")
-print((H_gate * np.sqrt(2)).round(5))
+if __name__ == "__main__": 
+    shots = 8192
+    backend = AerSimulator()
 
-Y_gate = Operator(UGate(np.pi/2, 0, np.pi/2)).data    
-print("Y_basis_gate:")
-print((Y_gate * np.sqrt(2)).round(5))
+    #creating a,b,c,d from random real numbers bewtween [0,10]
+    scale = 10
+    a, b, c, d = (scale*random(), scale*random(), 
+                scale*random(), scale*random())
+    H = hamiltonian_operator(a, b, c, d)
 
-
-pauli_dict = pauli_operator_to_dict(H)
-parameters_array = np.array([np.pi, np.pi])
-energy_history = []
-
-def callback(nfev, x_next, f_next, stepsize, accepted):
-    energy_history.append(f_next)
-
-spsa = SPSA(maxiter=15, callback=callback)
-
-vqe_result = spsa.minimize(fun=vqe,     #handles statistical noise better than gradient based optimizers 
-                           x0=parameters_array)
+    exact_result = NumPyMinimumEigensolver()
+    result = exact_result.compute_minimum_eigenvalue(operator=H)
+    reference_energy = result.eigenvalue.real
+    print('(Reference) The exact ground state energy is: {}'.format(reference_energy))
 
 
-print(f'The exact ground state energy is: {reference_energy:.6f}')
-print(f'The VQE estimated energy is:{vqe_result.fun:.6f}')
-print(f'Accuracy Error: {abs(reference_energy - vqe_result.fun):.6f}')
+    H_gate = Operator(UGate(np.pi/2, 0, np.pi)).data   #hadamard gate 
+    print("H_gate:")
+    print((H_gate * np.sqrt(2)).round(5))
+
+    Y_gate = Operator(UGate(np.pi/2, 0, np.pi/2)).data    
+    print("Y_basis_gate:")
+    print((Y_gate * np.sqrt(2)).round(5))
 
 
-plt.plot(energy_history, label='SPSA Optimization')
-plt.axhline(y=reference_energy, color='r', linestyle='--', label='Exact Energy')
-plt.xlabel('Iteration')
-plt.ylabel('Energy')
-plt.show()
+    pauli_dict = pauli_operator_to_dict(H)
+    parameters_array = np.array([np.pi, np.pi])
+    energy_history = []
+
+    spsa = SPSA(maxiter=15, callback=callback)
+
+    vqe_result = spsa.minimize(fun=vqe,     #handles statistical noise better than gradient based optimizers 
+                            x0=parameters_array)
+
+
+    print(f'The exact ground state energy is: {reference_energy:.6f}')
+    print(f'The VQE estimated energy is:{vqe_result.fun:.6f}')
+    print(f'Accuracy Error: {abs(reference_energy - vqe_result.fun):.6f}')
+
+
+    plt.plot(energy_history, label='SPSA Optimization')
+    plt.axhline(y=reference_energy, color='r', linestyle='--', label='Exact Energy')
+    plt.xlabel('Iteration')
+    plt.ylabel('Energy')
+    plt.show()
 
 

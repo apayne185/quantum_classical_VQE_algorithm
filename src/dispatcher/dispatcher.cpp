@@ -3,6 +3,7 @@
 #include <vector>
 #include <mpi.h>
 
+
 StackResult route_workload(HybridWorkload& wl) {
     StackResult res; 
     int rank, size;
@@ -70,7 +71,8 @@ StackResult route_workload(HybridWorkload& wl) {
         std::vector<float> params_fp32(wl.parameters.begin(), wl.parameters.end());
 
         // Mixed Precision Strategy - cast result to FP64 for final energy sum
-        double local_energy = run_cuda_vqe_fp32(wl.parameters.data(), param_size);   // calls CUDA
+        // double local_energy = run_cuda_vqe_fp32(wl.parameters.data(), param_size);   // calls CUDA
+        double local_energy = run_cuda_vqe_fp32(params_fp32.data(), param_size);
         std::cout << "[Node " << rank << "] Local GPU Energy: " << local_energy << std::endl;     // DEBUG
         double global_energy = 0.0;
 
@@ -86,7 +88,7 @@ StackResult route_workload(HybridWorkload& wl) {
         res.energy = global_energy;
         res.variance = 0.001;      //placeholder for future noise
         // res.success_msg = "Success";
-        res.used_path = "MPI + CUDA Distribued"; 
+        res.used_path = "MPI + CUDA Distributed"; 
     }
     
     res.success_msg = "Success";
