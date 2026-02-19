@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 
+
 __global__ void compute_vqe_energy_kernel(const float* params, double* result, int n) {
     __shared__ double sdata[256];
 
@@ -38,11 +39,23 @@ extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
     float *d_params = nullptr;
     double *d_result = nullptr;
     double h_result= 0.0;
+    cudaError_t err;
 
-    // cudaError_t err1 = cudaMalloc(&d_params, n * sizeof(float));     // DEBUG LINE
-    // cudaError_t err2 = cudaMalloc(&d_result, sizeof(double));
-    if (cudaMalloc(&d_params, n * sizeof(float)) != cudaSuccess || cudaMalloc(&d_result, sizeof(double)) != cudaSuccess)  {     //DEBUG LINE
-        printf("CUDA Malloc Failed!\n");
+    // if (cudaMalloc(&d_params, n * sizeof(float)) != cudaSuccess || cudaMalloc(&d_result, sizeof(double)) != cudaSuccess)  {     //DEBUG LINE
+    //     printf("CUDA Malloc Failed!\n");
+    //     return -888.0;
+    // }
+
+    err = cudaMalloc(&d_params, n * sizeof(float));
+    if (err != cudaSuccess) {
+        printf("CUDA Error (Params Malloc): %s\n", cudaGetErrorString(err));
+        return -888.0;
+    }
+
+    err = cudaMalloc(&d_result, sizeof(double));
+    if (err != cudaSuccess) {
+        printf("CUDA Error (Result Malloc): %s\n", cudaGetErrorString(err));
+        cudaFree(d_params); // Clean up previous allocation
         return -888.0;
     }
 

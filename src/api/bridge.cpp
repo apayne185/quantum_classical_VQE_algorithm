@@ -3,6 +3,7 @@
 #include <pybind11/stl.h>          // for std::vector conversion
 #include "stack_types.h"
 #include <mpi.h>
+#include <cuda_runtime.h>     // for CUDA API calls
 
 namespace py = pybind11;
 
@@ -31,6 +32,16 @@ int get_size() {
 }
 
 
+void set_cuda_device(int rank) {
+    int deviceCount;
+    cudaGetDeviceCount(&deviceCount);
+    if (deviceCount > 0) {
+        int device = rank % deviceCount;
+        cudaSetDevice(device);
+    }
+}
+
+
 
 // links Python call to C++ Dispatcher
 StackResult execute(const HybridWorkload& wl) {
@@ -53,6 +64,9 @@ StackResult execute(const HybridWorkload& wl) {
 PYBIND11_MODULE(hpc_core, m) {
     m.def("init_mpi", &init_mpi, "Initialize MPI environment");
     m.def("finalize_mpi", &finalize_mpi, "Finalize MPI environment");
+    m.def("get_rank", &get_rank);
+    m.def("get_size", &get_size);
+    m.def("set_cuda_device", &set_cuda_device, "Assigns GPU to MPI rank");
 
     py::class_<HybridWorkload>(m, "HybridWorkload")
         .def(py::init<>())                              // allows python to do wl=hpc_core.HybridWorklod()
@@ -74,6 +88,6 @@ PYBIND11_MODULE(hpc_core, m) {
 
     m.def("execute", &execute, "Main entry point for hybrid stack");
     m.def("route_workload", &route_workload, "Core dispatcher function");
-    m.def("get_rank", &get_rank, "Get MPI rank of current process");
-    m.def("get_size", &get_size, "Get total number of MPI processes"); 
+    // m.def("get_rank", &get_rank, "Get MPI rank of current process");
+    // m.def("get_size", &get_size, "Get total number of MPI processes"); 
 }

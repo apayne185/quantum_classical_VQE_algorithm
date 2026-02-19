@@ -11,6 +11,13 @@ class HPCHybridStack:
         self.rank = hpc_core.get_rank()
         self.size = hpc_core.get_size()
 
+        if use_gpu:
+            try:
+                hpc_core.set_cuda_device(self.rank)
+            except Exception as e:
+                print(f"Rank {self.rank}: GPU initialization failed, falling to CPU.  Error: {e}")
+                self.use_gpu = False
+
 
     def run_vqe_batch(self, circuit, parameter_batch, backend="qpu"):
         # 'contract' object - stack_types.h
@@ -38,7 +45,6 @@ class HPCHybridStack:
 
         return result
     
-
     def _display_report(self, result): 
         print(f"--- Execution Report ---")
         print(f"Target Path: {result.used_path}")
