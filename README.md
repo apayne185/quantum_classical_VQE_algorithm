@@ -14,8 +14,18 @@ This software stack implements a Hybrid Quantum- Classical Dispatcher.
 
 
 
+## To Run the Software
+### Activate the Conda Env
+### To Compile the C++ Code
+mkdir build 
 
+cd build 
 
-
+cmake ..
 
 cmake --build . --config Release
+
+
+### To Run the Python Script - with 4 nodes/processes
+
+mpiexec -n 4 python test_run.py
