@@ -1,0 +1,5 @@
+build/
+.git/
+__pycache__/
+*.so
+.ipynb_checkpoints/

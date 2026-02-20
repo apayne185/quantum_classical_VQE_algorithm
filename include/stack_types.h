@@ -1,6 +1,9 @@
 /* Defines "Contract", allows Python UI/C++ engine to function together. Contains:
  HybridWorkload - input packet for BE, 
- StackResult - output packet for future performance analysis*/
+ StackResult - output packet for future performance analysis */
+
+#ifndef STACK_TYPES_H
+#define STACK_TYPES_H
 
 #pragma once
 #include <vector>
@@ -13,6 +16,7 @@ struct HybridWorkload {
     bool requires_gpu;
     std::string backend_target;       // "simulator", "hpc_cluster", "qpu"
     std::string circuit_qasm;
+    int job_id;                   // for async tracking
 };
 
 // both C++ disptacher and python bridge needed to agree on workload
@@ -27,3 +31,9 @@ struct StackResult {
 }; 
 
 StackResult route_workload(HybridWorkload& wl);
+
+//connects CUDA function to C++
+// extern "C" double run_cuda_vqe(const double* h_params, int n);
+extern "C" double run_cuda_vqe_fp32(const float* h_params, int n);
+
+#endif
