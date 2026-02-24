@@ -64,7 +64,7 @@ class HPCHybridStack:
         terms = self.partition(problem.pauli_terms)
 
         workload = hpc_core.HybridWorkload()
-        workload.parameters = [float(coeff) for _, coeff in terms]        
+        workload.parameters = [float(coeff.real) for _, coeff in terms]        
         workload.num_qubits = len(terms[0][0]) if terms else 0
         workload.requires_gpu = self.use_gpu
         workload.circuit_qasm = problem.circuit_qasm
