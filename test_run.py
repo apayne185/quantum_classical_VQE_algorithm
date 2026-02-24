@@ -5,7 +5,7 @@ import numpy as np
 
 # so python can find C++ module
 sys.path.append('./build')
-sys.path.append('./build/Release')    
+# sys.path.append('./build/Release')    
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
@@ -14,7 +14,7 @@ try:
     import hpc_core
     print("hpc_core and interface imported.")
 except ImportError as e:
-    print(f"failed to import: {e}")
+    print(f"failed to import hpc_core module: {e}")
     sys.exit(1)
 
 
@@ -34,30 +34,18 @@ class FakeCircuit:
     
 
 
-# def prepare_workload(qc, params, backend='simulator'):
-#     # creates job/workload
-#     stack = hpc_core.HybridWorkload()
-#     stack.num_qubits = qc.num_qubits
-#     stack.parameters = params
-#     stack.circuit_depth = qc.depth()
-#     stack.requires_gpu = True if qc.num_qubits > 15 else False
-#     stack.backend_target = backend
-#     # stack.circuit_qasm = qasm3.dumps(qc)    to be used in real run, ltaer stages
-#     stack.circuit_qasm = "OPENQASM 3.0; gate x q; x $0;"
-
-#     return stack
-
 
 def run_benchmarks():
     stack = HPCHybridStack(use_gpu=True)   
-
+    
     #tests parameter batching dispatcher logic   
     num_params = 1000 
-    param_batch = [np.random.random(num_params).tolist()]
+    params = np.random.random(num_params).tolist()
+    param_batch = [params]
+    qc = FakeCircuit(qubits=20) 
 
-    qc = FakeCircuit(qubits=20)
     if stack.rank ==0: 
-        print("\n----PHASE 1 & 2 STRESS TEST - REPORT -----")
+        print("\n---- DISTRIBUTED STACK STRESS TEST - REPORT -----")
         print(f"Cluster Size: {stack.size} nodes")
         print(f"Qubits used: {qc.num_qubits}")
         print(f"Precision: Mixed (FP32 Kernel -> FP64 Reduction)")
@@ -73,16 +61,19 @@ def run_benchmarks():
         else:
             print(f"FAIL: Dispatcher routed to: {result.used_path}")
 
+        expected_val = 1000.0      # local energy would be 1000*0.5 = 500, since we are using 2 ranks 500*2 = 1000
         if result.energy != 0:
-            print(f"PASS: CUDA Kernel returned data: {result.energy:.6f}")
+            print(f"PASS: CUDA Kernel returned data.")
+            if abs(result.energy - expected_val) < 1e-5:
+                print(f"PASS: Energy Result Correct ({result.energy:.2f})")
+            else:
+                print(f"FAIL: Expected {expected_val}. Instead, returned: {result.energy:.2f}")
         else:
-            print(f"FAIL: Energy return is 0.0 (Check work)")
+            print(f"FAIL: Energy return is 0.0 (Check the work)")
 
 
-
-        print(f"Stack returned result: {result}")
         print(f"Result Variance: {result.variance}")
-        print(f"Wall Clock Time (T_total): {result.execution_time} s ")
+        print(f"Wall Clock Time (T_total): {result.execution_time:.6f} s ")
         # print(f"QCircuit: {stack.circuit_qasm}\n")
         print(f"Status Message: {result.success_msg}")
 

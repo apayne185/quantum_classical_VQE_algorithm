@@ -31,6 +31,10 @@ int get_size() {
     return size;
 }
 
+void execute_barrier() {
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
 
 void set_cuda_device(int rank) {
     int deviceCount;
