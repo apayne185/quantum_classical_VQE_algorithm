@@ -18,5 +18,7 @@ dependencies:
       - qiskit>=1.0.0
       - qiskit-aer>=0.14.0
       - qiskit-algorithms>=0.3.0
+      - qiskit-nature
       - pylatexenc  
+      - pyscf
 
