@@ -1,6 +1,7 @@
 # The API, users interact with this class instead of C++, automates creation of object
 import hpc_core  #compiled C++ module
 import numpy as np
+from src.api.problems import QuantumProblem
 
 class HPCHybridStack:
     def __init__(self, use_gpu=True):
@@ -38,36 +39,42 @@ class HPCHybridStack:
         
         # call C++ Bridge
         result = hpc_core.execute(workload)
-        # if self.rank == 0:
-        #     self._display_report(result)
-        
         return result
-    
-    # def _display_report(self, result): 
-    #     print(f"--- Execution Report ---")
-    #     print(f"Target Path: {result.used_path}")
-    #     print(f"Wall Time: {result.execution_time}s")
-    #     print(f"VQE Energy: {result.energy}")
-    #     print(f"Variance: {result.variance}")
-    #     print(f"Status: {result.success_msg}")
 
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.finalize()
+    def __enter__(self): return self
+    def __exit__(self, exc_type, exc_val, exc_tb): self.finalize()
 
 
     def finalize(self):
-        """Manually trigger MPI Finalize safely."""
         # hpc_core.execute_barrier()
         hpc_core.finalize_mpi()
 
 
-    def __del__(self):
-            """Ensures clean MPI exit when the object is destroyed."""
-            try:
-                hpc_core.finalize_mpi()
-            except:
-                pass
+    # def __del__(self):
+    #         try:
+    #             hpc_core.finalize_mpi()
+    #         except:
+    #             pass
+
+
+    # for now, the middleware accepts input of problem types:  chemistry, finance, max_cut
+    def run(self, problem: QuantumProblem): 
+        problem.prepare()      #domain specific logic/math handled 
+        terms = self.partition(problem.pauli_terms)
+
+        workload = hpc_core.HybridWorkload()
+        workload.parameters = [float(coeff) for _, coeff in terms]        
+        workload.num_qubits = len(terms[0][0]) if terms else 0
+        workload.requires_gpu = self.use_gpu
+        workload.circuit_qasm = problem.circuit_qasm
+
+        return hpc_core.execute(workload)
+
+
+    def partition(self, full_list): 
+        n= len(full_list)
+        chunk = n// self.size
+        start = self.rank * chunk
+        end = (self.rank + 1) * chunk if self.rank != self.size - 1 else n
+        return full_list[start:end]
