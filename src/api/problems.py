@@ -1,7 +1,11 @@
 # standardizes all inputs to handle quantum chem, finance, optimization, etc
 from abc import ABC, abstractmethod
 import numpy as np 
-
+from qiskit import qasm3 
+from qiskit_nature.second_q.drivers import PySCFDriver
+from qiskit_nature.second_q.mappers import JordanWignerMapper
+from qiskit_nature.units import DistanceUnit
+from qiskit.circuit.library import EfficientSU2
 
 
 class QuantumProblem(ABC):
@@ -19,17 +23,32 @@ class QuantumProblem(ABC):
 
 
 class ChemistryProblem(QuantumProblem):
-    def __init__(self, molecule_str, distance):
+    def __init__(self, atom_coordinates):     #user will provide the raw geometry 
         super().__init__()
-        self.molecule = molecule_str
-        self.dist = distance
+        # self.molecule = molecule_str
+        self.coords = atom_coordinates
+        # self.dist = distance
 
     def prepare(self):
-        # Here we will eventualy call qiskit_nature
-        # rn we mock H2/LiH output
-        self.pauli_terms = [("IIII", -0.8126), ("ZIII", -0.2252), ("IZII", 0.1723)]
-        self.circuit_qasm = 'OPENQASM 3.0; include "stdgates.inc"; qubit[4] q; h q[0];'
-        print(f"[Chemistry] Prepared {self.molecule} at {self.dist}A")  
+        # molecular physics 
+        driver = PySCFDriver(
+            atom=self.coords,
+            basis="sto3g",
+            unit=DistanceUnit.ANGSTROM
+        ) 
+
+        problem = driver.run()
+        hamiltonian = problem.hamiltonian.second_q_op()
+        mapper = JordanWignerMapper()
+        qubit_op = mapper.map(hamiltonian)
+    
+        self.pauli_terms = qubit_op.to_list()
+
+        num_qubits = qubit_op.num_qubits
+        ansatz = EfficientSU2(num_qubits, reps=1).decompose()  # HARDWARE EFFICIENT ANSATZ
+        self.circuit_qasm = qasm3.dumps(ansatz)
+
+        print(f"[Chemistry] Prepared {len(self.pauli_terms)} Pauli terms for  {num_qubits} qubits.")  
 
 
 
