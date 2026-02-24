@@ -2,6 +2,8 @@
 #include <iostream>
 #include <vector>
 #include <mpi.h>
+#include <cuda_runtime.h>  
+#include <numeric>
 
 
 StackResult route_workload(HybridWorkload& wl) {
@@ -25,8 +27,6 @@ StackResult route_workload(HybridWorkload& wl) {
         wl.parameters.resize(param_size);
         // wl.circuit_qasm.resize(qasm_size);
     }
-    
-    // std::vector<char> qasm_buffer(wl.circuit_qasm.begin(), wl.circuit_qasm.end());
 
     // explicit serialization buffer to bypass const_cast issues
     std::vector<char> qasm_buffer(qasm_size); 
@@ -67,13 +67,33 @@ StackResult route_workload(HybridWorkload& wl) {
     } else {   //logc for HPC
 
         // ACCELERATION LAYER: mixed precision implemented 
-        // convert to FP32 for heavy GPU state-vector math
-        std::vector<float> params_fp32(wl.parameters.begin(), wl.parameters.end());
 
         // Mixed Precision Strategy - cast result to FP64 for final energy sum
+        double local_energy = 0.0;
         // double local_energy = run_cuda_vqe_fp32(wl.parameters.data(), param_size);   // calls CUDA
-        double local_energy = run_cuda_vqe_fp32(params_fp32.data(), param_size);
+        // double local_energy = run_cuda_vqe_fp32(params_fp32.data(), param_size);
         std::cout << "[Node " << rank << "] Local GPU Energy: " << local_energy << std::endl;     // DEBUG
+
+        int deviceCount = 0;
+        cudaGetDeviceCount(&deviceCount);
+
+
+        if (deviceCount > 0) {
+            // Path A: NVIDIA GPU available (CUDA execution)
+            // convert to FP32 for heavy GPU state-vector math
+            std::vector<float> params_fp32(wl.parameters.begin(), wl.parameters.end());
+            local_energy = run_cuda_vqe_fp32(params_fp32.data(), param_size);
+            res.used_path = "MPI + CUDA Distributed";
+        } else {
+            // Path B: FALLBACK (No GPU found)
+            // Simulate CUDA kernel logic on CPU: sum(param * 0.5)
+            for (double p : wl.parameters) {
+                local_energy += (p * 0.5);
+            }
+            res.used_path = "MPI + CPU Fallback (Mock)";
+        }
+
+
         double global_energy = 0.0;
 
         //sums results from all nodes back to node 0 - Non blocking reduction
@@ -87,8 +107,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
         res.energy = global_energy;
         res.variance = 0.001;      //placeholder for future noise
-        // res.success_msg = "Success";
-        res.used_path = "MPI + CUDA Distributed"; 
+        res.used_path = res.used_path;
     }
     
     res.success_msg = "Success";
