@@ -5,7 +5,6 @@ import numpy as np
 class HPCHybridStack:
     def __init__(self, use_gpu=True):
         self.use_gpu = use_gpu
-
         #setup MPI environemnt using C++ bridge
         self.provided_thread_level = hpc_core.init_mpi()
         self.rank = hpc_core.get_rank()
@@ -15,7 +14,8 @@ class HPCHybridStack:
             try:
                 hpc_core.set_cuda_device(self.rank)
             except Exception as e:
-                print(f"Rank {self.rank}: GPU initialization failed, falling to CPU.  Error: {e}")
+                if self.rank == 0: 
+                    print(f"Rank {self.rank}: GPU initialization failed, falling back to CPU.  Error: {e}")
                 self.use_gpu = False
 
 
@@ -38,26 +38,36 @@ class HPCHybridStack:
         
         # call C++ Bridge
         result = hpc_core.execute(workload)
-
-        if self.rank == 0:
-            self._display_report(result)
+        # if self.rank == 0:
+        #     self._display_report(result)
         
-
         return result
     
-    def _display_report(self, result): 
-        print(f"--- Execution Report ---")
-        print(f"Target Path: {result.used_path}")
-        print(f"Wall Time: {result.execution_time}s")
-        print(f"VQE Energy: {result.energy}")
-        print(f"Variance: {result.variance}")
-        print(f"Status: {result.success_msg}")
+    # def _display_report(self, result): 
+    #     print(f"--- Execution Report ---")
+    #     print(f"Target Path: {result.used_path}")
+    #     print(f"Wall Time: {result.execution_time}s")
+    #     print(f"VQE Energy: {result.energy}")
+    #     print(f"Variance: {result.variance}")
+    #     print(f"Status: {result.success_msg}")
 
 
+    def __enter__(self):
+        return self
 
-def __del__(self):
-        """Ensures clean MPI exit when the object is destroyed."""
-        try:
-            hpc_core.finalize_mpi()
-        except:
-            pass
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.finalize()
+
+
+    def finalize(self):
+        """Manually trigger MPI Finalize safely."""
+        # hpc_core.execute_barrier()
+        hpc_core.finalize_mpi()
+
+
+    def __del__(self):
+            """Ensures clean MPI exit when the object is destroyed."""
+            try:
+                hpc_core.finalize_mpi()
+            except:
+                pass
