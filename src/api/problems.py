@@ -51,6 +51,14 @@ class ChemistryProblem(QuantumProblem):
         print(f"[Chemistry] Prepared {len(self.pauli_terms)} Pauli terms for  {num_qubits} qubits.")  
 
 
+    def get_pauli_strings(self):
+        # pass   #will return list of operatorsz, weights
+        return [("IIZI", -0.81), ("IZIZ", 0.17)]
+    
+    def get_ansatz(self): 
+        pass   #returns qiskit circuit for the domain 
+
+
 
 class FinanceProblem(QuantumProblem):
     def __init__(self, covariance_matrix):
@@ -59,6 +67,15 @@ class FinanceProblem(QuantumProblem):
 
     def prepare(self):
         # Logic to convert Portfolio Optimization to Ising Hamiltonian
-        self.pauli_terms = [("ZZII", 0.5), ("IZZI", 0.5), ("IIZZ", 0.5)]
+        # self.pauli_terms = [("ZZII", 0.5), ("IZZI", 0.5), ("IIZZ", 0.5)]
+        self.pauli_terms = [("ZIII", 1.0), ("IZII", 2.0), ("IIZI", 3.0)]
         self.circuit_qasm = 'OPENQASM 3.0; include "stdgates.inc"; qubit[4] q; x q[0];'
         print(f"[Finance] Prepared Portfolio QUBO from {len(self.matrix)} assets")
+
+        
+    def get_pauli_strings(self):
+        # pass   #will return list of operatorsz, weights
+        return [("ZZII", 0.5), ("IZZI", 0.5)]     #qubo/ising mapping logic - need to make this more applicable agnostic 
+    
+    def get_ansatz(self): 
+        pass   #returns qiskit circuit for the domain 

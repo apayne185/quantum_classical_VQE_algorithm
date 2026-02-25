@@ -28,7 +28,9 @@ RUN pip install --no-cache-dir \
     pybind11 \
     qiskit-aer \
     qiskit-algorithms \
-    pylatexenc
+    pylatexenc \
+    qiskit-nature \ 
+    pyscf 
 
 COPY . .
 

@@ -4,6 +4,15 @@
 #include <mpi.h>
 #include <cuda_runtime.h>  
 #include <numeric>
+#include <future>   
+#include <thread>   
+
+
+
+double call_qpu_cloud(std::string qasm) {
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    return -1.85;     // Mock QPU expectation value
+}
 
 
 StackResult route_workload(HybridWorkload& wl) {
@@ -11,6 +20,8 @@ StackResult route_workload(HybridWorkload& wl) {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+    double qpu_val = 0.0;
+    std::future<double> qpu_future;
 
     double start_time = MPI_Wtime();
     MPI_Request requests[2];          // tracks async broadcasts
@@ -25,7 +36,6 @@ StackResult route_workload(HybridWorkload& wl) {
     //resizes strings on worker nodes
     if (rank != 0) {
         wl.parameters.resize(param_size);
-        // wl.circuit_qasm.resize(qasm_size);
     }
 
     // explicit serialization buffer to bypass const_cast issues
@@ -33,7 +43,6 @@ StackResult route_workload(HybridWorkload& wl) {
     if (rank == 0) {
         std::copy(wl.circuit_qasm.begin(), wl.circuit_qasm.end(), qasm_buffer.begin());
     }
-
 
     // Shares numerical parameters - theta
     // starts async broadcast 
@@ -43,75 +52,57 @@ StackResult route_workload(HybridWorkload& wl) {
     if (rank ==0){
         // rank 0 starts QPU RTT 
         std::cout << "[MASTER] Rank 0 dispatching QASM to Cloud QPU.." << std::endl;
-        // add more later
+        qpu_future = std::async(std::launch::async, call_qpu_cloud, wl.circuit_qasm);
     }
 
     // ensures data arrives before starting CUDA kernls
     MPI_Waitall(2, requests, MPI_STATUSES_IGNORE);
 
-    // DEBUG
-    if (param_size > 0) {
-        std::cout << "[Node " << rank << "] First Param: " << wl.parameters[0] << std::endl;
+
+    // ACCELERATION LAYER: mixed precision implemented 
+    // Mixed Precision Strategy - cast result to FP64 for final energy sum
+    double t_accel_start = MPI_Wtime();
+    double local_energy = 0.0;
+    int deviceCount = 0;
+    cudaGetDeviceCount(&deviceCount);
+
+
+    if (wl.requires_gpu && deviceCount > 0) {
+        // Path A: NVIDIA GPU available (CUDA execution)
+        // convert to FP32 for heavy GPU state-vector math
+        std::vector<float> params_fp32(wl.parameters.begin(), wl.parameters.end());
+        local_energy = run_cuda_vqe_fp32(params_fp32.data(), param_size);
+        res.used_path = "MPI + CUDA Distributed";
     } else {
-        std::cout << "[Node " << rank << "] ERROR: param_size is 0" << std::endl;
-    }
-
-
-    // Dispatch logic 
-    if (wl.num_qubits < 15) {         
-        res.energy = -1.137;    //placeholder vqe energy
-        // res.execution_time = 0.002;   //secs 
-        res.variance = 0.001;      //placeholder for noise
-        res.used_path = "Local Simulator"; 
-
-    } else {   //logc for HPC
-
-        // ACCELERATION LAYER: mixed precision implemented 
-
-        // Mixed Precision Strategy - cast result to FP64 for final energy sum
-        double local_energy = 0.0;
-        // double local_energy = run_cuda_vqe_fp32(wl.parameters.data(), param_size);   // calls CUDA
-        // double local_energy = run_cuda_vqe_fp32(params_fp32.data(), param_size);
-        std::cout << "[Node " << rank << "] Local GPU Energy: " << local_energy << std::endl;     // DEBUG
-
-        int deviceCount = 0;
-        cudaGetDeviceCount(&deviceCount);
-
-
-        if (deviceCount > 0) {
-            // Path A: NVIDIA GPU available (CUDA execution)
-            // convert to FP32 for heavy GPU state-vector math
-            std::vector<float> params_fp32(wl.parameters.begin(), wl.parameters.end());
-            local_energy = run_cuda_vqe_fp32(params_fp32.data(), param_size);
-            res.used_path = "MPI + CUDA Distributed";
-        } else {
-            // Path B: FALLBACK (No GPU found)
-            // Simulate CUDA kernel logic on CPU: sum(param * 0.5)
-            for (double p : wl.parameters) {
-                local_energy += (p * 0.5);
-            }
-            res.used_path = "MPI + CPU Fallback (Mock)";
+        // Path B: FALLBACK (No GPU found)
+        // Simulate CUDA kernel logic on CPU
+         for (double p : wl.parameters) {
+            local_energy += p; 
+        }
+        res.used_path = (wl.num_qubits < 15) ? "Local Simulator" : "MPI + CPU Fallback";
         }
 
+        double t_accel_end = MPI_Wtime();
+        if (rank == 0) {
+            qpu_val = qpu_future.get(); 
+            std::cout << "[MANAGER] QPU result received. Merging with GPU results..." << std::endl;
+        }
 
-        double global_energy = 0.0;
-
-        //sums results from all nodes back to node 0 - Non blocking reduction
-        MPI_Request red_req;
-
+        double global_classical_energy = 0.0;
         // global reduction - non-blocking 
-        MPI_Iallreduce(&local_energy, &global_energy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD, &red_req);
+        MPI_Allreduce(&local_energy, &global_classical_energy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-        // wait for reduction to finish 
-        MPI_Wait(&red_req, MPI_STATUS_IGNORE);
+        std::cout << "[Rank " << rank << "] Local: " << local_energy 
+              << " | Global: " << global_classical_energy << std::endl;
 
-        res.energy = global_energy;
-        res.variance = 0.001;      //placeholder for future noise
-        res.used_path = res.used_path;
+        res.energy = global_classical_energy + qpu_val;
+        res.success_msg = "Success";
+        res.execution_time = MPI_Wtime() - start_time;
+
+        double t_comm = res.execution_time - (t_accel_end - t_accel_start);
+        res.variance = (t_accel_end - t_accel_start) / t_comm;   // 0.001;      //placeholder for future noise
+
+
+        return res; 
     }
     
-    res.success_msg = "Success";
-    res.execution_time = MPI_Wtime() - start_time;
-
-    return res; 
-}
