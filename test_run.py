@@ -6,7 +6,7 @@ from src.api.interface import HPCHybridStack
 from src.api.problems import ChemistryProblem, FinanceProblem
 
 # so python can find C++ module
-sys.path.append('./build')
+sys.path.insert(0, os.path.abspath("./build"))
 # sys.path.append('./build/Release')    
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
@@ -21,36 +21,27 @@ except ImportError as e:
 
 
 
-
-# # Simulates qiskit like object   -- placeholder while i setup 
-# class FakeCircuit:
-#     def __init__(self, qubits):
-#         self.num_qubits = qubits
-
-#     # def depth(self):
-#     #     return 12             # dispatcher will use to estimate workload
-
-#     def qasm(self): 
-#         return "OPENQASM 3.0;  include \"stdgates.inc\"; qubit[20] q; h q[0];"
-
-
 def run_universal_test():
     with HPCHybridStack(use_gpu=True) as stack:
         
-        if stack.rank == 0: print("\n--- RUNNING CHEMISTRY TASK ---")
-        chem_task = ChemistryProblem("H 0 0 0; H 0 0 0.74")  #hydrogen
-        # chem_task = ChemistryProblem("Li 0 0 0; H 0 0 1.59") #liH
-        res_chem = stack.run(chem_task)
+        # if stack.rank == 0: print("\n--- RUNNING CHEMISTRY TASK ---")
+        # chem_task = ChemistryProblem("H 0 0 0; H 0 0 0.74")  #hydrogen
+        # # chem_task = ChemistryProblem("Li 0 0 0; H 0 0 1.59") #liH
+        # res_chem = stack.run(chem_task)
         
-        if stack.rank == 0: print("\n--- RUNNING FINANCE TASK ---")
-        fin_task = FinanceProblem([[1, 0.5], [0.5, 1]])
-        res_fin = stack.run(fin_task)
+        # if stack.rank == 0: print("\n--- RUNNING FINANCE TASK ---")
+        # fin_task = FinanceProblem([[1, 0.5], [0.5, 1]])
+        # res_fin = stack.run(fin_task)
+
+        problem = ChemistryProblem("H 0 0 0; H 0 0 0.74")
+        final_theta, history, final_energy = stack.vqe_optimize(problem, iterations=15)
 
         if stack.rank == 0:
             print("UNIVERSAL STACK SUMMARY")
-            print(f"Chemistry Energy: {res_chem.energy:.6f} Hartree")
-            print(f"Finance Risk:     {res_fin.energy:.6f} units")
-            print(f"HPC Path Used:    {res_chem.used_path}")
+            print(f"Problem Energy: {final_energy} Hartree")
+            # print(f"Finance Riskbuild: {res_fin.energy:.6f} units")
+            # print(f"HPC Path Used: {problem.used_path}")
+            print(f"HPC execution complete across {stack.size} nodes.")
 
 
 

@@ -15,7 +15,7 @@ __global__ void compute_vqe_energy_kernel(const float* params, double* result, i
     double val = 0.0;
     if (idx < n) {
         // simulate expectation value contribution - mixed precision 
-        val = (double)params[idx] * 0.5;
+        val = (double)params[idx];
     }
     sdata[tid] = val;
     __syncthreads();
@@ -67,8 +67,13 @@ extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
     //launch kernel     
     int blockSize = 256;
     int gridSize = (n + blockSize - 1) / blockSize;
-    compute_vqe_energy_kernel<<<gridSize, blockSize>>>(d_params, d_result, n);
-    // compute_vqe_energy_kernel<<<(n+255)/256, 256>>>(d_data, n);
+    // compute_vqe_energy_kernel<<<gridSize, blockSize>>>(d_params, d_result, n);
+    // ARTIFICIAL STRESS TEST runs kernel 10000 times 
+    for(int i=0; i<10000; i++) {
+        compute_vqe_energy_kernel<<<gridSize, blockSize>>>(d_params, d_result, n);
+    }
+
+
     
     // Catch kernel launch errors
     cudaDeviceSynchronize();
