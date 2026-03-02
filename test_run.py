@@ -34,62 +34,14 @@ def run_universal_test():
         # res_fin = stack.run(fin_task)
 
         problem = ChemistryProblem("H 0 0 0; H 0 0 0.74")
-        final_theta, history, final_energy = stack.vqe_optimize(problem, iterations=15)
+        final_theta, history = stack.vqe_optimize(problem)
 
         if stack.rank == 0:
             print("UNIVERSAL STACK SUMMARY")
-            print(f"Problem Energy: {final_energy} Hartree")
+            # print(f"Problem Energy: {final_energy} Hartree")
             # print(f"Finance Riskbuild: {res_fin.energy:.6f} units")
             # print(f"HPC Path Used: {problem.used_path}")
             print(f"HPC execution complete across {stack.size} nodes.")
-
-
-
-
-
-# def run_benchmarks():
-#     stack = HPCHybridStack(use_gpu=True)   
-    
-#     #tests parameter batching dispatcher logic   
-#     num_params = 1000 
-#     params = np.random.random(num_params).tolist()
-#     param_batch = [params]
-#     qc = FakeCircuit(qubits=20) 
-
-#     if stack.rank ==0: 
-#         print("\n---- DISTRIBUTED STACK STRESS TEST - REPORT -----")
-#         print(f"Cluster Size: {stack.size} nodes")
-#         print(f"Qubits used: {qc.num_qubits}")
-#         print(f"Precision: Mixed (FP32 Kernel -> FP64 Reduction)")
-
-
-#     result = stack.run_vqe_batch(qc, param_batch, backend="hpc_cluster")
-
-#     if stack.rank == 0: 
-#         print("\n---RESULTS VERIFICATION----")
-        
-#         if "Distributed" in result.used_path:
-#             print(f"PASS: Dispatcher routed to CUDA/MPI path.")
-#         else:
-#             print(f"FAIL: Dispatcher routed to: {result.used_path}")
-
-#         expected_val = 1000.0      # local energy would be 1000*0.5 = 500, since we are using 2 ranks 500*2 = 1000
-#         if result.energy != 0:
-#             print(f"PASS: CUDA Kernel returned data.")
-#             if abs(result.energy - expected_val) < 1e-5:
-#                 print(f"PASS: Energy Result Correct ({result.energy:.2f})")
-#             else:
-#                 print(f"FAIL: Expected {expected_val}. Instead, returned: {result.energy:.2f}")
-#         else:
-#             print(f"FAIL: Energy return is 0.0 (Check the work)")
-
-
-#         print(f"Result Variance: {result.variance}")
-#         print(f"Wall Clock Time (T_total): {result.execution_time:.6f} s ")
-#         # print(f"QCircuit: {stack.circuit_qasm}\n")
-#         print(f"Status Message: {result.success_msg}")
-
-
 
 
 if __name__ == "__main__":

@@ -28,6 +28,8 @@ struct StackResult {
     double variance;                   //for noise analysis
     std::string success_msg;          // errors or status updates 
     std::string used_path;             // cpu gpu or simulator
+    double masking_metric;             // determines performanc metric
+
 }; 
 
 StackResult route_workload(HybridWorkload& wl);

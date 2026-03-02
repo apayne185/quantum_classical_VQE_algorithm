@@ -2,12 +2,19 @@
 import hpc_core  #compiled C++ module
 import numpy as np
 from src.api.problems import QuantumProblem
+import mpi4py
+mpi4py.rc.initialize = False
+from mpi4py import MPI
+
 
 class HPCHybridStack:
     def __init__(self, use_gpu=True):
         self.use_gpu = use_gpu
         #setup MPI environemnt using C++ bridge
         self.provided_thread_level = hpc_core.init_mpi()
+        if not MPI.Is_initialized():
+            MPI.Init()
+        self.comm = MPI.COMM_WORLD
         self.rank = hpc_core.get_rank()
         self.size = hpc_core.get_size()
 
@@ -21,66 +28,72 @@ class HPCHybridStack:
 
 
 
-    def vqe_optimize(self, problem: QuantumProblem, iterations=20):
+    def vqe_optimize(self, problem: QuantumProblem, max_iterations=100,tolerance=1.6e-3):
+        comm = MPI.COMM_WORLD
         problem.prepare()
         num_params = len(problem.pauli_terms[0][0])
 
         # init theta on Manager node, workers init empty arrays
         theta = np.random.uniform(0, 2*np.pi, num_params) if self.rank == 0 else np.zeros(num_params)
 
+        prev_energy = float('inf')
         # SPSA hyperparameters (standard coeffs)
-        a, c, A = 0.6, 0.1, 10
+        a, c, A = 0.01, 0.01, 10       # 0.6, 0.1, 10
         alpha, gamma = 0.602, 0.101
         history = []
 
-        for k in range(1, iterations +1): 
-            # Updates step sizes based on iteration  k
-            ak = a / (k + A)**alpha
-            ck = c / k**gamma
+        for k in range(1, max_iterations +1): 
+            stop_signal = np.array([0], dtype=np.int32)
 
             # Manager node updates the stochastic pertubation delta value
             if self.rank == 0:
+                # Updates step sizes based on iteration  k
+                ak = a / (k + A)**alpha
+                ck = c / k**gamma
                 delta = np.random.choice([-1, 1], size=num_params)
-                theta_plus = theta + ck * delta
-                theta_minus = theta - ck * delta
+                combined_params = np.concatenate([theta + ck * delta, theta - ck * delta])
             else:
-                theta_plus = np.zeros(num_params)
-                theta_minus = np.zeros(num_params)
+                combined_params = np.zeros(num_params * 2)
+                # delta = np.zeros(num_params)
+                ck = 0
 
             # Parallel expectation value estimation
-            # Evaluate  E(theta+delta)
-            res_plus = self.evaluate(problem, theta_plus)
-            
-            # Evaluate E(theta-delta)   
-            res_minus = self.evaluate(problem, theta_minus)
+            result = self.evaluate(problem, combined_params, num_qubits=4)
 
             # Parameters update - Manager only
             if self.rank == 0:
+                # E+ is in energy, E- is in variance (the hack we made in C++)
+                e_plus = result.energy
+                e_minus = result.variance
+                current_energy = result.energy
+                history.append(current_energy)
+                
+                delta_e = abs(current_energy - prev_energy)       #energy difference 
+                
+                if delta_e < tolerance:
+                    print(f"Convergence Reached: {delta_e:.6f} < {tolerance}")
+                    stop_signal[0] = 1
+                    # break
+
                 # Gradient aproximation
-                gradient = (res_plus.energy-res_minus.energy) / (2*ck*delta)
+                gradient = (e_plus - e_minus) / (2*ck*delta)
                 theta = theta - ak*gradient
+                prev_energy = current_energy
 
                 # Masking efficiency M stored in res.variance 
-                avg_m = (res_plus.variance +res_minus.variance) / 2
-                history.append(res_plus.energy)
+                # avg_m = (res_plus.variance +res_minus.variance) / 2
+                # history.append(res_plus.energy)
                 
-                print(f"Iter {k:03} |  Energy: {res_plus.energy:.6f} |  Masking M: {avg_m:.8f}")
-       
+                print(f"Iter {k:03} | Energy: {current_energy:.6f} | Delta: {delta_e:.6f} | M: {result.masking_metric:.8f}")  
 
-        # # done to map QASM from circuit  - PLACEHOLDER
-        # if hasattr(circuit, 'qasm'):
-        #     workload.circuit_qasm = circuit.qasm()
-        # else:
-        #     workload.circuit_qasm = "OPENQASM 3.0; // Simulated Circuit"
+            comm.Bcast(stop_signal, root=0)
+            
+            if stop_signal[0] == 1:
+                break     
 
-        
-        # # call C++ Bridge
-        # result = hpc_core.execute(workload)
-        # return result
-        final_energy = res_plus.energy
+        # final_energy = current_energy.energy
 
-        return theta, history, final_energy
-
+        return theta, history
 
 
 
@@ -95,12 +108,10 @@ class HPCHybridStack:
 
 
     # for now, the middleware accepts input of problem types:  chemistry, finance, max_cut
-    def evaluate(self, problem, params): 
+    def evaluate(self, problem, params, num_qubits): 
         workload = hpc_core.HybridWorkload()
-        # workload.parameters = [float(coeff.real) for _, coeff in terms]     
-        workload.parameters = params.tolist()   
-        # workload.num_qubits = len(terms[0][0]) if terms else 0
-        workload.num_qubits = len(params)
+        workload.parameters = params.tolist()
+        workload.num_qubits = num_qubits
         workload.requires_gpu = self.use_gpu
         workload.circuit_qasm = problem.circuit_qasm
 
