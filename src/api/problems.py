@@ -58,6 +58,9 @@ class ChemistryProblem(QuantumProblem):
     def get_ansatz(self): 
         pass   #returns qiskit circuit for the domain 
 
+    def get_pauli_count(self):
+        return len(self.pauli_terms)
+
 
 
 class FinanceProblem(QuantumProblem):
@@ -68,8 +71,8 @@ class FinanceProblem(QuantumProblem):
     def prepare(self):
         # Logic to convert Portfolio Optimization to Ising Hamiltonian
         # self.pauli_terms = [("ZZII", 0.5), ("IZZI", 0.5), ("IIZZ", 0.5)]
-        self.pauli_terms = [("ZIII", 1.0), ("IZII", 2.0), ("IIZI", 3.0)]
-        self.circuit_qasm = 'OPENQASM 3.0; include "stdgates.inc"; qubit[4] q; x q[0];'
+        self.pauli_terms = [("ZIII", 1.0), ("IZII", 2.0), ("IIZI", 3.0), ("IIIZ", 4.0)]
+        self.circuit_qasm = 'OPENQASM 3.0; include "stdgates.inc"; qubit[4] q; h q; s q[0];'
         print(f"[Finance] Prepared Portfolio QUBO from {len(self.matrix)} assets")
 
         
@@ -79,3 +82,6 @@ class FinanceProblem(QuantumProblem):
     
     def get_ansatz(self): 
         pass   #returns qiskit circuit for the domain 
+
+    def get_pauli_count(self):
+        return len(self.pauli_terms)
