@@ -67,13 +67,19 @@ extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
     //launch kernel     
     int blockSize = 256;
     int gridSize = (n + blockSize - 1) / blockSize;
+    double total_sum = 0.0;
+    int iterations = 100000;
+
     // compute_vqe_energy_kernel<<<gridSize, blockSize>>>(d_params, d_result, n);
     // ARTIFICIAL STRESS TEST runs kernel 10000 times 
-    for(int i=0; i<100000; i++) {
+    for(int i=0; i<iterations; i++) {
         cudaMemset(d_result, 0, sizeof(double));
         compute_vqe_energy_kernel<<<gridSize, blockSize>>>(d_params, d_result, n);
+        double temp_h;
+        cudaMemcpy(&temp_h, d_result, sizeof(double), cudaMemcpyDeviceToHost);
+        total_sum += temp_h;            // Summing w FP64,  maintains stability
     }
-    h_result /= 100000.0;
+    h_result = total_sum / iterations;
 
     // Catch kernel launch errors
     cudaDeviceSynchronize();

@@ -32,6 +32,7 @@ class HPCHybridStack:
         comm = MPI.COMM_WORLD
         problem.prepare()
         num_params = len(problem.pauli_terms[0][0])
+        actual_qubits = len(self.partition(problem.pauli_terms)[0][0])
 
         # init theta on Manager node, workers init empty arrays
         theta = np.random.uniform(0, 2*np.pi, num_params) if self.rank == 0 else np.zeros(num_params)
@@ -58,7 +59,7 @@ class HPCHybridStack:
                 ck = 0
 
             # Parallel expectation value estimation
-            result = self.evaluate(problem, combined_params, num_qubits=4)
+            result = self.evaluate(problem, combined_params, num_qubits=actual_qubits)
 
             # Parameters update - Manager only
             if self.rank == 0:
