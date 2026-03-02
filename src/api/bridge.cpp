@@ -71,6 +71,7 @@ PYBIND11_MODULE(hpc_core, m) {
     m.def("get_rank", &get_rank);
     m.def("get_size", &get_size);
     m.def("set_cuda_device", &set_cuda_device, "Assigns GPU to MPI rank");
+    m.def("execute_barrier", &execute_barrier, "MPI Barrier for sync"); // Added this
 
     py::class_<HybridWorkload>(m, "HybridWorkload")
         .def(py::init<>())                              // allows python to do wl=hpc_core.HybridWorklod()
@@ -87,7 +88,8 @@ PYBIND11_MODULE(hpc_core, m) {
         .def_readwrite("execution_time", &StackResult::execution_time)
         .def_readwrite("variance", &StackResult::variance)
         .def_readwrite("success_msg", &StackResult::success_msg)
-        .def_readwrite("used_path", &StackResult::used_path);  
+        .def_readwrite("used_path", &StackResult::used_path)
+        .def_readwrite("masking_metric", &StackResult::masking_metric);
     
 
     m.def("execute", &execute, "Main entry point for hybrid stack");
