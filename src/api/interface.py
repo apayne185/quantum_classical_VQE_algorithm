@@ -28,14 +28,23 @@ class HPCHybridStack:
 
 
 
-    def vqe_optimize(self, problem: QuantumProblem, max_iterations=100,tolerance=1.6e-3):
+    def vqe_optimize(self, problem: QuantumProblem, max_iterations=100,tolerance=1.6e-3, restart_from=None):
         comm = MPI.COMM_WORLD
         problem.prepare()
         num_params = len(problem.pauli_terms[0][0])
         actual_qubits = len(self.partition(problem.pauli_terms)[0][0])
 
+        if self.rank == 0:
+            if restart_from and os.path.exists(restart_from):
+                print(f"[RESILIENCE] Loading checkpoint from {restart_from}...")
+                theta = np.load(restart_from)
+            else:
+                theta = np.random.uniform(0, 2*np.pi, num_params)
+        else:
+            theta = np.zeros(num_params)
         # init theta on Manager node, workers init empty arrays
-        theta = np.random.uniform(0, 2*np.pi, num_params) if self.rank == 0 else np.zeros(num_params)
+        # theta = np.random.uniform(0, 2*np.pi, num_params) if self.rank == 0 else np.zeros(num_params)
+        comm.Bcast(theta, root=0)
 
         prev_energy = float('inf')
         # SPSA hyperparameters (standard coeffs)
@@ -55,7 +64,6 @@ class HPCHybridStack:
                 combined_params = np.concatenate([theta + ck * delta, theta - ck * delta])
             else:
                 combined_params = np.zeros(num_params * 2)
-                # delta = np.zeros(num_params)
                 ck = 0
 
             # Parallel expectation value estimation
@@ -85,8 +93,14 @@ class HPCHybridStack:
                 # avg_m = (res_plus.variance +res_minus.variance) / 2
                 # history.append(res_plus.energy)
                 
-                print(f"Iter {k:03} | Energy: {current_energy:.6f} | Delta: {delta_e:.6f} | M: {result.masking_metric:.8f}")  
+                print(f"Iter {k:03} | Energy: {current_energy:.6f} | Delta: {delta_e:.6f} | M: {result.masking_metric:.8f}") 
 
+                if k % 5 == 0:
+                    # np.save(f"/checkpoints/checkpoint_job_{k}.npy", theta)   
+                    np.save(f"checkpoint_job_{k}.npy", theta)
+                    print(f"[RESILIENCE] Iteration {k}: Global theta state checkpointed. ")   
+
+            self.comm.Barrier()
             comm.Bcast(stop_signal, root=0)
             
             if stop_signal[0] == 1:

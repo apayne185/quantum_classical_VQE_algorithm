@@ -23,24 +23,21 @@ except ImportError as e:
 
 def run_universal_test():
     with HPCHybridStack(use_gpu=True) as stack:
-        
-        # if stack.rank == 0: print("\n--- RUNNING CHEMISTRY TASK ---")
+        if stack.rank == 0: print("\n--- RUNNING CHEMISTRY TASK ---")
         # chem_task = ChemistryProblem("H 0 0 0; H 0 0 0.74")  #hydrogen
-        # # chem_task = ChemistryProblem("Li 0 0 0; H 0 0 1.59") #liH
-        # res_chem = stack.run(chem_task)
+        chem_task = ChemistryProblem("Li 0 0 0; H 0 0 1.59") #liH
+        theta_chem, hist_chem = stack.vqe_optimize(chem_task, max_iterations=20)
         
-        # if stack.rank == 0: print("\n--- RUNNING FINANCE TASK ---")
-        # fin_task = FinanceProblem([[1, 0.5], [0.5, 1]])
-        # res_fin = stack.run(fin_task)
+        if stack.rank == 0: print("\n--- RUNNING FINANCE TASK ---")
+        fake_cov = np.random.rand(4, 4)
+        fin_task = FinanceProblem(fake_cov)
+        theta_fin, hist_fin = stack.vqe_optimize(fin_task, max_iterations=20)
 
-        problem = ChemistryProblem("H 0 0 0; H 0 0 0.74")
-        final_theta, history = stack.vqe_optimize(problem)
 
         if stack.rank == 0:
             print("UNIVERSAL STACK SUMMARY")
-            # print(f"Problem Energy: {final_energy} Hartree")
-            # print(f"Finance Riskbuild: {res_fin.energy:.6f} units")
-            # print(f"HPC Path Used: {problem.used_path}")
+            print(f"Chemistry Final Energy: {hist_chem[-1]:.6f} Ha")
+            print(f"Finance Final Metric: {hist_fin[-1]:.6f}")
             print(f"HPC execution complete across {stack.size} nodes.")
 
 
