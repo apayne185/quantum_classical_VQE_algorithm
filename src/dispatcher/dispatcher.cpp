@@ -73,12 +73,16 @@ StackResult route_workload(HybridWorkload& wl) {
         if (is_batch) {
             // Path A: NVIDIA GPU available (CUDA execution)
             // convert to FP32 for heavy GPU state-vector math
-            std::vector<float> p1(wl.parameters.begin(), wl.parameters.begin() + wl.num_qubits);
-            e_plus_local = run_cuda_vqe_fp32(p1.data(), wl.num_qubits);
-
-            std::vector<float> p2(wl.parameters.begin() + wl.num_qubits, wl.parameters.end());
-            e_minus_local = run_cuda_vqe_fp32(p2.data(), wl.num_qubits);
-            res.used_path = "MPI + CUDA Distributed";
+            if (rank % 2 == 0) {
+                std::vector<float> p1(wl.parameters.begin(), wl.parameters.begin() + wl.num_qubits);
+                e_plus_local = run_cuda_vqe_fp32(p1.data(), wl.num_qubits);
+                e_minus_local = 0.0;
+            } else {
+                std::vector<float> p2(wl.parameters.begin() + wl.num_qubits, wl.parameters.end());
+                e_minus_local = run_cuda_vqe_fp32(p2.data(), wl.num_qubits);
+                e_plus_local = 0.0;
+                res.used_path = "MPI + CUDA Distributed";
+            }
 
         } else {
             // --- SINGLE MODE ---
@@ -112,8 +116,8 @@ StackResult route_workload(HybridWorkload& wl) {
             MPI_Allreduce(&e_minus_local, &e_minus_global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         }
 
-        std::cout << "[Rank " << rank << "] Local: " << e_plus_local 
-              << " | Global: " << e_plus_global << std::endl;
+        std::cout << "[Rank " << rank << "] Contribution - E+: " << e_plus_local 
+              << "  | E-: " << e_minus_local << std::endl << std::flush;
 
         res.energy = e_plus_global + qpu_val;
         res.success_msg = "Success";

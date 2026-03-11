@@ -130,6 +130,9 @@ class HPCHybridStack:
         workload.requires_gpu = self.use_gpu
         workload.circuit_qasm = problem.circuit_qasm
 
+        local_pauli_terms = self.partition(problem.pauli_terms)
+        workload.pauli_terms = local_pauli_terms
+
         return hpc_core.execute(workload)
 
 

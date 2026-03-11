@@ -23,7 +23,7 @@ find_package(MPI REQUIRED)
 
 # Define module
 pybind11_add_module(hpc_core 
-    src/api/bridge.cpp 
+    src/dispatcher/bridge.cpp 
     src/dispatcher/dispatcher.cpp
     src/classical/cuda/kernel.cu
 )
