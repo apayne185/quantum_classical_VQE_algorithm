@@ -9,28 +9,38 @@
 #include <vector>
 #include <string>
 
-struct HybridWorkload {
-    int num_qubits;
-    std::vector<double> parameters;      // theta value
-    int circuit_depth;
-    bool requires_gpu;
-    std::string backend_target;       // "simulator", "hpc_cluster", "qpu"
-    std::string circuit_qasm;
-    int job_id;                   // for async tracking
+// Pauli term - single operation str and coefficient 
+struct PauliTerm {
+    std::string op;       // ex IIZI
+    double coeff;           // -0.81
 };
 
-// both C++ disptacher and python bridge needed to agree on workload
+// input packet from Python to C++ dispatcher
+struct HybridWorkload {
+    int num_qubits = 0;
+    std::vector<double> parameters;      // variational θ vector
+    int circuit_depth =0;
+    bool requires_gpu = true;
+    std::string backend_target;       // "simulator" or "ibm_cloud"
+    std::string circuit_qasm;
+    int job_id = 0;                     // for async tracking
+    std::vector<PauliTerm> pauli_terms;     // hamiltonian decomposition
+    int num_shots = 1024;                   // QPU measuremnt shots
+};
 
 
+// output packet retuned to Python
 struct StackResult {
-    double energy;       // vqe eigenvalue
-    double execution_time;             //for benchmarking
-    double variance;                   //for noise analysis
+    double energy = 0.0;                      // VQE eigenvalue estimation 
+    double e_minus= 0.0;                    // SPSA E(θ − ck * Δ)
+    double execution_time = 0.0;             // Wall clock time for benchmarking
+    double variance = 0.0;                   //for shot noise var of expectation value
+    double masking_metric = 0.0;             // M = T_accel / T_comm - determines performanc metric
     std::string success_msg;          // errors or status updates 
-    std::string used_path;             // cpu gpu or simulator
-    double masking_metric;             // determines performanc metric
-
+    std::string used_path;             // MPI+CUDA, MPI+CPU  Fallback, ..
 }; 
+
+
 
 StackResult route_workload(HybridWorkload& wl);
 

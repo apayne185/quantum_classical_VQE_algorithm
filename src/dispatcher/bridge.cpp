@@ -49,9 +49,12 @@ void set_cuda_device(int rank) {
 
 // links Python call to C++ Dispatcher
 StackResult execute(const HybridWorkload& wl) {
+    int rank = get_rank();
+    int size = get_size();
+
     try {
         if (wl.circuit_qasm.empty()) {
-            throw std::runtime_error("Empty QASM string receieved");
+            throw std::runtime_error("Empty QASM string received on Rank " + std::to_string(rank));
         }
         return route_workload(const_cast<HybridWorkload&>(wl));
 
@@ -80,7 +83,8 @@ PYBIND11_MODULE(hpc_core, m) {
         .def_readwrite("circuit_depth", &HybridWorkload::circuit_depth)
         .def_readwrite("requires_gpu", &HybridWorkload::requires_gpu)
         .def_readwrite("backend_target", &HybridWorkload::backend_target)
-        .def_readwrite("circuit_qasm", &HybridWorkload::circuit_qasm);
+        .def_readwrite("circuit_qasm", &HybridWorkload::circuit_qasm)
+        .def_readwrite("pauli_terms", &HybridWorkload::pauli_terms);
         
 
     py::class_<StackResult>(m, "StackResult")

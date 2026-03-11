@@ -16,3 +16,5 @@ venv
 hpc_core.cp313-win_amd64.pyd
 apps/vqe_molecule
 
+.devcontainer
+

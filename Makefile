@@ -21,13 +21,13 @@ else
 	docker run --rm $(IMAGE_NAME)
 endif
 
-# scaling:
-# 	@echo "Starting Strong Scaling Analysis"
-# 	@echo "Running P=2..."
-# 	mpirun --allow-run-as-root -np 2 python3 test_run.py > scaling_p2.log
-# 	@echo "Running P=4..."
-# 	mpirun --allow-run-as-root -np 4 python3 test_run.py > scaling_p4.log
-# 	@echo "Scaling logs generated. Check scaling_p*.log for T_total and M-metric."
+scaling:
+	@echo "Starting Strong Scaling Analysis"
+	@echo "Running P=2..."
+	mpirun --allow-run-as-root -np 2 python3 test_run.py > scaling_p2.log
+	@echo "Running P=4..."
+	mpirun --allow-run-as-root -np 4 python3 test_run.py > scaling_p4.log
+	@echo "Scaling logs generated. Check scaling_p*.log for T_total and M-metric."
 
 
 clean:
