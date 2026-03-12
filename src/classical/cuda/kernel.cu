@@ -3,19 +3,24 @@
 #include <vector>
 #include <device_launch_parameters.h>
 #include <stdio.h>
+#include <math.h>
 
 
 
-__global__ void compute_vqe_energy_kernel(const float* params, double* result, int n) {
+__global__ void compute_vqe_energy_kernel(const float* __restrict__ params, double* result, int n) {
     __shared__ double sdata[256];
 
     unsigned int tid = threadIdx.x;
-    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    // unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int idx = blockIdx.x * blockDim.x + tid;
+
 
     double val = 0.0;
-    if (idx < n) {
+    if (idx < (unsigned int)n) {
         // simulate expectation value contribution - mixed precision 
-        val = (double)params[idx];
+        // val = (double)params[idx];
+        float theta = params[idx];
+        val = (double)(-0.5f*cosf(theta));  
     }
     sdata[tid] = val;
     __syncthreads();
@@ -35,7 +40,10 @@ __global__ void compute_vqe_energy_kernel(const float* params, double* result, i
 }
 
 extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
-    if (n <= 0) return -999.0;    // DEBUG LINE
+    if (n <= 0) {
+        fprintf(stderr, "[CUDA] run_cuda_vqe_fp32: n=%d is invalid.\n", n);
+        return 0.0;
+    } // DEBUG LINE
     float *d_params = nullptr;
     double *d_result = nullptr;
     double h_result= 0.0;
@@ -49,48 +57,48 @@ extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
     err = cudaMalloc(&d_params, n * sizeof(float));
     if (err != cudaSuccess) {
         printf("CUDA Error (Params Malloc): %s\n", cudaGetErrorString(err));
-        return -888.0;
+        return 0.0;
     }
 
     err = cudaMalloc(&d_result, sizeof(double));
     if (err != cudaSuccess) {
         printf("CUDA Error (Result Malloc): %s\n", cudaGetErrorString(err));
         cudaFree(d_params); // Clean up previous allocation
-        return -888.0;
+        return 0.0;
     }
 
 
     // init result on GPU to 0, copy params over
     cudaMemset(d_result, 0, sizeof(double));
-    cudaMemcpy(d_params, h_params, n * sizeof(float), cudaMemcpyHostToDevice);
-    
+    err = cudaMemcpy(d_params, h_params, n * sizeof(float), cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "[CUDA] H2D memcpy failed: %s\n", cudaGetErrorString(err));
+        cudaFree(d_params);
+        cudaFree(d_result);
+        return 0.0;  
+    }    
+
     //launch kernel     
     int blockSize = 256;
     int gridSize = (n + blockSize - 1) / blockSize;
-    double total_sum = 0.0;
-    int iterations = 100000;
+    // double total_sum = 0.0;
+    // int iterations = 100000;
+    compute_vqe_energy_kernel<<<gridSize, blockSize>>>(d_params, d_result, n);
 
-    // compute_vqe_energy_kernel<<<gridSize, blockSize>>>(d_params, d_result, n);
-    // ARTIFICIAL STRESS TEST runs kernel 10000 times 
-    for(int i=0; i<iterations; i++) {
-        cudaMemset(d_result, 0, sizeof(double));
-        compute_vqe_energy_kernel<<<gridSize, blockSize>>>(d_params, d_result, n);
-        double temp_h;
-        cudaMemcpy(&temp_h, d_result, sizeof(double), cudaMemcpyDeviceToHost);
-        total_sum += temp_h;            // Summing w FP64,  maintains stability
-    }
-    h_result = total_sum / iterations;
-
-    // Catch kernel launch errors
     cudaDeviceSynchronize();
     cudaError_t errSync = cudaGetLastError();
     if (errSync != cudaSuccess) {
-        printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+        fprintf(stderr, "[CUDA] Kernel error: %s\n", cudaGetErrorString(errSync));
+        cudaFree(d_params);
+        cudaFree(d_result);
+        return 0.0;
     }
 
-    // final calculation sends back to CPU
-    cudaMemcpy(&h_result, d_result, sizeof(double), cudaMemcpyDeviceToHost);
 
+    err = cudaMemcpy(&h_result, d_result, sizeof(double), cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "[CUDA] D2H memcpy failed: %s\n",cudaGetErrorString(err));
+    }
     cudaFree(d_params);
     cudaFree(d_result);
 
