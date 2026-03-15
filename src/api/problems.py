@@ -117,7 +117,7 @@ class FinanceProblem(QuantumProblem):
         self.pauli_terms = pauli_terms
         ansatz = EfficientSU2(n, reps=1).decompose()
         self.circuit_qasm = qasm3.dumps(ansatz)
-        self.num_params = ansatz.num_paramaters
+        self.num_params = ansatz.num_parameters
 
         # self.pauli_terms = [("ZIII", 1.0), ("IZII", 2.0), ("IIZI", 3.0), ("IIIZ", 4.0)]
         # self.circuit_qasm = 'OPENQASM 3.0; include "stdgates.inc"; qubit[4] q; h q; s q[0];'

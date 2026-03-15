@@ -105,7 +105,7 @@ class HPCHybridStack:
             ck = ck_arr[0]    
 
             # Parallel expectation value estimation
-            result = self.evaluate(problem, combined_params, num_qubits)
+            result = self._evaluate(problem, combined_params, num_qubits)
 
             # Parameters update - Manager only
             if self.rank == 0:
@@ -160,7 +160,7 @@ class HPCHybridStack:
 
 
     # for now, the middleware accepts input of problem types:  chemistry, finance, max_cut
-    def evaluate(self, problem: QuantumProblem, combined_params: np.ndarray, num_qubits:int): 
+    def _evaluate(self, problem: QuantumProblem, combined_params: np.ndarray, num_qubits:int): 
         workload = hpc_core.HybridWorkload()
         workload.parameters = combined_params.tolist()
         workload.num_qubits = num_qubits
@@ -172,7 +172,11 @@ class HPCHybridStack:
         workload.pauli_terms = [hpc_core.PauliTerm(op, coeff) for op, coeff in local_pauli_terms]
 
         return hpc_core.execute(workload)
+    
 
+    def evaluate(self, problem, combined_params, num_qubits):
+        return self._evaluate(problem, combined_params, num_qubits)
+    
 
     def partition(self, full_list:list) -> list: 
         n= len(full_list)
