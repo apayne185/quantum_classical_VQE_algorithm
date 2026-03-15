@@ -158,7 +158,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
     res.energy = e_plus_global + qpu_val;
     res.e_minus= e_minus_global + qpu_val;
-    res.success_msg = "Success";
+    res.success_msg = "OK";    //success
     res.execution_time = MPI_Wtime() - start_time;
 
     double t_accel = t_accel_end - t_accel_start;
