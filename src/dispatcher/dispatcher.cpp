@@ -10,7 +10,7 @@
 #include <chrono>
 
 
-extern std::string submit_qpu_job(const std::string& qasm, const std::string& backend, int numshots);
+extern std::string submit_qpu_job(const std::string& qasm, const std::string& backend, int num_shots);
 extern double poll_qpu_job(const std::string& job_id);
 
 
@@ -37,12 +37,12 @@ StackResult route_workload(HybridWorkload& wl) {
     int qasm_size =  static_cast<int>(wl.circuit_qasm.size());
     int n_pauli =  static_cast<int>(wl.pauli_terms.size()); 
     int num_qubits = wl.num_qubits;
-    int num_shots = wl.numshots;
+    int num_shots = wl.num_shots;
     
     // broadcast sizes first so workers can allocate the memory
     MPI_Bcast(&param_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&qasm_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&n_paulis, 1, MPI_INT, 0, MPI_COMM_WORLD); 
+    MPI_Bcast(&n_pauli, 1, MPI_INT, 0, MPI_COMM_WORLD); 
     MPI_Bcast(&num_qubits, 1, MPI_INT, 0, MPI_COMM_WORLD); 
     MPI_Bcast(&num_shots, 1, MPI_INT, 0, MPI_COMM_WORLD); 
 
@@ -72,7 +72,7 @@ StackResult route_workload(HybridWorkload& wl) {
         std::cout << "[MASTER] Dispatching QASM to Cloud QPU.." << wl.backend_target << "..."<< std::endl;
         const std::string backend = wl.backend_target;
         const std::string qasm = wl.circuit_qasm;
-        const inst shots = wl.num_shots; 
+        const int shots = wl.num_shots; 
 
         if (backend== "ibm_cloud"){
             qpu_future = std::async(std::launch::async, [qasm, backend, shots]() {      // ISSUE HERE?
@@ -92,8 +92,8 @@ StackResult route_workload(HybridWorkload& wl) {
     }
 
     const int num_params = param_size /2;
-    std::vector<double> theta_plus (wl.parameters.begin(), wl.parameters.begin + num_params);
-    std::vector<double> theta_minus (wl.parameters.begin + num_params, wl.parameters.begin());
+    std::vector<double> theta_plus (wl.parameters.begin(), wl.parameters.begin() + num_params);
+    std::vector<double> theta_minus (wl.parameters.begin() + num_params, wl.parameters.end());
 
 
 
@@ -122,7 +122,7 @@ StackResult route_workload(HybridWorkload& wl) {
     if (size == 1) {
         e_plus_local = compute_expectation(theta_plus);
         e_minus_local = compute_expectation(theta_minus);
-        res.used_path = used_cuda ? "Single Rank CUDA" : "Single Rank CPU"; 
+        res.used_path = use_cuda ? "Single Rank CUDA" : "Single Rank CPU"; 
     } else {
         if (rank % 2 == 0) {
             e_plus_local = compute_expectation(theta_plus);
@@ -137,7 +137,7 @@ StackResult route_workload(HybridWorkload& wl) {
     double t_qpu_wait_ms = 0.0; 
 
     if (rank == 0 && qpu_future.valid()){
-        const double t_wasit_start = MPI_Wtime();
+        const double t_wait_start = MPI_Wtime();
         qpu_val = qpu_future.get();
         t_qpu_wait_ms = (MPI_Wtime() - t_wait_start) * 1000.0;
         std::cout << "[Manager] QPU result = " << qpu_val << "  (residual wait = " <<t_qpu_wait_ms << "ms)" << std::endl; 
@@ -163,6 +163,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
     double t_accel = t_accel_end - t_accel_start;
     double t_comm = res.execution_time - t_accel;
+    const double delta_e= e_plus_global - e_minus_global;
     res.variance= (delta_e * delta_e) / 4.0;
     // res.variance = is_batch ? (e_minus_global + qpu_val) : 0.0;
     // res.masking_metric = (t_comm > 0) ? (t_accel_end - t_accel_start) / t_comm : 0.0;  

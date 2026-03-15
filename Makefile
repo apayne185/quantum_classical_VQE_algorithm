@@ -1,49 +1,101 @@
 IMAGE_NAME = vqe-mpi-gpu
-INSIDE_CONTAINER = $(shell [ -f /.dockerenv ] && echo yes || echo no)
 NP ?= 2       						#override with -  make run NP=4
-.PHONY: build run clean
+
+ifneq (,$(wildcard .env))
+  include .env
+  export
+endif
+ 
+GPU_AVAILABLE := $(shell docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi > /dev/null 2>&1 && echo yes || echo no)
+ifeq ($(GPU_AVAILABLE),yes)    
+  GPU_FLAG = --gpus all  
+  $(info [Make] GPU detected — CUDA acceleration enabled.)
+else   
+  GPU_FLAG =  
+  $(info [Make] No GPU detected — falling back to CPU mode.)   
+endif     
+
+
+.PHONY: build trial run run-ibm scaling clean shell
 
 build:
-ifeq ($(INSIDE_CONTAINER),yes)
-	@echo "Detected: Dev Container. Compiling C++ Core ... "
-	mkdir -p build && cd build && cmake .. -DPython_EXECUTABLE=/usr/bin/python3.11 && make -j$(nproc)
-else
-	@echo "Detected: Host. Building Docker Image ..."
+	@echo "[Make] Building Docker image '$(IMAGE_NAME)' ..."
 	docker build -t $(IMAGE_NAME) .
-endif
+	@echo "[Make] Build complete."
 
+
+# DIAGNOSTIC - tests the 6 layers on simulator
+trial:
+	@echo "[Make] Running diagnostic trial (simulator, $(NP) ranks) ..."
+	docker run --rm \
+	  $(GPU_FLAG) \
+	  -e BACKEND=simulator \
+	  -e USE_GPU=$(GPU_AVAILABLE) \
+	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
+	  $(IMAGE_NAME) \
+ 	  mpirun --allow-run-as-root -np $(NP) python3 test_layers_run.py       
+ 
+# FULL BENCHMARK - simualtor only 
 run:
-ifeq ($(INSIDE_CONTAINER),yes)
-	@echo "Running MPI Simulation run with $(NP) ranks inside container ..."
-	mpirun --allow-run-as-root -np $(NP) python3 test_run.py
-else
-	@echo "Running Docker Image from host ..."
-	docker run --rm $(IMAGE_NAME)
-endif
+	@echo "[Make] Running full benchmark (simulator, $(NP) ranks) ..."
+	docker run --rm \
+	  $(GPU_FLAG) \
+	  -e BACKEND=simulator \
+	  -e USE_GPU=$(GPU_AVAILABLE) \
+	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
+	  $(IMAGE_NAME) \
+	  mpirun --allow-run-as-root -np $(NP) python3 local_test_run.py
 
-run-ibm:
-	@echo "[Make] Launching MPI run -> IBM Quantum backend …"
-	@[ -n "$$IBM_QUANTUM_TOKEN" ] || (echo "ERROR: IBM_QUANTUM_TOKEN not set"; exit 1)
-	@[ -n "$$IBM_QUANTUM_INSTANCE" ] || (echo "ERROR: IBM_QUANTUM_INSTANCE not set"; exit 1)
-	mpirun --allow-run-as-root -np $(NP) \
-	  env BACKEND=ibm_cloud python3 test_run.py
 
+# # FULL BENCHMArk - IBM quantum QPU 
+# run-ibm:
+# 	@[ -n "$(IBM_QUANTUM_TOKEN)" ]    || (echo "ERROR: IBM_QUANTUM_TOKEN not set in .env"; exit 1)
+# 	@[ -n "$(IBM_QUANTUM_INSTANCE)" ] || (echo "ERROR: IBM_QUANTUM_INSTANCE not set in .env"; exit 1)
+# 	@echo "[Make] Running $(NP) ranks -> IBM Quantum ($(IBM_QUANTUM_BACKEND)) ..."
+# 	docker run --rm \
+# 	  $(GPU_FLAG) \
+# 	  -e BACKEND=ibm_cloud \
+# 	  -e USE_GPU=$(GPU_AVAILABLE) \
+# 	  -e IBM_QUANTUM_TOKEN="$(IBM_QUANTUM_TOKEN)" \
+# 	  -e IBM_QUANTUM_INSTANCE="$(IBM_QUANTUM_INSTANCE)" \
+# 	  -e IBM_QUANTUM_BACKEND="$(IBM_QUANTUM_BACKEND)" \
+# 	  -e IBM_QUANTUM_REGION="$(IBM_QUANTUM_REGION)" \
+# 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
+# 	  $(IMAGE_NAME) \
+# 	  mpirun --allow-run-as-root -np $(NP) python3 ibm_test_run.py
+
+
+# STRONG SCALAING SWEEP - simulator      
 scaling:
-	@echo "Starting Strong Scaling Analysis"
+	@echo "[Make] Starting strong scaling analysis ..."
 	@mkdir -p scaling_logs
 	@for p in 1 2 4 8; do \
-	  echo "  P=$$p …"; \
-	  mpirun --allow-run-as-root -np $$p python3 test_run.py \
+	  echo "  Running P=$$p ..."; \
+	  docker run --rm \
+	    $(GPU_FLAG) \
+	    -e BACKEND=simulator \
+		-e USE_GPU=$(GPU_AVAILABLE) \
+	    -v "$$(pwd)/scaling_logs:/workspace/scaling_logs" \
+	    $(IMAGE_NAME) \
+	    mpirun --allow-run-as-root -np $$p python3 local_test_run.py \
 	    > scaling_logs/scaling_p$$p.log 2>&1; \
+	  echo "  P=$$p done."; \
 	done
-	@echo "Scaling logs generated. Check scaling_p*.log for T_total and M-metric."
+	@echo "[Make] Scaling logs saved to scaling_logs/. Check T_total and M-metric."
+
+
+shell:
+	docker run --rm -it \
+	  $(GPU_FLAG) \
+	  -e BACKEND=simulator \
+	  -e USE_GPU=$(GPU_AVAILABLE) \
+	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
+	  $(IMAGE_NAME) \
+	  /bin/bash
 
 
 clean:
-	rm -rf build/
+	docker rmi $(IMAGE_NAME) || true
 	rm -rf scaling_logs/
-	rm -f *.log
-	rm -f *.npy
-	@if [ "$(INSIDE_CONTAINER)" = "no" ]; then \
-		docker rmi $(IMAGE_NAME) || true; \
-	fi
+	rm -f *.log *.npy
+	find checkpoints/ -name "*.npy" -delete 2>/dev/null || true

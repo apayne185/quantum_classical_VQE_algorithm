@@ -2,14 +2,13 @@ from qiskit import qasm3
 import sys
 import os
 import numpy as np
-from src.api.interface import HPCHybridStack
-from src.api.problems import ChemistryProblem, FinanceProblem
+import time
+
 
 # so python can find C++ module
 sys.path.insert(0, os.path.abspath("./build"))
-# sys.path.append('./build/Release')    
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)
+sys.path.append(current_dir)  
 
 try:
     from src.api.interface import HPCHybridStack
@@ -21,23 +20,52 @@ except ImportError as e:
     sys.exit(1)
 
 
+USE_GPU = os.environ.get("USE_GPU", "yes").strip().lower() == "yes"
+BACKEND = os.environ.get("BACKEND", "simulator")
 
-def run_chemistry_test(stack: HPCHybridStack): 
-    if stack.rank == 0: print("\n--- RUNNING CHEMISTRY TASK ---")
 
-    chem_task = ChemistryProblem("Li 0 0 0; H 0 0 1.59") #liH
-    theta, history = stack.vqe_optimize(chem_task, 
-                                        max_iterations=50, 
+
+def check_credentials(): 
+    token= os.environ.get("IBM_QUANTUM_TOKEN", "")
+    instance = os.environ.get("IBM_QUANTUM_INSTANCE", "")
+    backend= os.environ.get("IBM_QUANTUM_BACKEND", "ibm_brisbane")
+    region = os.environ.get("IBM_QUANTUM_REGION", "us-east")   
+ 
+    if not token or not instance:
+        print("[ERROR] IBM_QUANTUM_TOKEN and IBM_QUANTUM_INSTANCE must be set w/in .env.")
+        print("Add to your .env file and run 'make run-ibm'")
+        sys.exit(1)
+ 
+    print(f"[IBM] Token: {'*' * 8}{token[-4:]} ")
+    print(f"[IBM] Instance: {instance[:40]}... ")
+    print(f"[IBM] Backend: {backend}")
+    print(f"[IBM] Region: {region}  ")
+
+
+
+def run_chemistry_ibm(stack: HPCHybridStack): 
+    if stack.rank == 0: print("\n--- RUNNING CHEMISTRY TASK (LiH Ground State) ---")
+
+    problem = ChemistryProblem("Li 0 0 0; H 0 0 1.59") #liH
+    t0 = time.perf_counter()
+    theta, history = stack.vqe_optimize(problem, 
+                                        max_iterations=20,        
                                         tolerance=1.6e-3, 
-                                        checkpoint_dir="checkpoints")
+                                        checkpoint_dir="checkpoints") 
+    
+    t_total = time.perf_counter() - t0
+    
     if stack.rank ==0 and history:
         print(f"[LiH] Final energy : {history[-1]:+.6f} Ha ")
         print(f"[LiH] Reference FCI : -7.882500 Ha")      #known value of LiH
         print(f"[LiH] Absolute error: {abs(history[-1] - (-7.8825)):+.6f} Ha ")
         print(f"[LiH] Iterations run: {len(history)}")
+        print(f"  [H2] Wall time: {t_total:.2f}s (includes QPU queue + RTT) ")     
 
 
-def run_finance_test(stack:HPCHybridStack): 
+
+
+def run_finance_ibm(stack:HPCHybridStack): 
     if stack.rank == 0: print("\n--- RUNNING FINANCE (4-Assest Portfolio QUBO) TASK ---")
     np.random.seed(42)
     n_assets = 4
@@ -59,7 +87,7 @@ def run_finance_test(stack:HPCHybridStack):
 
 
   
-def run_scaling_test(stack: HPCHybridStack):   
+def run_scaling_ibm(stack: HPCHybridStack):   
     if stack.rank == 0:
         print(f"\n[Scaling] Running with P={stack.size} ranks …")
 
@@ -76,38 +104,31 @@ def run_scaling_test(stack: HPCHybridStack):
 
 
 
-        
-
-
-# def run_universal_test():
-#     with HPCHybridStack(use_gpu=True) as stack:
-#         if stack.rank == 0: print("\n--- RUNNING CHEMISTRY TASK ---")
-#         # chem_task = ChemistryProblem("H 0 0 0; H 0 0 0.74")  #hydrogen
-#         chem_task = ChemistryProblem("Li 0 0 0; H 0 0 1.59") #liH
-#         theta_chem, hist_chem = stack.vqe_optimize(chem_task, max_iterations=20)
-        
-#         if stack.rank == 0: print("\n--- RUNNING FINANCE TASK ---")
-#         fake_cov = np.random.rand(4, 4)
-#         fin_task = FinanceProblem(fake_cov)
-#         theta_fin, hist_fin = stack.vqe_optimize(fin_task, max_iterations=20)
-
-
-#         if stack.rank == 0:
-#             print("UNIVERSAL STACK SUMMARY")
-#             print(f"Chemistry Final Energy: {hist_chem[-1]:.6f} Ha")
-#             print(f"Finance Final Metric: {hist_fin[-1]:.6f}")
-#             print(f"HPC execution complete across {stack.size} nodes.")
-
+    
 
 if __name__ == "__main__":
-    backend = os.environ.get("BACKEND", "simulator")
+    check_credentials()
+ 
+    print(f"[Config] GPU= {'requested' if USE_GPU else 'CPU mode'} ")   
+    print(f"[Config] Backend= {BACKEND} ")
+    print("[Config] WARNING: This run submits real jobs to IBM Quantum.")
+    print(" Each iteration incurs QPU time. Monitor usage at  https://quantum.cloud.ibm.com \n\n")
 
-    with HPCHybridStack(use_gpu=True, backend=backend) as stack:
-        run_chemistry_test(stack)   
+
+    # if USE_GPU:
+    #     print("[Config] GPU mode requested")   
+    # else:
+    #     print("[Config] CPU-only mode (no GPU detectd on host).")  
+ 
+    # backend = os.environ.get("BACKEND", "simulator")
+
+    with HPCHybridStack(use_gpu=USE_GPU, backend=backend) as stack:
+        run_chemistry_ibm(stack)   
         run_finance_test(stack)   
         run_scaling_test(stack)   
 
         if stack.rank == 0:
             print("---ALL TESTS COMPLETE ----")
             print(f"Ranks used : {stack.size}")
+            print(f"GPU : {stack.use_gpu}")
             print(f"Backend : {backend} ")

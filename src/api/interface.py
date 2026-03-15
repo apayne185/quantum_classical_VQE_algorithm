@@ -11,7 +11,11 @@ from mpi4py import MPI
 
 
 class HPCHybridStack:
-    def __init__(self, use_gpu: bool =True, backend:str = 'simulator'):
+    def __init__(self, use_gpu: bool | None = None, backend:str = 'simulator'):
+        if use_gpu is None:
+            env_val = os.environ.get("USE_GPU", "yes").strip().lower()
+            use_gpu = (env_val == "yes") 
+
         self.use_gpu = use_gpu
         self.backend = backend
 
@@ -24,7 +28,7 @@ class HPCHybridStack:
         self.size = hpc_core.get_size()
 
         # Assign 1 GPU per rank, round robin if < GPUs than ranks
-        if use_gpu:
+        if self.use_gpu:
             try:
                 hpc_core.set_cuda_device(self.rank)
             except Exception as e:

@@ -23,7 +23,9 @@ int init_mpi(){
 }  
 
 void finalize_mpi(){    //for clean exits
-    if (MPI_Is_finalized() == 0) {
+    int finalized = 0;
+    MPI_Finalized(&finalized);
+    if (!finalized) {
         MPI_Finalize();
     }
 }
@@ -91,13 +93,14 @@ PYBIND11_MODULE(hpc_core, m) {
     m.def("route_workload", [](HybridWorkload& wl) { return route_workload(wl); }, py::arg("workload"), "Low level dispatcher"); 
 
 
-    py::class_<PauliTerm>(m, "PauliTerm") {
+    py::class_<PauliTerm>(m, "PauliTerm") 
         .def(py::init<>())
         .def(py::init<std::string, double>(), py::arg("op"), py::arg("coeff"))
         .def_readwrite("op",    &PauliTerm::op)
         .def_readwrite("coeff", &PauliTerm::coeff)
-        .def("__repr__", [](const PauliTerm& pt) {return "<PauliTerm op='" + pt.op +"' coeff=" + std::to_string(pt.coeff) + ">";
-    });
+        .def("__repr__", [](const PauliTerm& pt) 
+            {return "<PauliTerm op=" + pt.op +" coeff=" + std::to_string(pt.coeff) + ">"; }); 
+
 
 
     py::class_<HybridWorkload>(m, "HybridWorkload")
@@ -122,7 +125,7 @@ PYBIND11_MODULE(hpc_core, m) {
         .def_readwrite("success_msg", &StackResult::success_msg)
         .def_readwrite("used_path", &StackResult::used_path)
         .def("__repr__", [](const StackResult& r) {
-            return "<StackResult energy=" + std::to_string(r.energy) +"M= " + std::to_string(r.masking_metric) + path='" + r.used_path + "'>";
+            return "<StackResult energy=" + std::to_string(r.energy) +"M= " + std::to_string(r.masking_metric) + "path=" + r.used_path + ">";
         });
 
     }
