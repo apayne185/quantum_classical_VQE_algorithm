@@ -1,0 +1,450 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.2.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+WARNING: The NVIDIA Driver was not detected.  GPU functionality will not be available.
+   Use the NVIDIA Container Toolkit to start this container with GPU support; see
+   https://docs.nvidia.com/datacenter/cloud-native/ .
+
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+[Stack]  Initialized 8 MPI rank(s), GPU=disabled, backend='simulator'
+
+--- RUNNING CHEMISTRY TASK (LiH Ground State) ---
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Manager] QPU result = 0  (residual wait = 2383.26ms)
+[Rank 0] E+ Global : -5.66491  | E- global: -0.0046109QPU= 0
+Iter 0001 | Energy: -5.664911 | Delta: inf | M: 0.00036383 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2886.32ms)
+[Rank 0] E+ Global : -5.24932  | E- global: 0.0564691QPU= 0
+Iter 0002 | Energy: -5.249319 | Delta: 4.16e-01 | M: 0.00000560 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2778.09ms)
+[Rank 0] E+ Global : -4.80909  | E- global: 0.309852QPU= 0
+Iter 0003 | Energy: -4.809092 | Delta: 4.40e-01 | M: 0.00000589 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2915.42ms)
+[Rank 0] E+ Global : -3.23221  | E- global: 0.072704QPU= 0
+Iter 0004 | Energy: -3.232210 | Delta: 1.58e+00 | M: 0.00000758 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2793.96ms)
+[Rank 0] E+ Global : -7.06478  | E- global: -0.00328725QPU= 0
+Iter 0005 | Energy: -7.064778 | Delta: 3.83e+00 | M: 0.00000622 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/checkpoint_iter_0005.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2336.42ms)
+[Rank 0] E+ Global : -6.96814  | E- global: -0.0372351QPU= 0
+Iter 0006 | Energy: -6.968141 | Delta: 9.66e-02 | M: 0.00000758 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2386.81ms)
+[Rank 0] E+ Global : -6.41574  | E- global: -0.0466468QPU= 0
+Iter 0007 | Energy: -6.415742 | Delta: 5.52e-01 | M: 0.00000666 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2492.65ms)
+[Rank 0] E+ Global : -6.51997  | E- global: 0.133375QPU= 0
+Iter 0008 | Energy: -6.519965 | Delta: 1.04e-01 | M: 0.00000720 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2650.01ms)
+[Rank 0] E+ Global : -6.25474  | E- global: 0.0311193QPU= 0
+Iter 0009 | Energy: -6.254736 | Delta: 2.65e-01 | M: 0.00001126 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2422.14ms)
+[Rank 0] E+ Global : -4.39681  | E- global: -0.125654QPU= 0
+Iter 0010 | Energy: -4.396814 | Delta: 1.86e+00 | M: 0.00003473 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/checkpoint_iter_0010.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2363.16ms)
+[Rank 0] E+ Global : -6.3045  | E- global: -0.174553QPU= 0
+Iter 0011 | Energy: -6.304504 | Delta: 1.91e+00 | M: 0.00002400 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2027.7ms)
+[Rank 0] E+ Global : -3.46407  | E- global: 0.0685087QPU= 0
+Iter 0012 | Energy: -3.464074 | Delta: 2.84e+00 | M: 0.00000908 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2692.64ms)
+[Rank 0] E+ Global : -5.90991  | E- global: 0.0473663QPU= 0
+Iter 0013 | Energy: -5.909914 | Delta: 2.45e+00 | M: 0.00000657 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2059.64ms)
+[Rank 0] E+ Global : -4.22855  | E- global: -0.233682QPU= 0
+Iter 0014 | Energy: -4.228551 | Delta: 1.68e+00 | M: 0.00000802 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2763.81ms)
+[Rank 0] E+ Global : -5.73912  | E- global: -0.281248QPU= 0
+Iter 0015 | Energy: -5.739119 | Delta: 1.51e+00 | M: 0.00000694 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 15: Global theta state checkpointed at path checkpoints/checkpoint_iter_0015.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2926.74ms)
+[Rank 0] E+ Global : -3.86041  | E- global: -0.259366QPU= 0
+Iter 0016 | Energy: -3.860408 | Delta: 1.88e+00 | M: 0.00000606 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2541.01ms)
+[Rank 0] E+ Global : -5.83565  | E- global: -0.207861QPU= 0
+Iter 0017 | Energy: -5.835654 | Delta: 1.98e+00 | M: 0.00000696 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2426.96ms)
+[Rank 0] E+ Global : -4.20974  | E- global: -0.476474QPU= 0
+Iter 0018 | Energy: -4.209738 | Delta: 1.63e+00 | M: 0.00000813 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2172.82ms)
+[Rank 0] E+ Global : -6.23877  | E- global: -0.31435QPU= 0
+Iter 0019 | Energy: -6.238769 | Delta: 2.03e+00 | M: 0.00000813 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2738.94ms)
+[Rank 0] E+ Global : -4.90562  | E- global: -0.140455QPU= 0
+Iter 0020 | Energy: -4.905624 | Delta: 1.33e+00 | M: 0.00000961 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 20: Global theta state checkpointed at path checkpoints/checkpoint_iter_0020.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2204.97ms)
+[Rank 0] E+ Global : -4.41811  | E- global: -0.168175QPU= 0
+Iter 0021 | Energy: -4.418110 | Delta: 4.88e-01 | M: 0.00000950 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2368.67ms)
+[Rank 0] E+ Global : -5.48504  | E- global: -0.029016QPU= 0
+Iter 0022 | Energy: -5.485045 | Delta: 1.07e+00 | M: 0.00000750 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2568.1ms)
+[Rank 0] E+ Global : -3.7619  | E- global: -0.131721QPU= 0
+Iter 0023 | Energy: -3.761896 | Delta: 1.72e+00 | M: 0.00000881 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2430.97ms)
+[Rank 0] E+ Global : -4.88194  | E- global: 0.06301QPU= 0
+Iter 0024 | Energy: -4.881935 | Delta: 1.12e+00 | M: 0.00001071 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2778.18ms)
+[Rank 0] E+ Global : -4.58161  | E- global: -0.101141QPU= 0
+Iter 0025 | Energy: -4.581609 | Delta: 3.00e-01 | M: 0.00000665 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 25: Global theta state checkpointed at path checkpoints/checkpoint_iter_0025.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2528.75ms)
+[Rank 0] E+ Global : -5.59981  | E- global: -0.071253QPU= 0
+Iter 0026 | Energy: -5.599805 | Delta: 1.02e+00 | M: 0.00014581 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2863.09ms)
+[Rank 0] E+ Global : -3.7378  | E- global: -0.126QPU= 0
+Iter 0027 | Energy: -3.737803 | Delta: 1.86e+00 | M: 0.00000784 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2125.4ms)
+[Rank 0] E+ Global : -5.36224  | E- global: -0.0757336QPU= 0
+Iter 0028 | Energy: -5.362236 | Delta: 1.62e+00 | M: 0.00001162 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2067.77ms)
+[Rank 0] E+ Global : -4.9508  | E- global: -0.0437092QPU= 0
+Iter 0029 | Energy: -4.950798 | Delta: 4.11e-01 | M: 0.00000930 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2136.08ms)
+[Rank 0] E+ Global : -4.28001  | E- global: -0.0565869QPU= 0
+Iter 0030 | Energy: -4.280012 | Delta: 6.71e-01 | M: 0.00001230 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 30: Global theta state checkpointed at path checkpoints/checkpoint_iter_0030.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2928.79ms)
+[Rank 0] E+ Global : -6.59797  | E- global: -0.154542QPU= 0
+Iter 0031 | Energy: -6.597968 | Delta: 2.32e+00 | M: 0.00000892 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2804ms)
+[Rank 0] E+ Global : -3.46023  | E- global: -0.0669182QPU= 0
+Iter 0032 | Energy: -3.460235 | Delta: 3.14e+00 | M: 0.00000640 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2028.03ms)
+[Rank 0] E+ Global : -4.38133  | E- global: 0.0487089QPU= 0
+Iter 0033 | Energy: -4.381329 | Delta: 9.21e-01 | M: 0.00000860 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2059.21ms)
+[Rank 0] E+ Global : -6.33685  | E- global: 0.161657QPU= 0
+Iter 0034 | Energy: -6.336846 | Delta: 1.96e+00 | M: 0.00000799 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2066.09ms)
+[Rank 0] E+ Global : -4.57338  | E- global: 0.08002QPU= 0
+Iter 0035 | Energy: -4.573379 | Delta: 1.76e+00 | M: 0.00000894 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 35: Global theta state checkpointed at path checkpoints/checkpoint_iter_0035.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2167.94ms)
+[Rank 0] E+ Global : -5.11051  | E- global: -0.063739QPU= 0
+Iter 0036 | Energy: -5.110507 | Delta: 5.37e-01 | M: 0.00000757 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2393.42ms)
+[Rank 0] E+ Global : -4.93964  | E- global: -0.171643QPU= 0
+Iter 0037 | Energy: -4.939641 | Delta: 1.71e-01 | M: 0.00000695 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2457.12ms)
+[Rank 0] E+ Global : -5.266  | E- global: -0.0504002QPU= 0
+Iter 0038 | Energy: -5.266003 | Delta: 3.26e-01 | M: 0.00001033 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2011.92ms)
+[Rank 0] E+ Global : -4.3446  | E- global: -0.0934402QPU= 0
+Iter 0039 | Energy: -4.344603 | Delta: 9.21e-01 | M: 0.00000921 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2043.1ms)
+[Rank 0] E+ Global : -8.18964  | E- global: 0.0506983QPU= 0
+Iter 0040 | Energy: -8.189639 | Delta: 3.85e+00 | M: 0.00001199 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 40: Global theta state checkpointed at path checkpoints/checkpoint_iter_0040.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2229.99ms)
+[Rank 0] E+ Global : -2.28335  | E- global: 0.182952QPU= 0
+Iter 0041 | Energy: -2.283355 | Delta: 5.91e+00 | M: 0.00002618 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2373.43ms)
+[Rank 0] E+ Global : -3.4704  | E- global: 0.297115QPU= 0
+Iter 0042 | Energy: -3.470398 | Delta: 1.19e+00 | M: 0.00000991 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2421.25ms)
+[Rank 0] E+ Global : -3.17595  | E- global: -0.31186QPU= 0
+Iter 0043 | Energy: -3.175946 | Delta: 2.94e-01 | M: 0.00000708 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2920.58ms)
+[Rank 0] E+ Global : -3.70482  | E- global: -0.22281QPU= 0
+Iter 0044 | Energy: -3.704820 | Delta: 5.29e-01 | M: 0.00000598 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2784.84ms)
+[Rank 0] E+ Global : -6.27553  | E- global: 0.105309QPU= 0
+Iter 0045 | Energy: -6.275527 | Delta: 2.57e+00 | M: 0.00000898 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 45: Global theta state checkpointed at path checkpoints/checkpoint_iter_0045.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2537.26ms)
+[Rank 0] E+ Global : -5.17368  | E- global: 0.148468QPU= 0
+Iter 0046 | Energy: -5.173682 | Delta: 1.10e+00 | M: 0.00000638 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2198.34ms)
+[Rank 0] E+ Global : -5.47583  | E- global: -0.0256779QPU= 0
+Iter 0047 | Energy: -5.475834 | Delta: 3.02e-01 | M: 0.00000813 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2325.12ms)
+[Rank 0] E+ Global : -5.68763  | E- global: -0.130134QPU= 0
+Iter 0048 | Energy: -5.687631 | Delta: 2.12e-01 | M: 0.00001100 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2316.13ms)
+[Rank 0] E+ Global : -5.69367  | E- global: -0.0565255QPU= 0
+Iter 0049 | Energy: -5.693666 | Delta: 6.04e-03 | M: 0.00001067 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2370.47ms)
+[Rank 0] E+ Global : -5.0077  | E- global: 0.0414442QPU= 0
+Iter 0050 | Energy: -5.007699 | Delta: 6.86e-01 | M: 0.00000742 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 50: Global theta state checkpointed at path checkpoints/checkpoint_iter_0050.npy. 
+[LiH] Final energy : -5.007699 Ha 
+[LiH] Reference FCI : -7.882500 Ha
+[LiH] Absolute error: +2.874801 Ha 
+[LiH] Iterations run: 50
+[LiH] Wall time: 129.70s (includes QPU queue + RTT) 
+[LiH] Time/iter: 2.59 s 
+
+--- RUNNING FINANCE (4-Assest Portfolio QUBO) TASK ---
+[Finance] Prepared 10 Pauli terms for 4-asset portfolio (4 qubits,  16 params)  
+[Finance] Prepared 10 Pauli terms for 4-asset portfolio (4 qubits,  16 params)  
+[Finance] Prepared 10 Pauli terms for 4-asset portfolio (4 qubits,  16 params)  
+[Finance] Prepared 10 Pauli terms for 4-asset portfolio (4 qubits,  16 params)  
+[Finance] Prepared 10 Pauli terms for 4-asset portfolio (4 qubits,  16 params)  
+[Finance] Prepared 10 Pauli terms for 4-asset portfolio (4 qubits,  16 params)  
+[Finance] Prepared 10 Pauli terms for 4-asset portfolio (4 qubits,  16 params)  
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Finance] Prepared 10 Pauli terms for 4-asset portfolio (4 qubits,  16 params)  
+[Manager] QPU result = 0  (residual wait = 2412.84ms)
+[Rank 0] E+ Global : 0.212445  | E- global: 0.0109239QPU= 0
+Iter 0001 | Energy: 0.212445 | Delta: inf | M: 0.00000147 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2526.35ms)
+[Rank 0] E+ Global : 0.206895  | E- global: -0.0211678QPU= 0
+Iter 0002 | Energy: 0.206895 | Delta: 5.55e-03 | M: 0.00000082 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2085.99ms)
+[Rank 0] E+ Global : 0.190744  | E- global: -0.0481918QPU= 0
+Iter 0003 | Energy: 0.190744 | Delta: 1.62e-02 | M: 0.00000155 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2981.03ms)
+[Rank 0] E+ Global : 0.146171  | E- global: -0.0602582QPU= 0
+Iter 0004 | Energy: 0.146171 | Delta: 4.46e-02 | M: 0.00000084 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2956.32ms)
+[Rank 0] E+ Global : 0.101046  | E- global: -0.0498843QPU= 0
+Iter 0005 | Energy: 0.101046 | Delta: 4.51e-02 | M: 0.00000082 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/checkpoint_iter_0005.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2873.39ms)
+[Rank 0] E+ Global : 0.142235  | E- global: -0.0403471QPU= 0
+Iter 0006 | Energy: 0.142235 | Delta: 4.12e-02 | M: 0.00000073 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2858.15ms)
+[Rank 0] E+ Global : 0.188701  | E- global: -0.0400315QPU= 0
+Iter 0007 | Energy: 0.188701 | Delta: 4.65e-02 | M: 0.00000167 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2169.29ms)
+[Rank 0] E+ Global : 0.129254  | E- global: -0.0359486QPU= 0
+Iter 0008 | Energy: 0.129254 | Delta: 5.94e-02 | M: 0.00000142 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2996.96ms)
+[Rank 0] E+ Global : 0.0638353  | E- global: -0.0279831QPU= 0
+Iter 0009 | Energy: 0.063835 | Delta: 6.54e-02 | M: 0.00000082 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2281.32ms)
+[Rank 0] E+ Global : 0.069925  | E- global: -0.0269354QPU= 0
+Iter 0010 | Energy: 0.069925 | Delta: 6.09e-03 | M: 0.00000076 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/checkpoint_iter_0010.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2305.29ms)
+[Rank 0] E+ Global : 0.076351  | E- global: -0.035272QPU= 0
+Iter 0011 | Energy: 0.076351 | Delta: 6.43e-03 | M: 0.00000111 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2925.46ms)
+[Rank 0] E+ Global : 0.0853895  | E- global: -0.0331748QPU= 0
+Iter 0012 | Energy: 0.085389 | Delta: 9.04e-03 | M: 0.00000078 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2084.34ms)
+[Rank 0] E+ Global : 0.0672891  | E- global: -0.0344963QPU= 0
+Iter 0013 | Energy: 0.067289 | Delta: 1.81e-02 | M: 0.00000092 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2327.44ms)
+[Rank 0] E+ Global : 0.010775  | E- global: -0.0387757QPU= 0
+Iter 0014 | Energy: 0.010775 | Delta: 5.65e-02 | M: 0.00000103 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2339.73ms)
+[Rank 0] E+ Global : -0.0108001  | E- global: -0.0382134QPU= 0
+Iter 0015 | Energy: -0.010800 | Delta: 2.16e-02 | M: 0.00000086 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 15: Global theta state checkpointed at path checkpoints/checkpoint_iter_0015.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2507.19ms)
+[Rank 0] E+ Global : -0.00469124  | E- global: -0.0385221QPU= 0
+Iter 0016 | Energy: -0.004691 | Delta: 6.11e-03 | M: 0.00000098 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2846.53ms)
+[Rank 0] E+ Global : 0.000944721  | E- global: -0.0375254QPU= 0
+Iter 0017 | Energy: 0.000945 | Delta: 5.64e-03 | M: 0.00000065 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2729.35ms)
+[Rank 0] E+ Global : 0.033337  | E- global: -0.0340161QPU= 0
+Iter 0018 | Energy: 0.033337 | Delta: 3.24e-02 | M: 0.00000077 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2313.51ms)
+[Rank 0] E+ Global : 0.0107902  | E- global: -0.0364273QPU= 0
+Iter 0019 | Energy: 0.010790 | Delta: 2.25e-02 | M: 0.00000095 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2857.38ms)
+[Rank 0] E+ Global : 0.0417784  | E- global: -0.0371815QPU= 0
+Iter 0020 | Energy: 0.041778 | Delta: 3.10e-02 | M: 0.00000094 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 20: Global theta state checkpointed at path checkpoints/checkpoint_iter_0020.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2125.84ms)
+[Rank 0] E+ Global : 0.0246257  | E- global: -0.0398801QPU= 0
+Iter 0021 | Energy: 0.024626 | Delta: 1.72e-02 | M: 0.00000088 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2895.42ms)
+[Rank 0] E+ Global : 0.0356543  | E- global: -0.0415077QPU= 0
+Iter 0022 | Energy: 0.035654 | Delta: 1.10e-02 | M: 0.00000074 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2584.61ms)
+[Rank 0] E+ Global : 0.0460687  | E- global: -0.0405085QPU= 0
+Iter 0023 | Energy: 0.046069 | Delta: 1.04e-02 | M: 0.00000072 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2542.79ms)
+[Rank 0] E+ Global : 0.0814167  | E- global: -0.0409666QPU= 0
+Iter 0024 | Energy: 0.081417 | Delta: 3.53e-02 | M: 0.00000110 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2814.34ms)
+[Rank 0] E+ Global : 0.0586263  | E- global: -0.0387203QPU= 0
+Iter 0025 | Energy: 0.058626 | Delta: 2.28e-02 | M: 0.00000074 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 25: Global theta state checkpointed at path checkpoints/checkpoint_iter_0025.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2368.02ms)
+[Rank 0] E+ Global : 0.0991888  | E- global: -0.0407251QPU= 0
+Iter 0026 | Energy: 0.099189 | Delta: 4.06e-02 | M: 0.00000096 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2434.36ms)
+[Rank 0] E+ Global : 0.120414  | E- global: -0.0373539QPU= 0
+Iter 0027 | Energy: 0.120414 | Delta: 2.12e-02 | M: 0.00000097 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2357.01ms)
+[Rank 0] E+ Global : 0.0967849  | E- global: -0.0324704QPU= 0
+Iter 0028 | Energy: 0.096785 | Delta: 2.36e-02 | M: 0.00000216 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2043.4ms)
+[Rank 0] E+ Global : 0.0554513  | E- global: -0.0321666QPU= 0
+Iter 0029 | Energy: 0.055451 | Delta: 4.13e-02 | M: 0.00000155 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2751.5ms)
+[Rank 0] E+ Global : 0.0344595  | E- global: -0.0323648QPU= 0
+Iter 0030 | Energy: 0.034459 | Delta: 2.10e-02 | M: 0.00000059 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 30: Global theta state checkpointed at path checkpoints/checkpoint_iter_0030.npy. 
+[Finance] Final objective : +0.034459 
+[Finance] Iterations run : 30
+[Finance] Wall time : 76.44 s
+
+ RUNNING SCALAING (with P=8 ranks)
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[Chemistry] Prepared 631 Pauli terms for 12 qubits,  48 variational params.
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2092.69ms)
+[Rank 0] E+ Global : -6.18537  | E- global: -0.164501QPU= 0
+Iter 0001 | Energy: -6.185368 | Delta: inf | M: 0.00000821 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2809.77ms)
+[Rank 0] E+ Global : -6.39802  | E- global: -0.171685QPU= 0
+Iter 0002 | Energy: -6.398022 | Delta: 2.13e-01 | M: 0.00000581 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2277.13ms)
+[Rank 0] E+ Global : -4.50186  | E- global: -0.0283154QPU= 0
+Iter 0003 | Energy: -4.501860 | Delta: 1.90e+00 | M: 0.00000753 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2178.61ms)
+[Rank 0] E+ Global : -5.06616  | E- global: -0.148912QPU= 0
+Iter 0004 | Energy: -5.066155 | Delta: 5.64e-01 | M: 0.00000826 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2788.92ms)
+[Rank 0] E+ Global : -4.29772  | E- global: -0.128115QPU= 0
+Iter 0005 | Energy: -4.297724 | Delta: 7.68e-01 | M: 0.00000651 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/checkpoint_iter_0005.npy. 
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2585.08ms)
+[Rank 0] E+ Global : -4.00047  | E- global: 0.0276914QPU= 0
+Iter 0006 | Energy: -4.000473 | Delta: 2.97e-01 | M: 0.00000721 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2403.36ms)
+[Rank 0] E+ Global : -6.74436  | E- global: -0.0135218QPU= 0
+Iter 0007 | Energy: -6.744362 | Delta: 2.74e+00 | M: 0.00000756 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2651.79ms)
+[Rank 0] E+ Global : -6.51778  | E- global: -0.333563QPU= 0
+Iter 0008 | Energy: -6.517780 | Delta: 2.27e-01 | M: 0.00000639 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2754.31ms)
+[Rank 0] E+ Global : -6.48838  | E- global: -0.36033QPU= 0
+Iter 0009 | Energy: -6.488380 | Delta: 2.94e-02 | M: 0.00000643 | Path: MPI + CPU Fallback
+[MASTER] Dispatching QASM to Cloud QPU.. simulator...
+[Manager] QPU result = 0  (residual wait = 2399.77ms)
+[Rank 0] E+ Global : -6.59839  | E- global: -0.363505QPU= 0
+Iter 0010 | Energy: -6.598395 | Delta: 1.10e-01 | M: 0.00000718 | Path: MPI + CPU Fallback
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/checkpoint_iter_0010.npy. 
+[Scaling] P=8 |  T_total=31.992s |  final_E=-6.598395  
+---ALL LOCAL BENCHMARKS COMPLETE ----
+Ranks used : 8
+GPU : False
+Backend : simulator 
