@@ -1,58 +1,55 @@
 FROM nvidia/cuda:12.2.0-devel-ubuntu22.04
 
-# 2. Install Python, MPI system dependencies
-RUN apt-get update && apt-get install -y \
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    libopenmpi-dev \
+    openmpi-bin \
+    libcurl4-openssl-dev \
     python3.11 \
     python3.11-dev \
     python3-pip \
-    libopenmpi-dev \
-    openmpi-bin \
-    cmake \
-    git \
-    build-essential \
+    python3.11-venv \
+    libgfortran5 \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
+ && update-alternatives --install /usr/bin/python  python  /usr/bin/python3.11 1
 
-WORKDIR /app
 
-# 3. Install Python dependencies 
-RUN pip install --no-cache-dir \
+RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
+RUN pip3 install --no-cache-dir \
     numpy \
     scipy \
-    matplotlib \
     mpi4py \
-    cupy-cuda12x \
-    qiskit>=1.0.0 \
     pybind11 \
-    qiskit-aer \
-    qiskit-algorithms \
-    pylatexenc \
-    qiskit-nature \ 
-    pyscf 
+    qiskit \
+    qiskit-nature \
+    qiskit-ibm-runtime \
+    pyscf
 
-COPY . .
+WORKDIR /workspace
+COPY . /workspace
 
-# RUN rm -rf build && mkdir build && cd build && \
-#     cmake .. && \
-#     cmake --build . --config Release
-
-# 7. Build the C++ Core
-RUN rm -rf build && mkdir build && cd build && \
+RUN mkdir -p build && cd build && \
     cmake .. \
-    -DPython_EXECUTABLE=/usr/bin/python3.11 \
-    -Dpybind11_DIR=$(python3.11 -c "import pybind11; print(pybind11.get_cmake_dir())") && \
-    cmake --build . --config Release
+      -DPython_EXECUTABLE=/usr/bin/python3.11 \
+      -DCMAKE_BUILD_TYPE=Release \
+    && make -j$(nproc)
 
+ENV PYTHONPATH="/workspace/build:/workspace"
 
-ENV PYTHONPATH="/app/build:${PYTHONPATH:+:${PYTHONPATH}}"
+ENV IBM_QUANTUM_TOKEN=""
+ENV IBM_QUANTUM_INSTANCE=""
+ENV IBM_QUANTUM_BACKEND="ibm_brisbane"
+ENV IBM_QUANTUM_REGION="us-east"
+ENV BACKEND="simulator"
 
-# 4. MPI Environment setups
-ENV OMPI_ALLOW_RUN_AS_ROOT=1
-ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
-
-# Use python3.11 as entry point
-ENTRYPOINT ["mpirun", "-np", "2", "python3"]
-# CMD ["src/classical/vqe.py"]
-CMD ["test_run.py"]
+CMD ["mpirun", "--allow-run-as-root", "-np", "2", "python3", "trial_run.py"]
