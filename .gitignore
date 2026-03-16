@@ -3,8 +3,10 @@ build/
 bin/
 obj/
 
+
 __pycache__/
 .pytest_cache/
+.pubchem_cache/ 
 *.pyc
 
 .env
