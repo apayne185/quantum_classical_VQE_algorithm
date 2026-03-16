@@ -23,7 +23,7 @@ struct HybridWorkload {
     bool requires_gpu = true;
     std::string backend_target;       // "simulator" or "ibm_cloud"
     std::string circuit_qasm;
-    int job_id = 0;                     // for async tracking
+    std::string job_id = "";                    // for async tracking
     std::vector<PauliTerm> pauli_terms;     // hamiltonian decomposition
     int num_shots = 1024;                   // QPU measuremnt shots
 };
