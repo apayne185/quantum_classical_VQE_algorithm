@@ -121,7 +121,8 @@ def run_finance_local(stack:HPCHybridStack):
 def run_scaling_local(stack: HPCHybridStack):   
     if stack.rank == 0: print(f"\n RUNNING SCALING (with P={stack.size} ranks) ")
 
-    problem = ChemistryProblem.from_name("LiH")
+    # problem = ChemistryProblem.from_name("LiH")
+    problem = make_problem("LiH")
     if problem is None:
         if stack.rank == 0: print("[Scaling] LiH  resolution failed, skipping.")  
         return
