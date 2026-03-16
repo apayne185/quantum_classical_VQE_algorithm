@@ -62,7 +62,7 @@ extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
         printf("CUDA Error (Result Malloc): %s\n", cudaGetErrorString(err));
         cudaFree(d_params);    //clean up previous allocation
         return 0.0;
-    }
+    } 
 
     // init result on GPU to 0, copy params over
     cudaMemset(d_result, 0, sizeof(double));
@@ -74,11 +74,10 @@ extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
         return 0.0;  
     }    
 
-    //launch kernel     
+
+    // LAUNCH KERNEL     
     int blockSize = 256;
     int gridSize = (n + blockSize - 1) / blockSize;
-    // double total_sum = 0.0;
-    // int iterations = 100000;
     compute_vqe_energy_kernel<<<gridSize, blockSize>>>(d_params, d_result, n);
 
     cudaDeviceSynchronize();
@@ -91,6 +90,7 @@ extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
     }
 
 
+    // COPY BACK RESULT FP64
     err = cudaMemcpy(&h_result, d_result, sizeof(double), cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) {
         fprintf(stderr, "[CUDA] D2H memcpy failed: %s\n",cudaGetErrorString(err));

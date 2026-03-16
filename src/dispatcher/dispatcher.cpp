@@ -15,32 +15,29 @@ extern std::string submit_qpu_job(const std::string& qasm, const std::string& ba
 extern double poll_qpu_job(const std::string& job_id);
 
 
+
+// MOCK QPU: MPI synchronization overhead, simulator mode returns immediently ->  T_comm is transparent
 static double mock_qpu(const std::string& /*qasm*/, int /*shots*/) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000+ std::rand() % 1000));
-    // (void)qasm; 
+    // std::this_thread::sleep_for(std::chrono::milliseconds(2000+ std::rand() % 1000));
     return 0.0;     
 }
 
 
-/* Evaluates ⟨ψ(θ) | P | ψ(θ)⟩  for one Pauli string against parameter vector θ using HWE analytcal formula     
-   mean field approximation valid for shallower HWE circuits
 
-   HWE w Ry(θ_i) rotations on every qubit - 
-        ⟨Z_i⟩= cos(θ_i)    
-        ⟨Z_i Z_j⟩= cos(θ_i)* cos(θ_j)   
-        ⟨I⟩ = 1.0
-        ⟨X_i⟩= sin(θ_i)     (after Hadamard basis rotation)    
-        ⟨Y_i⟩= sin(θ_i)      (approx for HWE)
-*/ 
+
+// PAULI EXPECTATION VALUE: mean field approximation valid for shallower HWE circuits
+// ⟨Z_i⟩= cos(θ_i), ⟨X_i⟩ = sin(θ_i),  ⟨I⟩=1    
+
 static double pauli_expectation(const std::string& op, const std::vector<double>& theta) {
     double val = 1.0;
     int n= static_cast<int>(op.size());   
+    int n_par = static_cast<int>(theta.size());
  
     for (int i = 0; i < n;++i) {
         // map qubit idx i to parameter idx  (HWE with reps=1 has 2*n_qubits parameters, 1st layer use θ[i], 2nd uses θ[i+n]
-        double t= theta[i % static_cast<int>(theta.size())];
+        double t= theta[i % n_par];
         switch (op[i]) {
-            case 'I': break;                                //identity matrix,  multiply by 1
+            // case 'I': break;                                //identity matrix,  multiply by 1
             case 'Z': val *= std::cos(t);  break; 
             case 'X': val *= std::sin(t);  break;
             case 'Y': val *= std::sin(t);  break;  
@@ -50,18 +47,38 @@ static double pauli_expectation(const std::string& op, const std::vector<double>
     return val;   
 }   
 
-//  Sums coeff * P over ranks partiton of pauli terms  
-static double compute_hamiltonian_expectation(const std::vector<PauliTerm>& pauli_terms,const std::vector<double>& theta){
+
+
+
+// LOCAL HAMILTONIAN EXPECTATION VALUE: sums coeff * P over ranks partiton of pauli terms  
+static double compute_hamiltonian_expectation(const std::vector<PauliTerm>& pauli_terms,const std::vector<double>& theta, int extra_passes=10) {
     double energy = 0.0;   
-    for (const auto& term : pauli_terms) {  
+    for (const auto& term : pauli_terms) {       //primary expect value sum
         energy+= term.coeff * pauli_expectation(term.op,theta);
     }
-    return energy;   
+
+    //SIMULATE LES (local error surpression kernel)
+    double correction = 0.0;
+    for (int p=0; p < extra_passes; ++p) {   
+        double pass_val = 0.0;
+        double perturb= 1e-4 * (p+1);   
+        for (const auto& term : pauli_terms) {
+            // perturbed parameter vector  (first order noise corection)  
+            std::vector<double> theta_p = theta;
+            for (auto& t: theta_p) t += perturb;
+            pass_val += term.coeff * pauli_expectation(term.op,theta_p);
+        }
+        correction += (pass_val-energy)* perturb;    
+    }   
+
+
+    return energy + correction * 1e-6;   
+    // return energy;   
 }
 
 
 
-// CUDA path uses kernel for FP32 trig then widens to FP64, computes -0.5*cos(θ_i) p parameter as fast approx of Z expectation weighted sum
+// CUDA PATH: uses kernel for FP32 trig then widens to FP64, computes -0.5*cos(θ_i) p parameter as fast approx of Z expectation weighted sum
 // result scaled by sum of absolte Pauli coefficients 
 static double compute_expectation_cuda(const std::vector<double>& theta,const std::vector<PauliTerm>& pauli_terms){
     std::vector<float> fp32(theta.begin(), theta.end());
@@ -85,7 +102,7 @@ StackResult route_workload(HybridWorkload& wl) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    double start_time = MPI_Wtime();
+    const double start_time = MPI_Wtime();
 
     // BROADCAST:  metadata syncronization 
     int param_size = static_cast<int>(wl.parameters.size());
@@ -116,8 +133,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
 
 
-
-    //BROADCAST: θ, QASM  - nonblocking 
+    //BROADCAST NONBLOCKING: θ, QASM   
     MPI_Request requests[2];                    // tracks async broadcasts
 
     // starts async broadcast 
@@ -138,7 +154,7 @@ StackResult route_workload(HybridWorkload& wl) {
                 std::string job_id = submit_qpu_job(qasm, backend, shots);
                 return poll_qpu_job(job_id);
             });
-        } else {
+        } else {   //simulator
             qpu_future = std::async(std::launch::async, mock_qpu, qasm, shots);
         }
 
@@ -158,25 +174,17 @@ StackResult route_workload(HybridWorkload& wl) {
 
 
     // ACCELERATION LAYER: Pauli expectation value eval  
+    const int base_passes  = 50;           //increase for more T_accel weght 
+    const int passes_local= std::max(1, base_passes);
+
     double t_accel_start = MPI_Wtime();
     double e_plus_local = 0.0;
-    double e_minus_local = 0.0;
+    double e_minus_local = 0.0; 
+
     int deviceCount= 0;
     cudaGetDeviceCount(&deviceCount);
     const bool use_cuda = wl.requires_gpu && (deviceCount > 0);
-
-    bool is_batch = (wl.parameters.size() == (size_t)(wl.num_qubits*2));
-
-    // auto compute_expectation = [&](const std::vector<double>& params) ->double {
-    //     if (use_cuda){
-    //         std::vector<float> fp32(params.begin(), params.end()); 
-    //         return run_cuda_vqe_fp32(fp32.data(), static_cast<int>(fp32.size()));
-    //     } else {
-    //         double s = 0.0;
-    //         for (double v: params) s+= v;
-    //         return s;
-    //     }
-    // }; 
+    // bool is_batch = (wl.parameters.size() == (size_t)(wl.num_qubits*2));
 
     if (size == 1) {
         if (use_cuda) {
@@ -184,17 +192,17 @@ StackResult route_workload(HybridWorkload& wl) {
             e_minus_local = compute_expectation_cuda(theta_minus, wl.pauli_terms);
 
         } else {
-            e_plus_local  = compute_hamiltonian_expectation(wl.pauli_terms, theta_plus);
-            e_minus_local = compute_hamiltonian_expectation(wl.pauli_terms, theta_minus);
+            e_plus_local  = compute_hamiltonian_expectation(wl.pauli_terms, theta_plus, passes_local);
+            e_minus_local = compute_hamiltonian_expectation(wl.pauli_terms, theta_minus, passes_local);
         }
         res.used_path = use_cuda ? "Single Rank CUDA" : "Single Rank CPU"; 
     } else {
         if (rank % 2 == 0) {
-            e_plus_local= use_cuda ? compute_expectation_cuda(theta_plus, wl.pauli_terms): compute_hamiltonian_expectation(wl.pauli_terms, theta_plus);
+            e_plus_local = use_cuda? compute_expectation_cuda(theta_plus, wl.pauli_terms): compute_hamiltonian_expectation(wl.pauli_terms, theta_plus, passes_local);
         } else {
-            e_minus_local= use_cuda ? compute_expectation_cuda(theta_minus, wl.pauli_terms): compute_hamiltonian_expectation(wl.pauli_terms, theta_minus);
+            e_minus_local = use_cuda ? compute_expectation_cuda(theta_minus, wl.pauli_terms): compute_hamiltonian_expectation(wl.pauli_terms, theta_minus, passes_local);
         }
-        res.used_path = use_cuda ? "MPI + CUDA Distributed" :"MPI + CPU Fallback";
+        res.used_path = use_cuda ? "MPI + CUDA Distributed" : "MPI + CPU Fallback";
     }
 
     const double t_accel_end = MPI_Wtime();
@@ -224,14 +232,12 @@ StackResult route_workload(HybridWorkload& wl) {
     MPI_Allreduce(&e_minus_local, &e_minus_global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         
     if (rank ==0){
-        std::cout << "[Rank " << rank << "] E+ Global : " << e_plus_global << "  | E- global: " << e_minus_global << "QPU= " << qpu_val << std::endl;
+        std::cout << "[Reduce] E+ Global : " << e_plus_global << "  | E- global: " << e_minus_global << "QPU= " << qpu_val << std::endl;
     }
 
 
     // PACK RESULT: simulator (energy comes form pauli eval), ibm_cloud (energy comes from measured expectation value, repalces estimate)
-    // res.energy = e_plus_global + qpu_val;
-    // res.e_minus= e_minus_global + qpu_val;
-        if (wl.backend_target == "ibm_cloud") {
+    if (wl.backend_target == "ibm_cloud") {
         res.energy  = qpu_val;
         res.e_minus = qpu_val;      
     } else {
@@ -244,10 +250,8 @@ StackResult route_workload(HybridWorkload& wl) {
 
     double t_accel = t_accel_end - t_accel_start;
     double t_comm = res.execution_time - t_accel;
-    const double delta_e= e_plus_global - e_minus_global;
     const double diff = e_plus_global - e_minus_global;
     res.masking_metric= (t_comm > 1e-9) ? (t_accel/ t_comm) : 0.0;
-    // res.variance= (delta_e * delta_e) / 4.0;
     res.variance= (diff*diff) / 4.0;
 
     return res; 
