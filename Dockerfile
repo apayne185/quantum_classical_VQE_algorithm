@@ -52,4 +52,4 @@ ENV IBM_QUANTUM_BACKEND="ibm_brisbane"
 ENV IBM_QUANTUM_REGION="us-east"
 ENV BACKEND="simulator"
 
-CMD ["mpirun", "--allow-run-as-root", "-np", "2", "python3", "trial_run.py"]
+CMD ["mpirun", "--allow-run-as-root", "-np", "2", "python3", "tests/test_layers_run.py"]

@@ -190,7 +190,7 @@ class ChemistryProblem(QuantumProblem):
 
         if key not in MOLECULE_REGISTRY:
             supported = list(MOLECULE_REGISTRY.keys())
-            raise ValueError({"Unknown molecule '{key}', not within known MOLECULE_REGISTRY "})
+            raise ValueError("Unknown molecule '{key}', not within known MOLECULE_REGISTRY ")
 
         entry = MOLECULE_REGISTRY[key]
         problem = cls(atom_coordinates = entry["geometry"], reps=entry["reps"], name=key,force_tier=force_tier,)
