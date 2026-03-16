@@ -94,7 +94,7 @@ class ChemistryProblem(QuantumProblem):
 
         entry = MOLECULE_REGISTRY[key]
         problem = cls(atom_coordinates = entry["geometry"], reps=entry["reps"], name=key)
-        problem.fci_energy = entry["fci_entry"]
+        problem.fci_energy = entry["fci_energy"]
         return problem 
     
 
@@ -127,7 +127,7 @@ class ChemistryProblem(QuantumProblem):
         # print(f"[Chemistry] Prepared {len(self.pauli_terms)} Pauli terms for {self.num_qubits} qubits,  {self.num_params} variational params.")  
 
 
-        def energy_error(self, computed_energy:float) -> float |None:
+    def energy_error(self, computed_energy:float) -> float |None:
             if self.fci_energy is None:
                 return None
             return abs(computed_energy-self.fci_energy)
@@ -170,7 +170,7 @@ class FinanceProblem(QuantumProblem):
                         +"I" * (j-i-1) + "Z"
                         +"I" * (n-j-1)
                     ) 
-                    
+
                     pauli_terms.append((op, zizj_coeff))
 
         self.pauli_terms = pauli_terms

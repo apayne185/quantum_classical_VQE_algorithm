@@ -21,14 +21,14 @@ except ImportError as e:
 
 USE_GPU = os.environ.get("USE_GPU", "yes").strip().lower() == "yes"
 BACKEND = os.environ.get("BACKEND", "simulator")
+MOLECULES = ["H2", "LiH", "BeH2", "H2O"]
+# MOLECULES = ["H2", "LiH", "BeH2", "H2O", "NH3"]
 
 
+def run_chemistry_local(stack: HPCHybridStack, name:str): 
+    if stack.rank == 0: print(f"\n--- RUNNING CHEMISTRY TASK {name} ---")
 
-
-def run_chemistry_local(stack: HPCHybridStack): 
-    if stack.rank == 0: print("\n--- RUNNING CHEMISTRY TASK (LiH Ground State) ---")
-
-    problem = ChemistryProblem("Li 0 0 0; H 0 0 1.59") #liH
+    problem = ChemistryProblem.from_name(name)
     t0 = time.perf_counter()
     theta, history = stack.vqe_optimize(problem, 
                                         max_iterations=50,        
@@ -38,12 +38,19 @@ def run_chemistry_local(stack: HPCHybridStack):
     t_total = time.perf_counter() - t0
     
     if stack.rank ==0 and history:
-        print(f"[LiH] Final energy : {history[-1]:+.6f} Ha ")
-        print(f"[LiH] Reference FCI : -7.882500 Ha")      #known value of LiH
-        print(f"[LiH] Absolute error: {abs(history[-1] - (-7.8825)):+.6f} Ha ")
-        print(f"[LiH] Iterations run: {len(history)}")
-        print(f"[LiH] Wall time: {t_total:.2f}s (includes QPU queue + RTT) ")   
-        print(f"[LiH] Time/iter: {t_total / len(history):.2f} s ")     
+        final_e = history[-1]
+        error   = problem.energy_error(final_e)
+        error_str = f"{error:+.4f} Ha " if error is not None else "N/A"   
+
+        print(f"[{name}] Final energy : {final_e:+.6f} Ha ")
+        if problem.fci_energy is not None:
+            print(f"[{name}] Reference FCI : {problem.fci_energy:+.6f} Ha ")      #known value of LiH
+            print(f"[{name}] Absolute error: {error_str} Ha ")
+            print(f"[{name}] Iterations run: {len(history)}")
+            print(f"[{name}] Wall time: {t_total:.2f}s (includes QPU queue + RTT) ")   
+            print(f"[{name}] Time/iter: {t_total / len(history):.2f} s ")   
+
+    return history  
 
 
 
@@ -76,7 +83,7 @@ def run_finance_local(stack:HPCHybridStack):
 def run_scaling_local(stack: HPCHybridStack):   
     if stack.rank == 0: print(f"\n RUNNING SCALAING (with P={stack.size} ranks)")
 
-    problem = ChemistryProblem("Li 0 0 0; H 0 0 1.59")  
+    problem = ChemistryProblem.from_name("LiH")
     t0 = time.perf_counter()
     
     _, history = stack.vqe_optimize(problem, max_iterations=10)
@@ -90,8 +97,18 @@ def run_scaling_local(stack: HPCHybridStack):
     
 
 if __name__ == "__main__":
-    with HPCHybridStack(use_gpu=USE_GPU, backend=BACKEND) as stack:
-        run_chemistry_local(stack)   
+    print(f"[Config] GPU={'requested' if USE_GPU else 'CPU mode'}")
+    print(f"[Config] Molecules: {MOLECULES}") 
+
+    with HPCHybridStack(use_gpu=USE_GPU, backend=BACKEND) as stack:   
+
+        results = {}
+        for mol in MOLECULES:
+            history = run_chemistry_local(stack, mol)
+            if stack.rank == 0 and history:
+                results[mol] = history[-1] 
+
+        # run_chemistry_local(stack)   
         run_finance_local(stack)   
         run_scaling_local(stack)   
 
@@ -100,6 +117,11 @@ if __name__ == "__main__":
             print(f"Ranks used : {stack.size}")
             print(f"GPU : {stack.use_gpu}")
             print(f"Backend : {BACKEND} ")
+            for mol, energy in results.items():
+                problem = ChemistryProblem.from_name(mol)
+                fci= problem.fci_energy
+                err_str = (f" error={abs(energy-fci):+.4f} Ha" if fci else "")
+                print(f"{mol:6s}: {energy:+.6f} Ha{err_str} \n\n")
 
 
 
