@@ -33,8 +33,10 @@ trial:
 	  -e USE_GPU=$(GPU_AVAILABLE) \
 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
 	  $(IMAGE_NAME) \
- 	  mpirun --allow-run-as-root -np $(NP) python3 test_layers_run.py       
+ 	  mpirun --allow-run-as-root -np $(NP) python3 tests/test_layers_run.py       
  
+
+
 # FULL BENCHMARK - simualtor only 
 run:
 	@echo "[Make] Running full benchmark (simulator, $(NP) ranks) ..."
@@ -47,22 +49,24 @@ run:
 	  mpirun --allow-run-as-root -np $(NP) python3 local_test_run.py
 
 
+
+
 # # FULL BENCHMArk - IBM quantum QPU 
-# run-ibm:
-# 	@[ -n "$(IBM_QUANTUM_TOKEN)" ]    || (echo "ERROR: IBM_QUANTUM_TOKEN not set in .env"; exit 1)
-# 	@[ -n "$(IBM_QUANTUM_INSTANCE)" ] || (echo "ERROR: IBM_QUANTUM_INSTANCE not set in .env"; exit 1)
-# 	@echo "[Make] Running $(NP) ranks -> IBM Quantum ($(IBM_QUANTUM_BACKEND)) ..."
-# 	docker run --rm \
-# 	  $(GPU_FLAG) \
-# 	  -e BACKEND=ibm_cloud \
-# 	  -e USE_GPU=$(GPU_AVAILABLE) \
-# 	  -e IBM_QUANTUM_TOKEN="$(IBM_QUANTUM_TOKEN)" \
-# 	  -e IBM_QUANTUM_INSTANCE="$(IBM_QUANTUM_INSTANCE)" \
-# 	  -e IBM_QUANTUM_BACKEND="$(IBM_QUANTUM_BACKEND)" \
-# 	  -e IBM_QUANTUM_REGION="$(IBM_QUANTUM_REGION)" \
-# 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
-# 	  $(IMAGE_NAME) \
-# 	  mpirun --allow-run-as-root -np $(NP) python3 ibm_test_run.py
+run-ibm:
+	@[ -n "$(IBM_QUANTUM_TOKEN)" ] || (echo "ERROR: IBM_QUANTUM_TOKEN not set in .env"; exit 1)
+	@[ -n "$(IBM_QUANTUM_INSTANCE)" ] || (echo "ERROR: IBM_QUANTUM_INSTANCE not set in .env"; exit 1)
+	@echo "[Make] Running $(NP) ranks -> IBM Quantum ($(IBM_QUANTUM_BACKEND)) ..."
+	docker run --rm \
+	  $(GPU_FLAG) \
+	  -e BACKEND=ibm_cloud \
+	  -e USE_GPU=$(GPU_AVAILABLE) \
+	  -e IBM_QUANTUM_TOKEN="$(IBM_QUANTUM_TOKEN)" \
+	  -e IBM_QUANTUM_INSTANCE="$(IBM_QUANTUM_INSTANCE)" \
+	  -e IBM_QUANTUM_BACKEND="$(IBM_QUANTUM_BACKEND)" \
+	  -e IBM_QUANTUM_REGION="$(IBM_QUANTUM_REGION)" \
+	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
+	  $(IMAGE_NAME) \
+	  mpirun --allow-run-as-root -np $(NP) python3 ibm_test_run.py
 
 
 # STRONG SCALAING SWEEP - simulator      
@@ -82,6 +86,25 @@ scaling:
 	  echo "  P=$$p done."; \
 	done
 	@echo "[Make] Scaling logs saved to scaling_logs/. Check T_total and M-metric."
+
+
+
+# RUN ALL TESTS- resolver + layer diagnostic
+test:
+	@echo "[Make] Running test suite ..."
+# 	python3 tests/test_resolver.py
+	python3 tests/test_molecules_run.py
+	docker run --rm \
+	  $(GPU_FLAG) \
+	  -e BACKEND=simulator \
+	  -e USE_GPU=$(GPU_AVAILABLE) \
+	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
+	  $(IMAGE_NAME) \
+	  mpirun --allow-run-as-root -np 2 python3 tests/test_layers_run.py
+	@echo "[Make] All tests complete."
+
+
+
 
 
 shell:

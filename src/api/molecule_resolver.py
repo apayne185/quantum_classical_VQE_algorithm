@@ -37,7 +37,8 @@ class ResolutionResult:
     estimated_qubits: int
     freeze_core: bool
     warnings:list[str] = field(default_factory=list)
-    metadata:dict= field(default_factory=dict)
+    metadata:dict= field(default_factory=dict) 
+
 
     def to_chemistry_problem(self, force_tier: str | None = None):
         problem = ChemistryProblem(
@@ -55,14 +56,16 @@ class ResolutionResult:
             "estimated_qubits": self.estimated_qubits,
             "warnings":self.warnings,      
         }
-        return problem
+        return problem  
+    
 
     def _recommended_reps(self) -> int:
         q = self.estimated_qubits
         if q <= 4: return 1
         if q <= 12:return 1
         if q <= 16:return 2
-        return 3
+        return 3  
+    
 
 
 class MoleculeResolver:
@@ -81,9 +84,10 @@ class MoleculeResolver:
 
         result = (
             self._try_local_registry(molecule_input)
-            or self._try_pubchem(molecule_input)
+            or self._try_raw_geometry(molecule_input)
             or self._try_smiles(molecule_input)
-            or self._try_raw_geometry(molecule_input))
+            or self._try_pubchem(molecule_input) )
+
 
         if result is None:
             raise ResolutionError(f"Could not resolve '{molecule_input}'.")
@@ -204,7 +208,8 @@ class MoleculeResolver:
         est_q = self._estimate_qubits_sto3g(atoms)  
         mol_wt = Descriptors.MolWt(Chem.RemoveHs(mol))   
         
-        print(f"[Resolver] '{smiles}' resolved via RDKit MMFF geometry.")
+        print(f"[Resolver] '{smiles}' resolved via RDKit MMFF geometry")  
+
         return ResolutionResult(
             name=smiles, geometry=geometry, source="smiles",
             total_electrons=total_e, active_electrons=total_e,
@@ -283,7 +288,6 @@ class MoleculeResolver:
         geometry = self._parse_sdf_geometry(sdf_text)
         metadata={"pubchem_cid": cid, "name": name}
         print(f"[Resolver] '{name}' fetched from PubChem (CID={cid}).") 
-
 
         return geometry, metadata   
     
@@ -375,7 +379,6 @@ class MoleculeResolver:
             basis_fns += table.get(atom, 9) 
 
         return 2 * basis_fns
-
 
 
 
