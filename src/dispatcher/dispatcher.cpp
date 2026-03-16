@@ -232,7 +232,7 @@ StackResult route_workload(HybridWorkload& wl) {
     MPI_Allreduce(&e_minus_local, &e_minus_global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         
     if (rank ==0){
-        std::cout << "[Reduce] E+ Global : " << e_plus_global << "  | E- global: " << e_minus_global << "QPU= " << qpu_val << std::endl;
+        std::cout << "[Reduce] E+ Global : " << e_plus_global << "  | E- global: " << e_minus_global << "  QPU= " << qpu_val << std::endl;
     }
 
 

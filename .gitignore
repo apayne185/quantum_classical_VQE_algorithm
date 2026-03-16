@@ -3,7 +3,6 @@ build/
 bin/
 obj/
 
-
 __pycache__/
 .pytest_cache/
 .pubchem_cache/ 
@@ -14,6 +13,14 @@ venv
 
 *.pyd
 *.so
+*.o
+
+
+.vscode/
+.idea/
+*.swp
+
+.docker/
 
 hpc_core.cp313-win_amd64.pyd
 apps/vqe_molecule
