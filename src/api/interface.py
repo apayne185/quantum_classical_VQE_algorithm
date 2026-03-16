@@ -41,7 +41,7 @@ class HPCHybridStack:
 
 
     # Runs SPSA VQE loop
-    def vqe_optimize(self, problem: QuantumProblem, max_iterations:int=100, tolerance:int=1.6e-3, restart_from:str|None =None, checkpoint_dir: str = "checkpoints") -> tuple[np.ndarray, list[float]]:
+    def vqe_optimize(self, problem: QuantumProblem, max_iterations:int=100, tolerance:float=1.6e-3, restart_from:str | None =None, checkpoint_dir: str = "checkpoints", start_iter: int = 0) -> tuple[np.ndarray, list[float]]:
         comm = self.comm
         problem.prepare()
         num_params = problem.num_params
@@ -63,6 +63,11 @@ class HPCHybridStack:
                 theta = np.load(checkpoint_path).astype(np.float64)
                 if theta.shape[0] != num_params:
                     raise ValueError(f"Checkpoint has {theta.shape[0]} params but problem has {num_params} params ")
+                import re
+                match = re.search(r'checkpoint_iter_(\d+)', checkpoint_path)
+                if match and start_iter == 0:   
+                    start_iter= int(match.group(1))  
+                    print(f"[RESILIENCE] Resuming SPSA schedle from iteration {start_iter}  ")
             else:
                 theta = np.random.uniform(0.0, 2*np.pi, num_params)
         else:
@@ -75,14 +80,15 @@ class HPCHybridStack:
 
 
         # SPSA hyperparameters (standard coeffs)
-        a, c, A = 0.628, 0.1, max_iterations * 0.1      # 0.6, 0.1, 10
+        a, c, A = 0.628, 0.1, max_iterations * 0.1           # 0.6, 0.1,10
         alpha, gamma = 0.602, 0.101
         history: list[float] = []
         prev_energy = float('inf')
         stop_signal = np.array([0], dtype=np.int32)
 
 
-        for k in range(1, max_iterations +1): 
+        for loop_k in range(1, max_iterations +1): 
+            k = loop_k + start_iter
             stop_signal[0] = 0
 
             combined_params = np.zeros(num_params*2, dtype=np.float64)
@@ -96,9 +102,7 @@ class HPCHybridStack:
                 delta = np.random.choice([-1.0, 1.0], size=num_params)
                 combined_params[:num_params] = theta + ck * delta
                 combined_params[num_params:] = theta - ck * delta
-            # else:
-            #     combined_params = np.zeros(num_params * 2)
-            #     ck = 0
+            
             comm.Bcast(combined_params, root=0)
             ck_arr = np.array([ck], dtype=np.float64)
             comm.Bcast(ck_arr, root=0)
@@ -109,10 +113,10 @@ class HPCHybridStack:
 
             # Parameters update - Manager only
             if self.rank == 0:
-                # E+ is in energy, E- is in variance 
+                # E+ is in energy, E - is in variance 
                 e_plus = result.energy
                 e_minus = result.e_minus
-                current_energy = e_plus                 
+                current_energy = (e_plus + e_minus) /2.0                
 
                 # Gradient aproximation
                 gradient = (e_plus - e_minus) / (2*ck*delta)
@@ -130,7 +134,6 @@ class HPCHybridStack:
                     # break
 
                 if k % 5 == 0:
-                    # np.save(f"/checkpoints/checkpoint_job_{k}.npy", theta)   
                     ckpt_path = os.path.join(checkpoint_dir, f"checkpoint_iter_{k:04d}.npy")
                     np.save(ckpt_path, theta)
                     print(f"[RESILIENCE] Iteration {k}: Global theta state checkpointed at path {ckpt_path}. ")   
