@@ -4,6 +4,8 @@ sys.path.insert(0, os.path.abspath("./build"))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.api.molecule_resolver import (MoleculeResolver, MoleculeTooBigError, ResolutionError)   
 # sys.path.insert(0, os.path.abspath("."))
+from rdkit import RDLogger
+RDLogger.DisableLog('rdApp.*')
 
 
 resolver = MoleculeResolver(max_qubits=20,allow_network=True, cache_dir=".pubchem_cache")
