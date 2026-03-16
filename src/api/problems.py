@@ -155,6 +155,7 @@ class QuantumProblem(ABC):
         self.circuit_qasm: str = ""
         self.num_qubits: int = 0
         self.num_params: int = 0
+        self._prepared:bool = False
 
     @abstractmethod
     def prepare(self):
@@ -200,6 +201,9 @@ class ChemistryProblem(QuantumProblem):
 
 
     def prepare(self):
+        if self._prepared:                 
+            return 
+        
         # molecular physics 
         driver = PySCFDriver(
             atom=self.coords,
@@ -217,7 +221,9 @@ class ChemistryProblem(QuantumProblem):
         self.pauli_terms =[(op, float(coeff.real)) for op, coeff in raw]
 
         self.num_qubits = qubit_op.num_qubits
-        self.diagnostics = estimate_correlation_strength(self.pauli_terms)
+        self.diagnostics = estimate_correlation_strength(self.pauli_terms)  
+
+
         if self.force_tier is not None:    
             self.ansatz_tier = self.force_tier
             tier_source= "forced"
@@ -226,7 +232,6 @@ class ChemistryProblem(QuantumProblem):
             tier_source= "auto"
 
         ansatz, n_params = build_ansatz(self.num_qubits, self.ansatz_tier, self.reps) 
-        # ansatz = EfficientSU2(self.num_qubits, reps=self.reps).decompose()  
         self.num_params = n_params  
         self.circuit_qasm = qasm3.dumps(ansatz)
         fci_str = (f"FCI reference: {self.fci_energy:.4f} Ha" if self.fci_energy is not None else "") 
@@ -234,8 +239,10 @@ class ChemistryProblem(QuantumProblem):
 
         print(f"[Chemistry:{self.name}] {len(self.pauli_terms)} Pauli terms, {self.num_qubits} qubits, {self.num_params} params,  reps={self.reps}.{fci_str} ")  
         print(f"[Ansatz] {tier_label} ({tier_source}) | corr_score={self.diagnostics['correlation_score']:.3f} | off_diag_ratio={self.diagnostics['off_diag_ratio']:.3f}")
-        print(f"[Reason] {self.diagnostics['reasoning']}")  
- 
+        print(f"[Reason] {self.diagnostics['reasoning']}")   
+
+        self._prepared = True 
+
 
 
 
@@ -272,6 +279,9 @@ class FinanceProblem(QuantumProblem):
 
 
     def prepare(self):
+        if self._prepared:                 
+            return 
+        
         # Logic to map Mean-Varince Portfolio Optimization to Ising Hamiltonian using QUBO formulation
         n = self.num_qubits
         sigma = self.matrix
@@ -303,6 +313,7 @@ class FinanceProblem(QuantumProblem):
         self.circuit_qasm = qasm3.dumps(ansatz)
         self.num_params = ansatz.num_parameters
 
-        print(f"[Finance] Prepared {len(self.pauli_terms)} Pauli terms for {n}-asset portfolio ({self.num_qubits} qubits,  {self.num_params} params)  ")
-
+        print(f"[Finance] Prepared {len(self.pauli_terms)} Pauli terms for {n}-asset portfolio ({self.num_qubits} qubits,  {self.num_params} params)  ")  
+        
+        self._prepared = True 
 

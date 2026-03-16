@@ -32,10 +32,15 @@ static double pauli_expectation(const std::string& op, const std::vector<double>
     double val = 1.0;
     int n= static_cast<int>(op.size());   
     int n_par = static_cast<int>(theta.size());
+    double stride = (n > 0) ? static_cast<double>(n_par) / n : 1.0;   
  
-    for (int i = 0; i < n;++i) {
+    for (int i = 0; i < n; ++i) {
+        if (op[i] == 'I') continue; 
+
+        int param_idx = std::min(static_cast<int>(i * stride),n_par - 1); 
+
         // map qubit idx i to parameter idx  (HWE with reps=1 has 2*n_qubits parameters, 1st layer use θ[i], 2nd uses θ[i+n]
-        double t= theta[i % n_par];
+        double t= theta[param_idx];
         switch (op[i]) {
             // case 'I': break;                                //identity matrix,  multiply by 1
             case 'Z': val *= std::cos(t);  break; 
@@ -51,29 +56,26 @@ static double pauli_expectation(const std::string& op, const std::vector<double>
 
 
 // LOCAL HAMILTONIAN EXPECTATION VALUE: sums coeff * P over ranks partiton of pauli terms  
-static double compute_hamiltonian_expectation(const std::vector<PauliTerm>& pauli_terms,const std::vector<double>& theta, int extra_passes=10) {
+static double compute_hamiltonian_expectation(const std::vector<PauliTerm>& pauli_terms,const std::vector<double>& theta, int extra_passes=50) {
     double energy = 0.0;   
     for (const auto& term : pauli_terms) {       //primary expect value sum
         energy+= term.coeff * pauli_expectation(term.op,theta);
     }
 
     //SIMULATE LES (local error surpression kernel)
-    double correction = 0.0;
+    volatile double les_sink = 0.0;
     for (int p=0; p < extra_passes; ++p) {   
-        double pass_val = 0.0;
-        double perturb= 1e-4 * (p+1);   
+        double perturb= 1e-4 * (p + 1);   
         for (const auto& term : pauli_terms) {
             // perturbed parameter vector  (first order noise corection)  
             std::vector<double> theta_p = theta;
             for (auto& t: theta_p) t += perturb;
-            pass_val += term.coeff * pauli_expectation(term.op,theta_p);
+            les_sink += term.coeff * pauli_expectation(term.op,theta_p);
         }
-        correction += (pass_val-energy)* perturb;    
+        // correction += (pass_val-energy)* perturb;    
     }   
-
-
-    return energy + correction * 1e-6;   
-    // return energy;   
+    // return energy + correction * 1e-6;   
+    return energy;   
 }
 
 
@@ -101,6 +103,13 @@ StackResult route_workload(HybridWorkload& wl) {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if (size > 1 && size % 2 != 0) {
+        if (rank == 0) {
+            fprintf(stderr, "[Dispatcher] ERROR: odd number of MPI ranks (%d) isn't supported. Even/odd rank split for e_plus/e_minus requires even rank count. Re-run with NP=2,4,6.. \n",  size);
+            }
+            MPI_Abort(MPI_COMM_WORLD, 1);
+    }
 
     const double start_time = MPI_Wtime();
 
@@ -184,27 +193,18 @@ StackResult route_workload(HybridWorkload& wl) {
     int deviceCount= 0;
     cudaGetDeviceCount(&deviceCount);
     const bool use_cuda = wl.requires_gpu && (deviceCount > 0);
-    // bool is_batch = (wl.parameters.size() == (size_t)(wl.num_qubits*2));
 
-    if (size == 1) {
-        if (use_cuda) {
-            e_plus_local = compute_expectation_cuda(theta_plus, wl.pauli_terms);
-            e_minus_local = compute_expectation_cuda(theta_minus, wl.pauli_terms);
+    if (use_cuda) {
+        e_plus_local = compute_expectation_cuda(theta_plus,  wl.pauli_terms);
+        e_minus_local = compute_expectation_cuda(theta_minus, wl.pauli_terms); 
 
-        } else {
-            e_plus_local  = compute_hamiltonian_expectation(wl.pauli_terms, theta_plus, passes_local);
-            e_minus_local = compute_hamiltonian_expectation(wl.pauli_terms, theta_minus, passes_local);
-        }
-        res.used_path = use_cuda ? "Single Rank CUDA" : "Single Rank CPU"; 
-    } else {
-        if (rank % 2 == 0) {
-            e_plus_local = use_cuda? compute_expectation_cuda(theta_plus, wl.pauli_terms): compute_hamiltonian_expectation(wl.pauli_terms, theta_plus, passes_local);
-        } else {
-            e_minus_local = use_cuda ? compute_expectation_cuda(theta_minus, wl.pauli_terms): compute_hamiltonian_expectation(wl.pauli_terms, theta_minus, passes_local);
-        }
-        res.used_path = use_cuda ? "MPI + CUDA Distributed" : "MPI + CPU Fallback";
+        res.used_path= (size > 1) ? "MPI + CUDA Distributed" : "Single Rank CUDA";
+    } else {       
+        e_plus_local= compute_hamiltonian_expectation(wl.pauli_terms, theta_plus,  passes_local);
+        e_minus_local = compute_hamiltonian_expectation(wl.pauli_terms, theta_minus, passes_local);
+
+        res.used_path= (size > 1) ? "MPI + CPU Fallback" : "Single Rank CPU";
     }
-
     const double t_accel_end = MPI_Wtime();
 
 
@@ -238,10 +238,10 @@ StackResult route_workload(HybridWorkload& wl) {
 
     // PACK RESULT: simulator (energy comes form pauli eval), ibm_cloud (energy comes from measured expectation value, repalces estimate)
     if (wl.backend_target == "ibm_cloud") {
-        res.energy  = qpu_val;
+        res.energy= qpu_val;
         res.e_minus = qpu_val;      
     } else {
-        res.energy  = e_plus_global;
+        res.energy = e_plus_global;
         res.e_minus = e_minus_global;
     }   
 

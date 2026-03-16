@@ -223,7 +223,7 @@ double poll_qpu_job(const std::string& job_id) {
                 return ev; 
 
             } catch (const std::exception& ex) {
-                throw std::runtime_error(std::string("[QPU] Failed to parse result: ") + ex.what()+ " \nRaw response: " + response);
+                throw std::runtime_error(std::string("[QPU] Failed to parse result: ") + ex.what()+ " \nRaw response: " + result_resp);
             }
         }
         

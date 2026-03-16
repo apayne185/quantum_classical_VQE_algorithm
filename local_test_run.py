@@ -119,16 +119,19 @@ def run_finance_local(stack:HPCHybridStack):
 
   
 def run_scaling_local(stack: HPCHybridStack):   
-    if stack.rank == 0: print(f"\n RUNNING SCALAING (with P={stack.size} ranks) ")
+    if stack.rank == 0: print(f"\n RUNNING SCALING (with P={stack.size} ranks) ")
 
     problem = ChemistryProblem.from_name("LiH")
+    if problem is None:
+        if stack.rank == 0: print("[Scaling] LiH  resolution failed, skipping.")  
+        return
     t0 = time.perf_counter()
     
     _, history = stack.vqe_optimize(problem, max_iterations=10)
     t_total= time.perf_counter() - t0    
 
     if stack.rank == 0:
-        print(f"[Scaling] P={stack.size} |  T_total={t_total:.3f}s |  final_E={history[-1]:+.6f}  ")
+        print(f"[Scaling] P={stack.size} |  T_total={t_total:.3f}s |  final_E={history[-1]:+.6f} | tier={getattr(problem, 'ansatz_tier', 'N/A')} | qubits={problem.num_qubits}")
 
 
 

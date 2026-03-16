@@ -27,4 +27,6 @@ apps/vqe_molecule
 
 .devcontainer
 
+checkpoints/*.npy
+
 
