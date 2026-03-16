@@ -40,13 +40,19 @@ class ResolutionResult:
     metadata:dict= field(default_factory=dict) 
 
 
-    def to_chemistry_problem(self, force_tier: str | None = None):
+    def to_chemistry_problem(self, force_tier= None):
         problem = ChemistryProblem(
             atom_coordinates=self.geometry,
             reps=self._recommended_reps(),
             name=self.name,
             force_tier=force_tier,
-        )
+        ) 
+
+        fci = None
+        if "registry_entry" in self.metadata:   
+            fci = self.metadata["registry_entry"].get("fci_energy")
+        
+        problem.fci_energy = fci 
 
         problem.resolution_metadata = {
             "source": self.source,
@@ -54,9 +60,10 @@ class ResolutionResult:
             "active_electrons": self.active_electrons,
             "freeze_core":self.freeze_core,
             "estimated_qubits": self.estimated_qubits,
-            "warnings":self.warnings,      
-        }
-        return problem  
+            "warnings":self.warnings,    
+            "fci_energy":fci,   
+        }    
+        return problem
     
 
     def _recommended_reps(self) -> int:
