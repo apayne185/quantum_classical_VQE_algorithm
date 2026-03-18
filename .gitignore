@@ -27,7 +27,11 @@ apps/vqe_molecule
 
 .devcontainer
 
-checkpoints/*.npy
+checkpoints/
+results/
+scaling_logs/
 
 CLAUDE.md
 MEMORY.md
+
+thesis_new_sections.tex

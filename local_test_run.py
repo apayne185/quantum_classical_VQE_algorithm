@@ -2,22 +2,25 @@ import sys
 import os
 import numpy as np
 import time
+from datetime import datetime
 
 
 # so python can find C++ module
 sys.path.insert(0, os.path.abspath("./build"))
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)  
+sys.path.append(current_dir)
 
 try:
     from src.api.interface import HPCHybridStack
     from src.api.problems import ChemistryProblem, FinanceProblem, ANSATZ_TIERS
     from src.api.molecule_resolver import (MoleculeResolver, MoleculeTooBigError, ResolutionError)
+    from src.api.results import save_results
+    from src.api.log import init_log, log, close_log
     import hpc_core
     print("hpc_core and interface imported.")
 except ImportError as e:
     print(f"failed to import hpc_core module: {e}")
-    sys.exit(1)  
+    sys.exit(1)
 
 
 
@@ -60,10 +63,11 @@ def run_chemistry_local(stack: HPCHybridStack, molecule_input: str, force_tier: 
     t0 = time.perf_counter()
     # Scale iterations by parameter count — more params need more SPSA steps
     max_iters = max(200, problem.num_params * 8)
+    ckpt_dir = os.path.join("checkpoints", problem.name)
     theta, history = stack.vqe_optimize(problem,
                                         max_iterations=max_iters,
                                         tolerance=1.6e-3,
-                                        checkpoint_dir="checkpoints",
+                                        checkpoint_dir=ckpt_dir,
                                         seed=42)
     
     t_total = time.perf_counter() - t0
@@ -110,11 +114,11 @@ def run_chemistry_local(stack: HPCHybridStack, molecule_input: str, force_tier: 
 
 
 
-def run_finance_local(stack:HPCHybridStack): 
+def run_finance_local(stack:HPCHybridStack):
     if stack.rank == 0: print("\n\n\n--- RUNNING FINANCE (4-Assest Portfolio QUBO) TASK ---")
     np.random.seed(42)
     n_assets = 4
-    #  synthetic positive definite covariance matrix   
+    #  synthetic positive definite covariance matrix
     A = np.random.rand(n_assets, n_assets)
     cov = A @ A.T / n_assets
     mu  = np.random.uniform(0.02, 0.15, n_assets)
@@ -124,38 +128,57 @@ def run_finance_local(stack:HPCHybridStack):
     _, history = stack.vqe_optimize(problem,
                                         max_iterations=30,
                                         tolerance=1e-3,
-                                        checkpoint_dir="checkpoints",
+                                        checkpoint_dir="checkpoints/finance",
     )
     t_total = time.perf_counter() - t0
 
+    result = None
     if stack.rank == 0 and history:
         print(f"[Finance] Final objective : {history[-1]:+.6f} ")
         print(f"[Finance] Iterations run : {len(history)}")
-        print(f"[Finance] Wall time : {t_total:.2f} s")    
+        print(f"[Finance] Wall time : {t_total:.2f} s")
+        result = {
+            "final_objective": history[-1],
+            "iterations": len(history),
+            "wall_time": t_total,
+            "n_assets": n_assets,
+            "history": history,
+        }
+    return result
 
 
-  
-def run_scaling_local(stack: HPCHybridStack):   
+
+def run_scaling_local(stack: HPCHybridStack):
     if stack.rank == 0: print(f"\n RUNNING SCALING (with P={stack.size} ranks) ")
 
-    # problem = ChemistryProblem.from_name("LiH")
     problem = make_problem("LiH")
     if problem is None:
-        if stack.rank == 0: print("[Scaling] LiH  resolution failed, skipping.")  
-        return
+        if stack.rank == 0: print("[Scaling] LiH  resolution failed, skipping.")
+        return None
     t0 = time.perf_counter()
-    
-    _, history = stack.vqe_optimize(problem, max_iterations=10)
-    t_total= time.perf_counter() - t0    
 
+    _, history = stack.vqe_optimize(problem, max_iterations=10,
+                                    checkpoint_dir="checkpoints/scaling")
+    t_total= time.perf_counter() - t0
+
+    result = None
     if stack.rank == 0 and history:
-        result_line = (f"P={stack.size} T_total={t_total:.4f} final_E={history[-1]:+.6f} tier={getattr(problem, 'ansatz_tier', 'N/A')} qubits={problem.num_qubits} iters={len(history)}")   
-        print(f"[Scaling] {result_line}")   
+        result_line = (f"P={stack.size} T_total={t_total:.4f} final_E={history[-1]:+.6f} tier={getattr(problem, 'ansatz_tier', 'N/A')} qubits={problem.num_qubits} iters={len(history)}")
+        print(f"[Scaling] {result_line}")
 
-        import os
-        os.makedirs("scaling_logs",exist_ok=True)   
-        with open(f"scaling_logs/scaling_P{stack.size}.txt", "w") as f:    
-            f.write(result_line + "\n")    
+        os.makedirs("scaling_logs",exist_ok=True)
+        with open(f"scaling_logs/scaling_P{stack.size}.txt", "w") as f:
+            f.write(result_line + "\n")
+
+        result = {
+            "ranks": stack.size,
+            "wall_time": t_total,
+            "final_energy": history[-1],
+            "tier": getattr(problem, 'ansatz_tier', 'N/A'),
+            "qubits": problem.num_qubits,
+            "iterations": len(history),
+        }
+    return result
 
 
 
@@ -163,17 +186,21 @@ def run_scaling_local(stack: HPCHybridStack):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        MOLECULES = sys.argv[1:]   
+        MOLECULES = sys.argv[1:]
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    os.makedirs("results", exist_ok=True)
+    init_log(f"results/run_{ts}.log")
 
     print(f"[Config] GPU={'requested' if USE_GPU else 'CPU mode'}")
-    print(f"[Config] Molecules: {MOLECULES}") 
+    print(f"[Config] Molecules: {MOLECULES}")
     print(f"[Config] Resolver: max_qubits=20, cache=.pubchem_cache/")
 
 
-    with HPCHybridStack(use_gpu=USE_GPU, backend=BACKEND) as stack:   
+    with HPCHybridStack(use_gpu=USE_GPU, backend=BACKEND) as stack:
         results = {}
         for mol in MOLECULES:
-            history, problem, t_total = run_chemistry_local(stack, mol) 
+            history, problem, t_total = run_chemistry_local(stack, mol)
 
             if stack.rank == 0 and history:
                 if problem is not None:
@@ -192,11 +219,11 @@ if __name__ == "__main__":
                         "fci": fci,
                         "iters": len(history),
                         "wall_time": t_total,
+                        "history": history,
                     }
 
-        # run_chemistry_local(stack)   
-        run_finance_local(stack)   
-        run_scaling_local(stack)   
+        finance_result = run_finance_local(stack)
+        scaling_result = run_scaling_local(stack)
 
         if stack.rank == 0:
             print("\n\n\n---ALL LOCAL BENCHMARKS COMPLETE ----")
@@ -215,6 +242,16 @@ if __name__ == "__main__":
                 t_per_iter = t_wall / iters if iters > 0 else 0.0
 
                 print(f"{mol:<10} {energy:<16.6f} {err_str:<14} {tier_label:<20} {data['score']:<6.3f} {iters:<8} {t_wall:<10.2f} {t_per_iter:<10.4f}")
+
+            save_results({
+                "mpi_ranks": stack.size,
+                "gpu": stack.use_gpu,
+                "molecules": results,
+                "finance": finance_result,
+                "scaling": scaling_result,
+            }, backend=BACKEND)
+
+    close_log()
 
 
 
