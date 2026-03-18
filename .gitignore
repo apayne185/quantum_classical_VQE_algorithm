@@ -29,4 +29,5 @@ apps/vqe_molecule
 
 checkpoints/*.npy
 
-
+CLAUDE.md
+MEMORY.md
