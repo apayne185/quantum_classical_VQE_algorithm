@@ -222,7 +222,8 @@ if __name__ == "__main__":
                         "history": history,
                     }
 
-        finance_result = run_finance_local(stack)
+        # Finance problem kept in codebase but excluded from chemistry-focused benchmarks
+        # finance_result = run_finance_local(stack)
         scaling_result = run_scaling_local(stack)
 
         if stack.rank == 0:
@@ -247,7 +248,6 @@ if __name__ == "__main__":
                 "mpi_ranks": stack.size,
                 "gpu": stack.use_gpu,
                 "molecules": results,
-                "finance": finance_result,
                 "scaling": scaling_result,
             }, backend=BACKEND)
 
