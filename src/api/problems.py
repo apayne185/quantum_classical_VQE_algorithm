@@ -60,8 +60,8 @@ def estimate_correlation_strength(pauli_terms: list) -> dict:
         tier = "hwe_adaptive"
         reason = (f"score={score:.3f} in [0.25, 0.55). Moderate correlation (off_diag_ratio={off_diag_ratio:.3f}, zz_frac={zz_fraction:.3f}). Adaptive HWE with full entanglement recommended.")
     else:
-        tier = "hwe_adaptive"
-        reason = (f"score={score:.3f} >= 0.55. Strong correlation detected (off_diag_ratio={off_diag_ratio:.3f}, zz_frac={zz_fraction:.3f}). Adaptive HWE with full entanglement recommended.")
+        tier = "uccsd"
+        reason = (f"score={score:.3f} >= 0.55. Strong correlation detected (off_diag_ratio={off_diag_ratio:.3f}, zz_frac={zz_fraction:.3f}). UCCSD particle-conserving ansatz recommended.")
  
     return {
         "off_diag_ratio":off_diag_ratio,

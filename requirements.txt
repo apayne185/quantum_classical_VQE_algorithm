@@ -1,0 +1,19 @@
+# Core quantum
+qiskit>=1.0,<2.0
+qiskit-nature>=0.7
+qiskit-ibm-runtime>=0.20
+pyscf>=2.4
+
+# HPC / parallel
+mpi4py>=3.1
+numpy>=1.24
+scipy>=1.10
+
+# Optional: GPU acceleration (requires CUDA 12.2)
+# cupy-cuda12x>=12.0
+
+# Optional: molecule resolution via SMILES
+# rdkit
+
+# Optional: results analysis plots
+# matplotlib>=3.7

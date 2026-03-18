@@ -2,10 +2,12 @@
 import hpc_core  #compiled C++ module
 from src.api.problems import QuantumProblem
 
+import glob as _glob
 import os
 import sys
+import time as _time
 import numpy as np
-from qiskit.quantum_info import SparsePauliOp, Statevector 
+from qiskit.quantum_info import SparsePauliOp, Statevector
 
 import mpi4py
 mpi4py.rc.initialize = False
@@ -20,6 +22,10 @@ class HPCHybridStack:
 
         self.use_gpu = use_gpu
         self.backend = backend
+        self._ibm_session = None
+        self._ibm_estimator = None
+        self._ibm_transpiled = None
+        self._ibm_observable = None
 
         #Init MPI environemnt using C++ bridge
         self.provided_thread_level = hpc_core.init_mpi()
@@ -123,8 +129,11 @@ class HPCHybridStack:
             if self.backend == "simulator":
                 # Exact statevector simulation, distributed across MPI ranks
                 e_plus, e_minus, masking_metric, used_path = self._evaluate_distributed_statevector(problem, combined_params)
+            elif self.backend == "ibm_cloud":
+                # Python-side IBM QPU path via EstimatorV2 (rank 0 only, broadcast results)
+                e_plus, e_minus, masking_metric, used_path = self._evaluate_ibm_estimator(problem, combined_params)
             else:
-                # C++ dispatcher path for IBM cloud QPU
+                # C++ dispatcher path (fallback)
                 result = self._evaluate(problem, combined_params, num_qubits)
                 e_plus = result.energy
                 e_minus = result.e_minus
@@ -176,6 +185,10 @@ class HPCHybridStack:
                     ckpt_path = os.path.join(checkpoint_dir, f"checkpoint_iter_{k:04d}.npy")
                     np.save(ckpt_path, theta)
                     print(f"[RESILIENCE] Iteration {k}: Global theta state checkpointed at path {ckpt_path}. ")
+                    # Rotate: keep only last 5 checkpoints in this directory
+                    existing = sorted(_glob.glob(os.path.join(checkpoint_dir, "checkpoint_iter_*.npy")))
+                    for old in existing[:-5]:
+                        os.remove(old)
 
             comm.Bcast(theta, root=0)
             comm.Bcast(stop_signal, root=0)
@@ -203,6 +216,15 @@ class HPCHybridStack:
         self.finalize()
 
     def finalize(self):
+        if self._ibm_session is not None:
+            try:
+                self._ibm_session.close()
+                if self.rank == 0:
+                    print("[IBM] Session closed.")
+            except Exception:
+                pass
+            self._ibm_session = None
+            self._ibm_estimator = None
         hpc_core.finalize_mpi()     # clean MPI shutdown
 
 
@@ -296,3 +318,98 @@ class HPCHybridStack:
         pauli_op = SparsePauliOp.from_list(problem.pauli_terms)
         energy = sv.expectation_value(pauli_op).real
         return float(energy)
+
+
+    # ── IBM QPU via Python EstimatorV2 ────────────────────────────
+
+    def _init_ibm_session(self, problem):
+        """Lazy-init: connect to IBM Quantum, transpile ansatz once, open Session + EstimatorV2."""
+        from qiskit_ibm_runtime import QiskitRuntimeService, Session, EstimatorV2
+        from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+
+        token = os.environ.get("IBM_QUANTUM_TOKEN", "")
+        instance = os.environ.get("IBM_QUANTUM_INSTANCE", "")
+        backend_name = os.environ.get("IBM_QUANTUM_BACKEND", "ibm_brisbane")
+        region = os.environ.get("IBM_QUANTUM_REGION", "us-east")
+
+        print(f"[IBM] Connecting to {backend_name} ({region}) ...")
+        # v0.45+ requires save_account before connecting
+        QiskitRuntimeService.save_account(token=token, overwrite=True, set_as_default=True)
+        service = QiskitRuntimeService()
+        ibm_backend = service.backend(backend_name)
+
+        # Transpile ansatz once for this backend
+        pm = generate_preset_pass_manager(backend=ibm_backend, optimization_level=1)
+        ansatz = problem.ansatz_circuit
+        self._ibm_transpiled = pm.run(ansatz)
+        print(f"[IBM] Ansatz transpiled: {self._ibm_transpiled.num_qubits} physical qubits, depth {self._ibm_transpiled.depth()}")
+
+        # Build observable in transpiled qubit space
+        pauli_op = SparsePauliOp.from_list(problem.pauli_terms)
+        self._ibm_observable = pauli_op.apply_layout(self._ibm_transpiled.layout)
+
+        # Open session (keeps QPU allocated across iterations)
+        print(f"[IBM] Opening session on {backend_name}...")
+        try:
+            self._ibm_session = Session(backend=ibm_backend)
+            self._ibm_estimator = EstimatorV2(session=self._ibm_session)
+            self._ibm_estimator.options.default_shots = 4096
+            print(f"[IBM] Session opened, EstimatorV2 ready (4096 shots)")
+        except Exception as e:
+            # Fallback: use EstimatorV2 without session (serverless mode)
+            print(f"[IBM] Session failed ({e}), using sessionless EstimatorV2...")
+            self._ibm_session = None
+            self._ibm_estimator = EstimatorV2(backend=ibm_backend)
+            self._ibm_estimator.options.default_shots = 4096
+            print(f"[IBM] Sessionless EstimatorV2 ready (4096 shots)")
+
+
+    def _evaluate_ibm_estimator(self, problem, combined_params):
+        """Submit 2 PUBs (theta_plus, theta_minus) to IBM EstimatorV2. Rank 0 only; results broadcast via MPI."""
+        comm = self.comm
+        num_params = len(combined_params) // 2
+        result_buf = np.zeros(4, dtype=np.float64)  # [e_plus, e_minus, M, 0]
+
+        if self.rank == 0:
+            # Lazy-init IBM session on first call
+            if self._ibm_estimator is None:
+                self._init_ibm_session(problem)
+
+            theta_plus = combined_params[:num_params]
+            theta_minus = combined_params[num_params:]
+
+            isa_circuit = self._ibm_transpiled
+            observable = self._ibm_observable
+            # Map parameter values by name — same ordering used in statevector path
+            sorted_params = sorted(isa_circuit.parameters, key=lambda x: x.name)
+            binds_plus = {p: float(v) for p, v in zip(sorted_params, theta_plus)}
+            binds_minus = {p: float(v) for p, v in zip(sorted_params, theta_minus)}
+
+            # Submit 2 PUBs in one job (one queue wait)
+            t0 = _time.perf_counter()
+            pubs = [
+                (isa_circuit, observable, binds_plus),
+                (isa_circuit, observable, binds_minus),
+            ]
+            print(f"[IBM] Submitting job (2 PUBs, 4096 shots)...")
+            job = self._ibm_estimator.run(pubs)
+            print(f"[IBM] Job submitted: {job.job_id()}, waiting for result...")
+            job_result = job.result()
+            t_qpu = _time.perf_counter() - t0
+            print(f"[IBM] Job completed in {t_qpu:.1f}s")
+
+            e_plus = float(job_result[0].data.evs)
+            e_minus = float(job_result[1].data.evs)
+            masking_metric = t_qpu  # for IBM path, report raw QPU time
+
+            result_buf[0] = e_plus
+            result_buf[1] = e_minus
+            result_buf[2] = masking_metric
+
+        comm.Bcast(result_buf, root=0)
+        e_plus = result_buf[0]
+        e_minus = result_buf[1]
+        masking_metric = result_buf[2]
+        used_path = "IBM EstimatorV2 (Python)"
+
+        return e_plus, e_minus, masking_metric, used_path

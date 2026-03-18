@@ -37,7 +37,7 @@ trial:
  
 
 
-# FULL BENCHMARK - simualtor only 
+# FULL BENCHMARK - simualtor only
 run:
 	@echo "[Make] Running full benchmark (simulator, $(NP) ranks) ..."
 	docker run --rm \
@@ -45,6 +45,7 @@ run:
 	  -e BACKEND=simulator \
 	  -e USE_GPU=$(GPU_AVAILABLE) \
 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
+	  -v "$$(pwd)/results:/workspace/results" \
 	  $(IMAGE_NAME) \
 	  mpirun --allow-run-as-root -np $(NP) python3 local_test_run.py
 
@@ -65,6 +66,7 @@ run-ibm:
 	  -e IBM_QUANTUM_BACKEND="$(IBM_QUANTUM_BACKEND)" \
 	  -e IBM_QUANTUM_REGION="$(IBM_QUANTUM_REGION)" \
 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
+	  -v "$$(pwd)/results:/workspace/results" \
 	  $(IMAGE_NAME) \
 	  mpirun --allow-run-as-root -np $(NP) python3 ibm_test_run.py
 
