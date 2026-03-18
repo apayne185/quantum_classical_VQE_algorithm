@@ -69,9 +69,9 @@ class ResolutionResult:
     def _recommended_reps(self) -> int:
         q = self.estimated_qubits
         if q <= 4: return 1
-        if q <= 12:return 1
-        if q <= 16:return 2
-        return 3  
+        if q <= 12: return 2
+        if q <= 16: return 2
+        return 3
     
 
 

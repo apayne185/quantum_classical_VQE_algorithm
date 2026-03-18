@@ -16,7 +16,7 @@ else
 endif     
 
 
-.PHONY: build trial run run-ibm scaling clean shell
+.PHONY: build trial run run-ibm scaling baseline clean shell
 
 build:
 	@echo "[Make] Building Docker image '$(IMAGE_NAME)' ..."
@@ -87,6 +87,16 @@ scaling:
 	done
 	@echo "[Make] Scaling logs saved to scaling_logs/. Check T_total and M-metric."
 
+
+
+# SERIAL BASELINE - single-core Qiskit VQE for comparison (no MPI)
+baseline:
+	@echo "[Make] Running serial Qiskit baseline (no MPI, no GPU) ..."
+	docker run --rm \
+	  -e USE_GPU=no \
+	  $(IMAGE_NAME) \
+	  python3 serial_baseline.py
+	@echo "[Make] Serial baseline complete."
 
 
 # RUN ALL TESTS- resolver + layer diagnostic

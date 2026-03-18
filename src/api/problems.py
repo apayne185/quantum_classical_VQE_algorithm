@@ -1,7 +1,7 @@
 # standardizes all inputs to handle quantum chem, finance, optimization, etc
 from abc import ABC, abstractmethod
-import numpy as np 
-from qiskit import qasm3 
+import numpy as np
+from qiskit import qasm3
 from qiskit_nature.second_q.drivers import PySCFDriver
 from qiskit_nature.second_q.mappers import JordanWignerMapper
 from qiskit_nature.units import DistanceUnit
@@ -12,8 +12,8 @@ from qiskit.circuit.library import EfficientSU2, TwoLocal
 ANSATZ_TIERS = {
     "hwe":{"label": "HWE (shallow)", "color": "green"},
     "hwe_adaptive": {"label": "HWE (adaptive)", "color": "amber"},
-    "ucc_inspired": {"label": "UCC-inspired (deep)", "color": "red"},
-} 
+    "uccsd": {"label": "UCCSD (particle-conserving)", "color": "blue"},
+}
 
  
 def estimate_correlation_strength(pauli_terms: list) -> dict:    
@@ -55,13 +55,13 @@ def estimate_correlation_strength(pauli_terms: list) -> dict:
  
     if score < 0.25:
         tier = "hwe"
-        reason = (f"score={score:.3f} < 0.25. Off-diagonal coupling is weak, (ratio={off_diag_ratio:.3f}). Single-reference character, HWE ansatz is appropriate.")
+        reason = (f"score={score:.3f} < 0.25. Off-diagonal coupling is weak (ratio={off_diag_ratio:.3f}). Single-reference character, HWE ansatz is appropriate.")
     elif score < 0.55:
-        tier= "hwe_adaptive"
-        reason= (f"score={score:.3f} in [0.25, 0.55). Moderate correlation detected (off_diag_ratio={off_diag_ratio:.3f}, zz_frac={zz_fraction:.3f}). Adaptive HWE with full entanglement recommended.")
+        tier = "hwe_adaptive"
+        reason = (f"score={score:.3f} in [0.25, 0.55). Moderate correlation (off_diag_ratio={off_diag_ratio:.3f}, zz_frac={zz_fraction:.3f}). Adaptive HWE with full entanglement recommended.")
     else:
-        tier = "ucc_inspired"
-        reason = (f"score={score:.3f} >= 0.55. Strong multireference character detected (off_diag_ratio= {off_diag_ratio:.3f}, spread={spectral_spread:.2f}).   UCC-inspired ansatz recommended for better expressibility.")
+        tier = "hwe_adaptive"
+        reason = (f"score={score:.3f} >= 0.55. Strong correlation detected (off_diag_ratio={off_diag_ratio:.3f}, zz_frac={zz_fraction:.3f}). Adaptive HWE with full entanglement recommended.")
  
     return {
         "off_diag_ratio":off_diag_ratio,
@@ -73,23 +73,72 @@ def estimate_correlation_strength(pauli_terms: list) -> dict:
     }
  
  
-def build_ansatz(num_qubits: int, tier: str, reps: int):
+def build_ansatz(num_qubits: int, tier: str, reps: int, mol_problem=None, mapper=None):
+    """Build ansatz circuit for the given tier.
+
+    For 'uccsd' tier, mol_problem and mapper are required to construct the
+    particle-number-conserving UCCSD ansatz with HartreeFock initial state.
+    """
     if tier == "hwe":
         ansatz = EfficientSU2(
             num_qubits,
             reps=reps,
             entanglement="linear",
         ).decompose()
- 
+
     elif tier == "hwe_adaptive":
         adaptive_reps = min(reps + 1, 3)
-        ansatz= EfficientSU2(
+        ansatz = EfficientSU2(
             num_qubits,
             reps=adaptive_reps,
             entanglement="full",
-        ).decompose()  
- 
-    else:  
+        ).decompose()
+
+    elif tier == "uccsd" and mol_problem is not None and mapper is not None:
+        from qiskit_nature.second_q.circuit.library import UCCSD, HartreeFock
+
+        num_particles = mol_problem.num_particles
+        num_spatial_orbitals = mol_problem.num_spatial_orbitals
+
+        # UCCSD circuit depth grows rapidly — only practical for smaller systems
+        if num_qubits <= 12:
+            try:
+                hf_init = HartreeFock(
+                    num_spatial_orbitals=num_spatial_orbitals,
+                    num_particles=num_particles,
+                    qubit_mapper=mapper,
+                )
+
+                ansatz = UCCSD(
+                    num_spatial_orbitals=num_spatial_orbitals,
+                    num_particles=num_particles,
+                    qubit_mapper=mapper,
+                    initial_state=hf_init,
+                    reps=min(reps, 1),
+                )
+                # DO NOT decompose — decompose() breaks UCC parameter ties
+                # and destroys particle-number conservation
+                print(f"[Ansatz] UCCSD built: {ansatz.num_parameters} UCC amplitudes, {num_particles} particles, {num_spatial_orbitals} spatial orbitals")
+            except Exception as e:
+                print(f"[Ansatz] UCCSD construction failed: {e} — falling back to HWE-adaptive")
+                adaptive_reps = min(reps + 1, 3)
+                ansatz = EfficientSU2(
+                    num_qubits,
+                    reps=adaptive_reps,
+                    entanglement="full",
+                ).decompose()
+        else:
+            # Fall back to HWE-adaptive for larger molecules (>12 qubits)
+            print(f"[Ansatz] UCCSD impractical for {num_qubits} qubits — using HWE-adaptive instead")
+            adaptive_reps = min(reps + 1, 3)
+            ansatz = EfficientSU2(
+                num_qubits,
+                reps=adaptive_reps,
+                entanglement="full",
+            ).decompose()
+
+    else:
+        # Fallback: TwoLocal for non-chemistry or missing mol_problem
         ucc_reps = min(reps, 2)
         ansatz = TwoLocal(
             num_qubits,
@@ -99,7 +148,7 @@ def build_ansatz(num_qubits: int, tier: str, reps: int):
             reps=ucc_reps,
             skip_final_rotation_layer=False,
         ).decompose()
- 
+
     return ansatz, ansatz.num_parameters
 
 
@@ -191,7 +240,7 @@ class ChemistryProblem(QuantumProblem):
 
         if key not in MOLECULE_REGISTRY:
             supported = list(MOLECULE_REGISTRY.keys())
-            raise ValueError("Unknown molecule '{key}', not within known MOLECULE_REGISTRY ")
+            raise ValueError(f"Unknown molecule '{key}', not within known MOLECULE_REGISTRY. Supported: {supported}")
 
         entry = MOLECULE_REGISTRY[key]
         problem = cls(atom_coordinates = entry["geometry"], reps=entry["reps"], name=key,force_tier=force_tier,)
@@ -201,47 +250,61 @@ class ChemistryProblem(QuantumProblem):
 
 
     def prepare(self):
-        if self._prepared:                 
-            return 
-        
-        # molecular physics 
-        driver = PySCFDriver(
-            atom=self.coords,
-            basis="sto-3g",
-            unit=DistanceUnit.ANGSTROM,
-        ) 
+        if self._prepared:
+            return
 
-        problem = driver.run()
-        hamiltonian = problem.hamiltonian.second_q_op()
+        # molecular physics
+        driver = PySCFDriver(atom=self.coords, basis="sto-3g", unit=DistanceUnit.ANGSTROM)
+        mol_problem = driver.run()
+
+        hamiltonian = mol_problem.hamiltonian.second_q_op()
         mapper = JordanWignerMapper()
         qubit_op = mapper.map(hamiltonian)
 
-
-        raw = qubit_op.to_list()                                 #[("IIZI", (- 0.81+0j)), ..]     
-        self.pauli_terms =[(op, float(coeff.real)) for op, coeff in raw]
+        raw = qubit_op.to_list()                                 #[("IIZI", (- 0.81+0j)), ..]
+        self.pauli_terms = [(op, float(coeff.real)) for op, coeff in raw]
 
         self.num_qubits = qubit_op.num_qubits
-        self.diagnostics = estimate_correlation_strength(self.pauli_terms)  
+        self.diagnostics = estimate_correlation_strength(self.pauli_terms)
 
+        # Compute exact FCI energy directly from PySCF for ground truth validation
+        try:
+            from pyscf import gto, fci as pyscf_fci
+            pyscf_mol = gto.M(atom=self.coords.replace(";", "\n"), basis="sto-3g", unit="Angstrom")
+            pyscf_mol.build()
+            mf = pyscf_mol.RHF().run(verbose=0)
+            fci_solver = pyscf_fci.FCI(mf)
+            fci_e, _ = fci_solver.kernel()
+            self.fci_energy = float(fci_e)
+        except Exception as e:
+            print(f"[Chemistry:{self.name}] FCI computation failed: {e}, using registry value")
 
-        if self.force_tier is not None:    
+        if self.force_tier is not None:
             self.ansatz_tier = self.force_tier
-            tier_source= "forced"
-        else:    
+            tier_source = "forced"
+        else:
             self.ansatz_tier = self.diagnostics["recommended_tier"]
-            tier_source= "auto"
+            tier_source = "auto"
 
-        ansatz, n_params = build_ansatz(self.num_qubits, self.ansatz_tier, self.reps) 
-        self.num_params = n_params  
-        self.circuit_qasm = qasm3.dumps(ansatz)
-        fci_str = (f"FCI reference: {self.fci_energy:.4f} Ha" if self.fci_energy is not None else "") 
-        tier_label = ANSATZ_TIERS[self.ansatz_tier]["label"]   
+        # Pass mol_problem and mapper for UCCSD ansatz construction
+        ansatz, n_params = build_ansatz(
+            self.num_qubits, self.ansatz_tier, self.reps,
+            mol_problem=mol_problem, mapper=mapper)
+        self.num_params = n_params
+        self.ansatz_circuit = ansatz
+        # QASM export may fail for non-decomposed UCCSD — only needed for C++ dispatcher
+        try:
+            self.circuit_qasm = qasm3.dumps(ansatz)
+        except Exception:
+            self.circuit_qasm = qasm3.dumps(ansatz.decompose())
+        fci_str = (f"FCI reference: {self.fci_energy:.4f} Ha" if self.fci_energy is not None else "")
+        tier_label = ANSATZ_TIERS.get(self.ansatz_tier, {}).get("label", self.ansatz_tier)
 
-        print(f"[Chemistry:{self.name}] {len(self.pauli_terms)} Pauli terms, {self.num_qubits} qubits, {self.num_params} params,  reps={self.reps}.{fci_str} ")  
+        print(f"[Chemistry:{self.name}] {len(self.pauli_terms)} Pauli terms, {self.num_qubits} qubits, {self.num_params} params, reps={self.reps}. {fci_str} ")
         print(f"[Ansatz] {tier_label} ({tier_source}) | corr_score={self.diagnostics['correlation_score']:.3f} | off_diag_ratio={self.diagnostics['off_diag_ratio']:.3f}")
-        print(f"[Reason] {self.diagnostics['reasoning']}")   
+        print(f"[Reason] {self.diagnostics['reasoning']}")
 
-        self._prepared = True 
+        self._prepared = True
 
 
 
@@ -252,15 +315,15 @@ class ChemistryProblem(QuantumProblem):
             return abs(computed_energy-self.fci_energy)  
     
 
-    def get_ansatz_summary(self) -> dict:  
-        return { 
-            "molecule":self.name,  
-            "tier":self.ansatz_tier, 
-            "tier_label":ANSATZ_TIERS[self.ansatz_tier]["label"],  
-            "num_qubits": self.num_qubits,     
+    def get_ansatz_summary(self) -> dict:
+        return {
+            "molecule":self.name,
+            "tier":self.ansatz_tier,
+            "tier_label":ANSATZ_TIERS.get(self.ansatz_tier, {}).get("label", self.ansatz_tier),
+            "num_qubits": self.num_qubits,
             "num_params": self.num_params,
             "corr_score": self.diagnostics.get("correlation_score", None),
-            "off_diag_ratio": self.diagnostics.get("off_diag_ratio",None),
+            "off_diag_ratio": self.diagnostics.get("off_diag_ratio", None),
             "fci_energy":self.fci_energy,
         }
 
@@ -311,6 +374,7 @@ class FinanceProblem(QuantumProblem):
         self.pauli_terms = pauli_terms
         ansatz = EfficientSU2(n, reps=1).decompose()
         self.circuit_qasm = qasm3.dumps(ansatz)
+        self.ansatz_circuit = ansatz
         self.num_params = ansatz.num_parameters
 
         print(f"[Finance] Prepared {len(self.pauli_terms)} Pauli terms for {n}-asset portfolio ({self.num_qubits} qubits,  {self.num_params} params)  ")  

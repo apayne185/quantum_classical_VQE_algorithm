@@ -62,17 +62,16 @@ void set_cuda_device(int rank) {
 
 
 // links Python call to C++ Dispatcher
-StackResult execute(const HybridWorkload& wl) {
+StackResult execute(HybridWorkload& wl) {
     int rank = get_rank();
-    // int size = get_size();
-  
+
     if (wl.circuit_qasm.empty()) {
         throw std::runtime_error("Empty QASM string received on Rank " + std::to_string(rank));
     }
 
     try{
-        return route_workload(const_cast<HybridWorkload&>(wl));
-    } catch(const std::exception& e){ 
+        return route_workload(wl);
+    } catch(const std::exception& e){
         PyErr_SetString(PyExc_RuntimeError, e.what());
         throw py::error_already_set();
     }
@@ -89,7 +88,7 @@ PYBIND11_MODULE(hpc_core, m) {
     m.def("get_size", &get_size, "Return number of MPI processes");
     m.def("set_cuda_device", &set_cuda_device, "Assigns CUDA Device to MPI rank (round robin)");
     m.def("execute_barrier", &execute_barrier, "MPI Barrier for synchronize all rank"); 
-    m.def("execute", &execute, "Dispatch HybridWorkload through stack"); 
+    m.def("execute", &execute, py::arg("workload"), "Dispatch HybridWorkload through stack");
     m.def("route_workload", [](HybridWorkload& wl) { return route_workload(wl); }, py::arg("workload"), "Low level dispatcher"); 
 
 

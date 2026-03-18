@@ -93,10 +93,13 @@ extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
     // COPY BACK RESULT FP64
     err = cudaMemcpy(&h_result, d_result, sizeof(double), cudaMemcpyDeviceToHost);
     if (err != cudaSuccess) {
-        fprintf(stderr, "[CUDA] D2H memcpy failed: %s\n",cudaGetErrorString(err));
+        fprintf(stderr, "[CUDA] D2H memcpy failed: %s\n", cudaGetErrorString(err));
+        cudaFree(d_params);
+        cudaFree(d_result);
+        return 0.0;
     }
     cudaFree(d_params);
     cudaFree(d_result);
 
-    return h_result; 
+    return h_result;
 }

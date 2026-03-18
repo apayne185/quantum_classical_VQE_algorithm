@@ -55,27 +55,15 @@ static double pauli_expectation(const std::string& op, const std::vector<double>
 
 
 
-// LOCAL HAMILTONIAN EXPECTATION VALUE: sums coeff * P over ranks partiton of pauli terms  
-static double compute_hamiltonian_expectation(const std::vector<PauliTerm>& pauli_terms,const std::vector<double>& theta, int extra_passes=50) {
-    double energy = 0.0;   
-    for (const auto& term : pauli_terms) {       //primary expect value sum
-        energy+= term.coeff * pauli_expectation(term.op,theta);
+// LOCAL HAMILTONIAN EXPECTATION VALUE: sums coeff * P over ranks partition of pauli terms
+// NOTE: uses mean-field approximation (independent qubits). Only valid for product states.
+// For entangled ansatzes (HWE/UCC), use the Python statevector path instead.
+static double compute_hamiltonian_expectation(const std::vector<PauliTerm>& pauli_terms, const std::vector<double>& theta) {
+    double energy = 0.0;
+    for (const auto& term : pauli_terms) {
+        energy += term.coeff * pauli_expectation(term.op, theta);
     }
-
-    //SIMULATE LES (local error surpression kernel)
-    volatile double les_sink = 0.0;
-    for (int p=0; p < extra_passes; ++p) {   
-        double perturb= 1e-4 * (p + 1);   
-        for (const auto& term : pauli_terms) {
-            // perturbed parameter vector  (first order noise corection)  
-            std::vector<double> theta_p = theta;
-            for (auto& t: theta_p) t += perturb;
-            les_sink += term.coeff * pauli_expectation(term.op,theta_p);
-        }
-        // correction += (pass_val-energy)* perturb;    
-    }   
-    // return energy + correction * 1e-6;   
-    return energy;   
+    return energy;
 }
 
 
@@ -182,10 +170,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
 
 
-    // ACCELERATION LAYER: Pauli expectation value eval  
-    const int base_passes  = 50;           //increase for more T_accel weght 
-    const int passes_local= std::max(1, base_passes);
-
+    // ACCELERATION LAYER: Pauli expectation value eval
     double t_accel_start = MPI_Wtime();
     double e_plus_local = 0.0;
     double e_minus_local = 0.0; 
@@ -195,15 +180,21 @@ StackResult route_workload(HybridWorkload& wl) {
     const bool use_cuda = wl.requires_gpu && (deviceCount > 0);
 
     if (use_cuda) {
-        e_plus_local = compute_expectation_cuda(theta_plus,  wl.pauli_terms);
-        e_minus_local = compute_expectation_cuda(theta_minus, wl.pauli_terms); 
+        // CUDA kernel uses mean-field approximation — not physically correct for entangled ansatzes.
+        // For accurate results, use the Python statevector path (simulator mode).
+        if (rank == 0) {
+            fprintf(stderr, "[Dispatcher] WARNING: CUDA path uses mean-field approximation. "
+                    "Results will be approximate. Use simulator backend for exact statevector.\n");
+        }
+        e_plus_local = compute_expectation_cuda(theta_plus, wl.pauli_terms);
+        e_minus_local = compute_expectation_cuda(theta_minus, wl.pauli_terms);
 
-        res.used_path= (size > 1) ? "MPI + CUDA Distributed" : "Single Rank CUDA";
-    } else {       
-        e_plus_local= compute_hamiltonian_expectation(wl.pauli_terms, theta_plus,  passes_local);
-        e_minus_local = compute_hamiltonian_expectation(wl.pauli_terms, theta_minus, passes_local);
+        res.used_path = (size > 1) ? "MPI + CUDA (mean-field approx)" : "Single Rank CUDA (mean-field approx)";
+    } else {
+        e_plus_local = compute_hamiltonian_expectation(wl.pauli_terms, theta_plus);
+        e_minus_local = compute_hamiltonian_expectation(wl.pauli_terms, theta_minus);
 
-        res.used_path= (size > 1) ? "MPI + CPU Fallback" : "Single Rank CPU";
+        res.used_path = (size > 1) ? "MPI + CPU (mean-field approx)" : "Single Rank CPU (mean-field approx)";
     }
     const double t_accel_end = MPI_Wtime();
 

@@ -43,24 +43,30 @@ def check_credentials():
 
 
 
-def run_chemistry_ibm(stack: HPCHybridStack): 
-    if stack.rank == 0: print("\n--- RUNNING CHEMISTRY TASK (LiH Ground State) ---")
+def run_chemistry_ibm(stack: HPCHybridStack):
+    if stack.rank == 0: print("\n--- RUNNING IBM QPU CHEMISTRY TASK (H2 Ground State) ---")
 
-    problem = ChemistryProblem("Li 0 0 0; H 0 0 1.59") #liH
+    problem = ChemistryProblem.from_name("H2")
     t0 = time.perf_counter()
-    theta, history = stack.vqe_optimize(problem, 
-                                        max_iterations=20,        
-                                        tolerance=1.6e-3, 
-                                        checkpoint_dir="checkpoints") 
-    
+    theta, history = stack.vqe_optimize(problem,
+                                        max_iterations=10,
+                                        tolerance=1.6e-3,
+                                        checkpoint_dir="checkpoints",
+                                        seed=42)
+
     t_total = time.perf_counter() - t0
-    
-    if stack.rank ==0 and history:
-        print(f"[LiH] Final energy : {history[-1]:+.6f} Ha ")
-        print(f"[LiH] Reference FCI : -7.882500 Ha")      #known value of LiH
-        print(f"[LiH] Absolute error: {abs(history[-1] - (-7.8825)):+.6f} Ha ")
-        print(f"[LiH] Iterations run: {len(history)}")
-        print(f"[LiH] Wall time: {t_total:.2f}s (includes QPU queue + RTT) ")     
+
+    if stack.rank == 0 and history:
+        fci = problem.fci_energy
+        final_e = history[-1]
+        error = abs(final_e - fci) if fci else None
+        print(f"\n[H2-IBM] Final energy : {final_e:+.6f} Ha ")
+        print(f"[H2-IBM] Reference FCI : {fci:+.6f} Ha")
+        print(f"[H2-IBM] Absolute error: {error:+.6f} Ha " if error else "")
+        print(f"[H2-IBM] Iterations run: {len(history)}")
+        print(f"[H2-IBM] Wall time: {t_total:.2f}s (includes QPU queue + RTT)")
+        print(f"[H2-IBM] Time/iter: {t_total/len(history):.2f}s")
+        print(f"[H2-IBM] Path: IBM cloud QPU via C++ dispatcher")
 
 
 
