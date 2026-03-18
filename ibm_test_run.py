@@ -161,8 +161,9 @@ if __name__ == "__main__":
 
     with HPCHybridStack(use_gpu=USE_GPU, backend=BACKEND) as stack:
         chem_result = run_chemistry_ibm(stack)
-        finance_result = run_finance_ibm(stack)
-        scaling_result = run_scaling_ibm(stack)
+        # Uncomment these when QPU time budget allows:
+        # finance_result = run_finance_ibm(stack)
+        # scaling_result = run_scaling_ibm(stack)
 
         if stack.rank == 0:
             print("\n---ALL IBM QPU BENCHMARKS COMPLETE ----")
@@ -174,8 +175,6 @@ if __name__ == "__main__":
                 "mpi_ranks": stack.size,
                 "gpu": stack.use_gpu,
                 "chemistry": chem_result,
-                "finance": finance_result,
-                "scaling": scaling_result,
             }, backend=BACKEND)
 
     close_log()

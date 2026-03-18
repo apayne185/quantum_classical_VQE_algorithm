@@ -28,7 +28,6 @@ apps/vqe_molecule
 .devcontainer
 
 checkpoints/
-results/
 scaling_logs/
 
 CLAUDE.md

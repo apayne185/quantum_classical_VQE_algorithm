@@ -323,23 +323,22 @@ class HPCHybridStack:
     # ── IBM QPU via Python EstimatorV2 ────────────────────────────
 
     def _init_ibm_session(self, problem):
-        """Lazy-init: connect to IBM Quantum, transpile ansatz once, open Session + EstimatorV2."""
-        from qiskit_ibm_runtime import QiskitRuntimeService, Session, EstimatorV2
+        """Lazy-init: connect to IBM Quantum, transpile ansatz once, create EstimatorV2."""
+        from qiskit_ibm_runtime import QiskitRuntimeService, EstimatorV2
         from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
         token = os.environ.get("IBM_QUANTUM_TOKEN", "")
-        instance = os.environ.get("IBM_QUANTUM_INSTANCE", "")
-        backend_name = os.environ.get("IBM_QUANTUM_BACKEND", "ibm_brisbane")
+        backend_name = os.environ.get("IBM_QUANTUM_BACKEND", "ibm_marrakesh")
         region = os.environ.get("IBM_QUANTUM_REGION", "us-east")
 
         print(f"[IBM] Connecting to {backend_name} ({region}) ...")
         # v0.45+ requires save_account before connecting
         QiskitRuntimeService.save_account(token=token, overwrite=True, set_as_default=True)
         service = QiskitRuntimeService()
-        ibm_backend = service.backend(backend_name)
+        self._ibm_backend = service.backend(backend_name)
 
         # Transpile ansatz once for this backend
-        pm = generate_preset_pass_manager(backend=ibm_backend, optimization_level=1)
+        pm = generate_preset_pass_manager(backend=self._ibm_backend, optimization_level=1)
         ansatz = problem.ansatz_circuit
         self._ibm_transpiled = pm.run(ansatz)
         print(f"[IBM] Ansatz transpiled: {self._ibm_transpiled.num_qubits} physical qubits, depth {self._ibm_transpiled.depth()}")
@@ -348,20 +347,11 @@ class HPCHybridStack:
         pauli_op = SparsePauliOp.from_list(problem.pauli_terms)
         self._ibm_observable = pauli_op.apply_layout(self._ibm_transpiled.layout)
 
-        # Open session (keeps QPU allocated across iterations)
-        print(f"[IBM] Opening session on {backend_name}...")
-        try:
-            self._ibm_session = Session(backend=ibm_backend)
-            self._ibm_estimator = EstimatorV2(session=self._ibm_session)
-            self._ibm_estimator.options.default_shots = 4096
-            print(f"[IBM] Session opened, EstimatorV2 ready (4096 shots)")
-        except Exception as e:
-            # Fallback: use EstimatorV2 without session (serverless mode)
-            print(f"[IBM] Session failed ({e}), using sessionless EstimatorV2...")
-            self._ibm_session = None
-            self._ibm_estimator = EstimatorV2(backend=ibm_backend)
-            self._ibm_estimator.options.default_shots = 4096
-            print(f"[IBM] Sessionless EstimatorV2 ready (4096 shots)")
+        # On open plan: no Session allowed. Pass backend as 'mode' argument.
+        # Each .run() call submits an independent job.
+        self._ibm_estimator = EstimatorV2(mode=self._ibm_backend)
+        self._ibm_estimator.options.default_shots = 4096
+        print(f"[IBM] EstimatorV2 ready (4096 shots)")
 
 
     def _evaluate_ibm_estimator(self, problem, combined_params):
