@@ -332,6 +332,12 @@ class ChemistryProblem(QuantumProblem):
 
 
 class FinanceProblem(QuantumProblem):
+    """Portfolio optimization via QUBO -> Ising mapping.
+
+    Demonstrates stack extensibility beyond chemistry. Not included in
+    primary benchmarks -- see ChemistryProblem for the active application.
+    """
+
     def __init__(self, covariance_matrix: np.ndarray, expected_returns: np.ndarray|None = None, risk_factor: float=1.0):
         super().__init__()
         self.matrix = np.array(covariance_matrix, dtype=float)

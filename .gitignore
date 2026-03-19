@@ -28,7 +28,11 @@ apps/vqe_molecule
 .devcontainer
 
 checkpoints/
-scaling_logs/
+results/*.log
+scaling_logs/*.log
+
+*.egg-info/
+.DS_Store
 
 CLAUDE.md
 MEMORY.md
