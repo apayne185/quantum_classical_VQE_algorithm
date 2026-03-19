@@ -47,7 +47,7 @@ run:
 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
 	  -v "$$(pwd)/results:/workspace/results" \
 	  $(IMAGE_NAME) \
-	  mpirun --allow-run-as-root -np $(NP) python3 local_test_run.py
+	  mpirun --allow-run-as-root -np $(NP) python3 benchmarks/local_test_run.py
 
 
 
@@ -68,26 +68,26 @@ run-ibm:
 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
 	  -v "$$(pwd)/results:/workspace/results" \
 	  $(IMAGE_NAME) \
-	  mpirun --allow-run-as-root -np $(NP) python3 ibm_test_run.py
+	  mpirun --allow-run-as-root -np $(NP) python3 benchmarks/ibm_test_run.py
 
 
 # STRONG SCALAING SWEEP - simulator      
 scaling:
 	@echo "[Make] Starting strong scaling analysis ..."
-	@mkdir -p scaling_logs
+	@mkdir -p results/scaling
 	@for p in 1 2 4 8; do \
 	  echo "  Running P=$$p ..."; \
 	  docker run --rm \
 	    $(GPU_FLAG) \
 	    -e BACKEND=simulator \
 		-e USE_GPU=$(GPU_AVAILABLE) \
-	    -v "$$(pwd)/scaling_logs:/workspace/scaling_logs" \
+	    -v "$$(pwd)/results/scaling:/workspace/results/scaling" \
 	    $(IMAGE_NAME) \
-	    mpirun --allow-run-as-root -np $$p python3 local_test_run.py \
-	    > scaling_logs/scaling_p$$p.log 2>&1; \
+	    mpirun --allow-run-as-root -np $$p python3 benchmarks/local_test_run.py \
+	    > results/scaling/scaling_p$$p.log 2>&1; \
 	  echo "  P=$$p done."; \
 	done
-	@echo "[Make] Scaling logs saved to scaling_logs/. Check T_total and M-metric."
+	@echo "[Make] Scaling logs saved to results/scaling/. Check T_total and M-metric."
 
 
 
@@ -98,7 +98,7 @@ baseline:
 	  -e USE_GPU=no \
 	  -v "$$(pwd)/results:/workspace/results" \
 	  $(IMAGE_NAME) \
-	  python3 serial_baseline.py
+	  python3 benchmarks/serial_baseline.py
 	@echo "[Make] Serial baseline complete."
 
 
@@ -130,6 +130,6 @@ shell:
 
 clean:
 	docker rmi $(IMAGE_NAME) || true
-	rm -rf scaling_logs/
+	rm -rf results/scaling/
 	rm -f *.log *.npy
 	find checkpoints/ -name "*.npy" -delete 2>/dev/null || true
