@@ -73,9 +73,9 @@ The stack will be developed in the future to be extensible to other problem doma
    ```  
 3. Run: `make run-ibm NP=2`
 
-The stack uses `EstimatorV2` with `mode=backend` (compatible with qiskit-ibm-runtime v0.45.1 open plan, which does not support Sessions), 4096 shots, and TREX measurement error mitigation (resilience_level=1).
+This stack uses `EstimatorV2` with `mode=backend` (which is compatible with qiskit-ibm-runtime v0.45.1 open plan, but does not support Sessions), 4096 shots, and TREX measurement error mitigation (resilience_level=1).   
 
-## Supported Molecules
+## Supported (Tested) Molecules
 
 | Molecule | Qubits | FCI Energy (Ha) | Recommended Ansatz | Notes |
 |----------|--------|------------------|--------------------|-------|
@@ -84,15 +84,15 @@ The stack uses `EstimatorV2` with `mode=backend` (compatible with qiskit-ibm-run
 | BeH₂ | 14 | -15.5952 | HWE-adaptive | 6 electrons |
 | H₂O | 14 | -75.0129 | HWE-adaptive | 8 electrons |
 
-Custom molecules are supported via the `MoleculeResolver` (SMILES, PubChem lookup, or raw geometry).
+Custom molecules are supported within the `MoleculeResolver` (SMILES, PubChem lookup, or raw geometry).   
 
 ## Results
 
-Results are saved as timestamped JSON files in `results/` including git commit hash, per-molecule energies, convergence histories, and timing data. Analyze with:
+Results will be saved after runs as timestamped JSON files in `results/` including its git commit hash, per-molecule energies, convergence histories, and timing data. Analyze the data with:
 
 ```bash
-python benchmarks/run_analysis.py          # Summary table
-python benchmarks/run_analysis.py --plot   # + convergence plots (requires matplotlib)
+python benchmarks/run_analysis.py          # summary table   
+python benchmarks/run_analysis.py --plot   # convergence plots (requires matplotlib)  
 ```
 
 ## Dependencies
@@ -101,14 +101,14 @@ python benchmarks/run_analysis.py --plot   # + convergence plots (requires matpl
 **Build:** CMake 3.18+, pybind11, nlohmann_json, libcurl, OpenMPI, CUDA 12.2
 **Optional:** cupy (GPU), rdkit (SMILES), matplotlib (plots)
 
-All dependencies are included in the Docker image. See `requirements.txt` for Python packages.
+All dependencies are included in the Docker image. See the file `requirements.txt` for Python packages needed.
 
 ## Project Structure
 
 ```
 ├── src/
-│   ├── api/              # Python API (interface, problems, resolver, results, log)
-│   ├── dispatcher/       # C++ MPI coordinator + IBM QPU client
+│   ├── api/              # Python API (interface, problems, resolver, results, log)   
+│   ├── dispatcher/       # C++ MPI coordinator + IBM QPU client 
 │   └── classical/cuda/   # CUDA kernels for Pauli expectations
 ├── include/              # C++ headers (stack_types.h)
 ├── tests/                # Test suite (layer tests, molecule tests)
@@ -120,5 +120,5 @@ All dependencies are included in the Docker image. See `requirements.txt` for Py
 ├── results/              # Timestamped JSON results + scaling data
 ├── Dockerfile            # CUDA 12.2 + OpenMPI container
 ├── Makefile              # Build orchestration
-└── CMakeLists.txt        # C++ build config
+└── CMakeLists.txt        # C++ build config   
 ```

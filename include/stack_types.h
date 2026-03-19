@@ -44,8 +44,11 @@ struct StackResult {
 
 StackResult route_workload(HybridWorkload& wl);
 
-//connects CUDA function to C++
-// extern "C" double run_cuda_vqe(const double* h_params, int n);
-extern "C" double run_cuda_vqe_fp32(const float* h_params, int n);
+// CUDA kernel entry points
+extern "C" double run_cuda_vqe_fp32(const float* h_params, int n);  // Legacy fallback
+extern "C" double run_cuda_pauli_expectation(
+    const double* h_coeffs, const char* h_ops, const float* h_params,
+    int n_terms, int n_qubits, int n_params
+);
 
 #endif

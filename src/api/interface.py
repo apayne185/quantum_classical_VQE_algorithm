@@ -355,51 +355,104 @@ class HPCHybridStack:
 
 
     def _evaluate_ibm_estimator(self, problem, combined_params):
-        """Submit 2 PUBs (theta_plus, theta_minus) to IBM EstimatorV2. Rank 0 only; results broadcast via MPI."""
+        """Async IBM QPU evaluation with concurrent classical statevector work.
+
+        Pipeline:
+          1. Rank 0 submits QPU job (non-blocking after .run() returns)
+          2. ALL ranks compute exact statevector expectation values (T_accel)
+          3. Rank 0 collects QPU result (blocks on .result() for remainder of T_quant)
+          4. M = T_accel / T_quant — measures how well classical work masks QPU latency
+        """
         comm = self.comm
         num_params = len(combined_params) // 2
-        result_buf = np.zeros(4, dtype=np.float64)  # [e_plus, e_minus, M, 0]
+        theta_plus = combined_params[:num_params]
+        theta_minus = combined_params[num_params:]
+
+        # --- Step 1: Rank 0 submits QPU job (returns immediately after submission) ---
+        job = None
+        t_qpu_start = _time.perf_counter()
 
         if self.rank == 0:
-            # Lazy-init IBM session on first call
             if self._ibm_estimator is None:
                 self._init_ibm_session(problem)
 
-            theta_plus = combined_params[:num_params]
-            theta_minus = combined_params[num_params:]
-
             isa_circuit = self._ibm_transpiled
             observable = self._ibm_observable
-            # Map parameter values by name — same ordering used in statevector path
             sorted_params = sorted(isa_circuit.parameters, key=lambda x: x.name)
             binds_plus = {p: float(v) for p, v in zip(sorted_params, theta_plus)}
             binds_minus = {p: float(v) for p, v in zip(sorted_params, theta_minus)}
 
-            # Submit 2 PUBs in one job (one queue wait)
-            t0 = _time.perf_counter()
             pubs = [
                 (isa_circuit, observable, binds_plus),
                 (isa_circuit, observable, binds_minus),
             ]
             print(f"[IBM] Submitting job (2 PUBs, 4096 shots)...")
             job = self._ibm_estimator.run(pubs)
-            print(f"[IBM] Job submitted: {job.job_id()}, waiting for result...")
+            print(f"[IBM] Job submitted: {job.job_id()}, classical work proceeding...")
+
+        # --- Step 2: ALL ranks do classical statevector work concurrently ---
+        t_accel_start = _time.perf_counter()
+
+        ansatz = problem.ansatz_circuit
+        sorted_ansatz_params = sorted(ansatz.parameters, key=lambda x: x.name)
+
+        bound_plus = ansatz.assign_parameters(
+            {p: v for p, v in zip(sorted_ansatz_params, theta_plus)})
+        bound_minus = ansatz.assign_parameters(
+            {p: v for p, v in zip(sorted_ansatz_params, theta_minus)})
+
+        sv_plus = Statevector(bound_plus)
+        sv_minus = Statevector(bound_minus)
+
+        # Distribute Pauli terms across ranks (same as simulator path)
+        local_terms = self.partition(problem.pauli_terms)
+        if len(local_terms) > 0:
+            local_op = SparsePauliOp.from_list(local_terms)
+            e_plus_sv_local = float(sv_plus.expectation_value(local_op).real)
+            e_minus_sv_local = float(sv_minus.expectation_value(local_op).real)
+        else:
+            e_plus_sv_local = 0.0
+            e_minus_sv_local = 0.0
+
+        # Reduce classical results across ranks
+        e_plus_sv = np.array([0.0], dtype=np.float64)
+        e_minus_sv = np.array([0.0], dtype=np.float64)
+        comm.Allreduce(np.array([e_plus_sv_local], dtype=np.float64), e_plus_sv, op=MPI.SUM)
+        comm.Allreduce(np.array([e_minus_sv_local], dtype=np.float64), e_minus_sv, op=MPI.SUM)
+
+        t_accel = _time.perf_counter() - t_accel_start
+
+        # --- Step 3: Rank 0 collects QPU result (blocks for remaining QPU time) ---
+        result_buf = np.zeros(6, dtype=np.float64)
+        # [e_plus_qpu, e_minus_qpu, masking_metric, t_quant, e_plus_sv, e_minus_sv]
+
+        if self.rank == 0:
             job_result = job.result()
-            t_qpu = _time.perf_counter() - t0
-            print(f"[IBM] Job completed in {t_qpu:.1f}s")
+            t_qpu = _time.perf_counter() - t_qpu_start
 
-            e_plus = float(job_result[0].data.evs)
-            e_minus = float(job_result[1].data.evs)
-            masking_metric = t_qpu  # for IBM path, report raw QPU time
+            e_plus_qpu = float(job_result[0].data.evs)
+            e_minus_qpu = float(job_result[1].data.evs)
 
-            result_buf[0] = e_plus
-            result_buf[1] = e_minus
+            # M = T_accel / T_quant — classical work vs QPU round-trip
+            masking_metric = (t_accel / t_qpu) if t_qpu > 1e-9 else 0.0
+            residual_wait = max(0.0, t_qpu - t_accel)
+
+            print(f"[IBM] Job completed in {t_qpu:.1f}s "
+                  f"(T_accel={t_accel:.2f}s, residual_wait={residual_wait:.1f}s, M={masking_metric:.4f})")
+            print(f"[IBM] Classical SV estimate: E+={float(e_plus_sv[0]):.6f}, E-={float(e_minus_sv[0]):.6f}")
+            print(f"[IBM] QPU measured:          E+={e_plus_qpu:.6f}, E-={e_minus_qpu:.6f}")
+
+            result_buf[0] = e_plus_qpu
+            result_buf[1] = e_minus_qpu
             result_buf[2] = masking_metric
+            result_buf[3] = t_qpu
+            result_buf[4] = float(e_plus_sv[0])
+            result_buf[5] = float(e_minus_sv[0])
 
         comm.Bcast(result_buf, root=0)
         e_plus = result_buf[0]
         e_minus = result_buf[1]
         masking_metric = result_buf[2]
-        used_path = "IBM EstimatorV2 (Python)"
+        used_path = "IBM QPU + Classical SV (async)"
 
         return e_plus, e_minus, masking_metric, used_path
