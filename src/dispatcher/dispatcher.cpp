@@ -56,8 +56,8 @@ static double pauli_expectation(const std::string& op, const std::vector<double>
 
 
 // LOCAL HAMILTONIAN EXPECTATION VALUE: sums coeff * P over ranks partition of pauli terms
-// NOTE: uses mean-field approximation (independent qubits). Only valid for product states.
-// For entangled ansatzes (HWE/UCC), use the Python statevector path instead.
+// uses mean-field approximation (independent qubits) - valid for product states
+// entangled ansatzes (HWE/UCC), use Python statevector path instead.
 static double compute_hamiltonian_expectation(const std::vector<PauliTerm>& pauli_terms, const std::vector<double>& theta) {
     double energy = 0.0;
     for (const auto& term : pauli_terms) {
@@ -68,7 +68,7 @@ static double compute_hamiltonian_expectation(const std::vector<PauliTerm>& paul
 
 
 
-// CUDA PATH: uses kernel for FP32 trig then widens to FP64, computes -0.5*cos(θ_i) p parameter as fast approx of Z expectation weighted sum
+// CUDA PATH: uses kernel for FP32 trig then widens into FP64, computes -0.5*cos(θ_i) p parameter as fast approx of Z expectation weighted sum
 // result scaled by sum of absolte Pauli coefficients 
 static double compute_expectation_cuda(const std::vector<double>& theta,const std::vector<PauliTerm>& pauli_terms){
     std::vector<float> fp32(theta.begin(), theta.end());

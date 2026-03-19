@@ -96,6 +96,7 @@ baseline:
 	@echo "[Make] Running serial Qiskit baseline (no MPI, no GPU) ..."
 	docker run --rm \
 	  -e USE_GPU=no \
+	  -v "$$(pwd)/results:/workspace/results" \
 	  $(IMAGE_NAME) \
 	  python3 serial_baseline.py
 	@echo "[Make] Serial baseline complete."
