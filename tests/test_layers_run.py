@@ -137,6 +137,7 @@ def test_vqe_loop(stack: HPCHybridStack):
 
 
 
+# --- FINANCE PROBLEM (extensibility demonstration, not active in chemistry-focused benchmarks) ---
 def test_finance_layer(stack: HPCHybridStack):
     section("LAYER 5: Finance QUBO (4 assets, 10 iterations)")
     np.random.seed(0)
@@ -227,8 +228,8 @@ if __name__ == "__main__":
             ("Problem Preparation", lambda: test_problem_layer(stack)),
             ("C++ Dispatcher", lambda: test_dispatcher_layer(
                                           stack, ChemistryProblem("H 0 0 0; H 0 0 0.74"))),
-            ("VQE Loop",lambda: test_vqe_loop(stack)),   
-            ("Finance QUBO", lambda: test_finance_layer(stack)),   
+            ("VQE Loop",lambda: test_vqe_loop(stack)),
+            # ("Finance QUBO", lambda: test_finance_layer(stack)),  # Extensibility demo — uncomment to test
             ("Checkpoint Resilience", lambda: test_checkpoint_resilience(stack)),
         ]
 
