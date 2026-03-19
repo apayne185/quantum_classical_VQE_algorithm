@@ -163,28 +163,38 @@ def test_finance_layer(stack: HPCHybridStack):
 def test_checkpoint_resilience(stack: HPCHybridStack):
     section("LAYER 6: Checkpoint Resilience")
 
+    # Use a dedicated test directory to avoid conflicts with old checkpoints
+    test_ckpt_dir = "checkpoints/_resilience_test"
+    if stack.rank == 0:
+        import shutil
+        if os.path.exists(test_ckpt_dir):
+            shutil.rmtree(test_ckpt_dir)
+
+    stack.comm.Barrier()
+
     problem = ChemistryProblem("H 0 0 0; H 0 0 0.74")
     _, _ = stack.vqe_optimize(problem, max_iterations=5,
-                               checkpoint_dir="checkpoints")   
+                               checkpoint_dir=test_ckpt_dir)
 
     if stack.rank == 0:
-        ckpt = "checkpoints/checkpoint_iter_0005.npy"
+        ckpt = os.path.join(test_ckpt_dir, "checkpoint_iter_0005.npy")
         assert os.path.exists(ckpt), f"Expected checkpoint not found: {ckpt}"
-        saved_theta = np.load(ckpt)   
+        saved_theta = np.load(ckpt)
         print(f"Checkpoint file: {ckpt}")
         print(f"Saved theta shape: {saved_theta.shape}")
-        print(f"Saved theta[:3]: {saved_theta[:3]}")     
+        print(f"Saved theta[:3]: {saved_theta[:3]}")
 
 
     if stack.rank == 0:
-        print("\n  Restarting from checkpoint... ")    
+        print("\n  Restarting from checkpoint... ")
 
-    problem2 = ChemistryProblem("H 0 0 0; H 0 0 0.74")  
+    problem2 = ChemistryProblem("H 0 0 0; H 0 0 0.74")
+    ckpt_path = os.path.join(test_ckpt_dir, "checkpoint_iter_0005.npy")
     _, history2 = stack.vqe_optimize(
         problem2,
         max_iterations=5,
-        restart_from="checkpoints/checkpoint_iter_0005.npy",
-        checkpoint_dir="checkpoints",  
+        restart_from=ckpt_path,
+        checkpoint_dir=test_ckpt_dir,
     )
 
     if stack.rank == 0:

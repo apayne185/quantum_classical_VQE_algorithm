@@ -6,10 +6,10 @@ import time
 from datetime import datetime
 
 
-# so python can find C++ module
-sys.path.insert(0, os.path.abspath("./build"))
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)
+# so python can find C++ module and src package
+_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, _root)
+sys.path.insert(0, os.path.join(_root, "build"))
 
 try:
     from src.api.interface import HPCHybridStack

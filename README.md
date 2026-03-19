@@ -1,72 +1,76 @@
 # Hybrid Quantum-Classical VQE Stack for HPC
 
-**Bachelor's Thesis — CSAI, IE University**
+**Bachelors of Computer Science and Artificial Intelligence (BCSAI) Thesis — IE University**
 **Anna Payne**
 
-A hybrid quantum-classical software stack that implements the Variational Quantum Eigensolver (VQE) with MPI parallelism, CUDA GPU acceleration, and IBM Quantum cloud integration. Designed for molecular ground-state energy computation.
+A hybrid quantum classical software/middlware stack that implements the Variational Quantum Eigensolver (VQE) with MPI parallelism, CUDA GPU acceleration, and IBM Quantum cloud integration. Designed primarily for molecular ground state energy computation.
 
 ---
 
 ## Quick Start
 
+Run the commands below
+
 ```bash
 git clone <repo-url> && cd quantum_classical_VQE_algorithm
-cp .env.example .env          # Add your IBM Quantum token (optional, for QPU runs)
-make build                    # Build Docker image (CUDA 12.2 + OpenMPI + Python 3.11)
-make trial                    # 5-layer diagnostic test (simulator, 2 MPI ranks)
-make run NP=2 MOLECULES="H2 LiH"   # Full benchmark
+cp .env.example .env          # Add IBM Quantum token (optional, only for QPU runs)
+make build                      # Build Docker image (CUDA 12.2 + OpenMPI + Python 3.11)   
+make trial                      # 5-layer diagnostic test (simulator, 2 MPI ranks)
+make run NP=2 MOLECULES="H2 LiH"   # Full benchmark 
 ```
 
 ## Architecture
 
-### Three-Layer Stack
+### Three Layer Stack
 
 ```
 Python API (src/api/)
-   ↓ QuantumProblem.prepare() → OpenQASM + Pauli Hamiltonian
+   ↓ QuantumProblem.prepare() to OpenQASM + Pauli Hamiltonian
 C++ Dispatcher (src/dispatcher/)
-   ↓ MPI broadcast → local compute → MPI_Allreduce
+   ↓ MPI broadcast to local compute to MPI_Allreduce
 CUDA Kernels (src/classical/cuda/)
-   ↓ Mixed-precision FP32→FP64 Pauli expectations
+   ↓ Mixed-precision FP32 to FP64 Pauli expectations
 ```
 
-**Data flow:** `QuantumProblem.prepare()` builds an ansatz circuit and Pauli Hamiltonian → `HPCHybridStack.vqe_optimize()` runs the SPSA loop → each iteration evaluates E(θ±) via statevector simulation (MPI-distributed), IBM QPU (EstimatorV2), or C++ dispatcher → `MPI_Allreduce` sums partial energies → gradient update.
+**Data flow in stack:** `QuantumProblem.prepare()` builds an ansatz circuit and Pauli Hamiltonian. `HPCHybridStack.vqe_optimize()` runs the SPSA loop, where each iteration evaluates E(θ±) through statevector simulation (MPI distributed), the IBM QPU (EstimatorV2), or the C++ dispatcher ()`MPI_Allreduce` sums partial energies and handles  gradient update).
 
-### Key Classes
+### Key Classes   
 
 | Class | File | Role |
 |-------|------|------|
 | `HPCHybridStack` | `src/api/interface.py` | Main entry point: MPI init, SPSA loop, checkpoints |
 | `ChemistryProblem` | `src/api/problems.py` | Molecular Hamiltonian via PySCF + Jordan-Wigner |
-| `MoleculeResolver` | `src/api/molecule_resolver.py` | Registry → geometry → SMILES → PubChem cascade |
+| `MoleculeResolver` | `src/api/molecule_resolver.py` | Registry, geometry, SMILES, PubChem cascade |
 | `HybridWorkload` | `include/stack_types.h` | C++ dispatcher interface contract |
 
-The stack is extensible to other problem domains (e.g., `FinanceProblem` for portfolio optimization via QUBO → Ising mapping is included as a demonstration).
+The stack will be developed in the future to be extensible to other problem domains (`FinanceProblem` is currently in progress for portfolio optimization using QUBO, where Ising mapping is included as a demonstration).   
+
 
 ## Makefile Targets
 
 | Target | Description |
 |--------|-------------|
 | `make build` | Build Docker image |
-| `make trial` | 5-layer diagnostic (simulator, 2 ranks) |
+| `make trial` | 5 layer diagnostic (simulator, 2 ranks) |
 | `make run NP=4` | Full benchmark with MPI (simulator) |
-| `make run-ibm NP=2` | Run on IBM Quantum QPU |
-| `make scaling` | Strong scaling sweep (P=1,2,4,8) |
+| `make run-ibm NP=2` | Runs on IBM Quantum QPU |
+| `make scaling` | Strong scaling sweep (P=1,2,4,8)  |
 | `make baseline` | Serial Qiskit VQE for accuracy comparison |
-| `make test` | Run all tests |
+| `make test` | Runs all tests |
 | `make shell` | Interactive shell inside container |
-| `make clean` | Remove image and logs |
+| `make clean` | Removes image and logs | 
+
 
 ## IBM Quantum Setup
 
-1. Get a token at [quantum.ibm.com](https://quantum.ibm.com)
-2. Copy `.env.example` to `.env` and fill in your credentials:
+1. Get an instance API token at [quantum.ibm.com](https://quantum.ibm.com)
+2. Copy `.env.example` to `.env` and fill in your credentials (all can be found on IBM site):
    ```
    IBM_QUANTUM_TOKEN=your_token_here
    IBM_QUANTUM_INSTANCE=your-crn-instance
-   IBM_QUANTUM_BACKEND=ibm_marrakesh
-   IBM_QUANTUM_REGION=us-east
-   ```
+   IBM_QUANTUM_BACKEND=ibm-location
+   IBM_QUANTUM_REGION=us-east or eu-de
+   ```  
 3. Run: `make run-ibm NP=2`
 
 The stack uses `EstimatorV2` with `mode=backend` (compatible with qiskit-ibm-runtime v0.45.1 open plan, which does not support Sessions), 4096 shots, and TREX measurement error mitigation (resilience_level=1).
@@ -87,8 +91,8 @@ Custom molecules are supported via the `MoleculeResolver` (SMILES, PubChem looku
 Results are saved as timestamped JSON files in `results/` including git commit hash, per-molecule energies, convergence histories, and timing data. Analyze with:
 
 ```bash
-python run_analysis.py          # Summary table
-python run_analysis.py --plot   # + convergence plots (requires matplotlib)
+python benchmarks/run_analysis.py          # Summary table
+python benchmarks/run_analysis.py --plot   # + convergence plots (requires matplotlib)
 ```
 
 ## Dependencies
@@ -107,11 +111,13 @@ All dependencies are included in the Docker image. See `requirements.txt` for Py
 │   ├── dispatcher/       # C++ MPI coordinator + IBM QPU client
 │   └── classical/cuda/   # CUDA kernels for Pauli expectations
 ├── include/              # C++ headers (stack_types.h)
-├── tests/                # Test suite
-├── local_test_run.py     # Simulator entry point
-├── ibm_test_run.py       # IBM Quantum entry point
-├── serial_baseline.py    # Qiskit reference baseline
-├── run_analysis.py       # Results analysis + plotting
+├── tests/                # Test suite (layer tests, molecule tests)
+├── benchmarks/           # Entry points for experiments
+│   ├── local_test_run.py # Simulator benchmark
+│   ├── ibm_test_run.py   # IBM Quantum benchmark
+│   ├── serial_baseline.py# Serial Qiskit reference
+│   └── run_analysis.py   # Results analysis + plotting
+├── results/              # Timestamped JSON results + scaling data
 ├── Dockerfile            # CUDA 12.2 + OpenMPI container
 ├── Makefile              # Build orchestration
 └── CMakeLists.txt        # C++ build config

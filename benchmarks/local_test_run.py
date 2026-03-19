@@ -5,10 +5,10 @@ import time
 from datetime import datetime
 
 
-# so python can find C++ module
-sys.path.insert(0, os.path.abspath("./build"))
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)
+# so python can find C++ module and src package
+_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, _root)
+sys.path.insert(0, os.path.join(_root, "build"))
 
 try:
     from src.api.interface import HPCHybridStack
@@ -166,8 +166,8 @@ def run_scaling_local(stack: HPCHybridStack):
         result_line = (f"P={stack.size} T_total={t_total:.4f} final_E={history[-1]:+.6f} tier={getattr(problem, 'ansatz_tier', 'N/A')} qubits={problem.num_qubits} iters={len(history)}")
         print(f"[Scaling] {result_line}")
 
-        os.makedirs("scaling_logs",exist_ok=True)
-        with open(f"scaling_logs/scaling_P{stack.size}.txt", "w") as f:
+        os.makedirs("results/scaling",exist_ok=True)
+        with open(f"results/scaling/scaling_P{stack.size}.txt", "w") as f:
             f.write(result_line + "\n")
 
         result = {

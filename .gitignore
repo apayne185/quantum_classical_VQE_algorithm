@@ -29,7 +29,7 @@ apps/vqe_molecule
 
 checkpoints/
 results/*.log
-scaling_logs/*.log
+results/scaling/*.log
 
 *.egg-info/
 .DS_Store
