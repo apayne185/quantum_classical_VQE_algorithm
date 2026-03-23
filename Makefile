@@ -89,6 +89,30 @@ scaling:
 	done
 	@echo "[Make] Scaling logs saved to results/scaling/. Check T_total and M-metric."
 
+# WEAK SCALING SWEEP - problem size grows with P
+weak-scaling:
+	@echo "[Make] Starting weak scaling analysis ..."
+	@mkdir -p results/scaling
+	@for p in 1 2 4 8; do \
+	  echo "  Running P=$$p (weak scaling) ..."; \
+	  docker run --rm \
+	    $(GPU_FLAG) \
+	    -e BACKEND=simulator \
+		-e USE_GPU=$(GPU_AVAILABLE) \
+	    -v "$$(pwd)/results/scaling:/workspace/results/scaling" \
+	    -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
+	    $(IMAGE_NAME) \
+	    mpirun --allow-run-as-root -np $$p python3 -c \
+	    "import sys,os; sys.path.insert(0,'.'); sys.path.insert(0,'build'); \
+	     from src.api.interface import HPCHybridStack; \
+	     from benchmarks.local_test_run import run_weak_scaling; \
+	     stack = HPCHybridStack(use_gpu=os.environ.get('USE_GPU','no')=='yes', backend='simulator'); \
+	     run_weak_scaling(stack); stack.finalize()" \
+	    > results/scaling/weak_scaling_p$$p.log 2>&1; \
+	  echo "  P=$$p done."; \
+	done
+	@echo "[Make] Weak scaling results saved to results/scaling/."
+
 
 
 # SERIAL BASELINE - single-core Qiskit VQE for comparison (no MPI)
