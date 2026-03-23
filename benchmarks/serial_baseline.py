@@ -103,6 +103,11 @@ def serial_vqe(mol_name, coords, fci_ref, reps=1, max_iterations=500,seed=42):
 if __name__ == "__main__":
     import json
     from datetime import datetime
+    from src.api.log import init_log, close_log
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    os.makedirs("results/baseline", exist_ok=True)
+    init_log(f"results/baseline/serial_baseline_{ts}.log")
 
     print("----SERIAL QISKIT AER BASELINE--- ")   
 
@@ -123,11 +128,10 @@ if __name__ == "__main__":
     for name, d in all_results.items():
         print(f"{name:<10} {d['energy']:<16.6f} {d['error']:+.4f} Ha   {d['iterations']:<8} {d['wall_time']:<10.2f}")
 
-    # Save results t5 results/
-    os.makedirs("results", exist_ok=True)   
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_path= f"results/serial_baseline_{ts}.json"
+    # Save results to results/baseline/
+    out_path = f"results/baseline/serial_baseline_{ts}.json"
 
     with open(out_path, "w") as f:
         json.dump(all_results, f, indent=2)
     print(f"\n[Results] Saved to {out_path}")
+    close_log()
