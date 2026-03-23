@@ -2,7 +2,7 @@ name: CI — Build & Test
 
 on:
   push:
-    branches: [main, trial2]
+    branches: [main, feature/ci-workflow]
   pull_request:
     branches: [main]
 
