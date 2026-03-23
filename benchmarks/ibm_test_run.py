@@ -152,7 +152,8 @@ if __name__ == "__main__":
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     os.makedirs("results", exist_ok=True)
-    init_log(f"results/ibm_run_{ts}.log")
+    os.makedirs("results/ibm", exist_ok=True)
+    init_log(f"results/ibm/ibm_run_{ts}.log")
 
     print(f"[Config] GPU= {'requested' if USE_GPU else 'CPU mode'} ")
     print(f"[Config] Backend= {BACKEND} ")

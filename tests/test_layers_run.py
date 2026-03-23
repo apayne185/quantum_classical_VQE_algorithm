@@ -173,7 +173,7 @@ def test_checkpoint_resilience(stack: HPCHybridStack):
     stack.comm.Barrier()
 
     problem = ChemistryProblem("H 0 0 0; H 0 0 0.74")
-    _, _ = stack.vqe_optimize(problem, max_iterations=5,
+    _, history1 = stack.vqe_optimize(problem, max_iterations=5,
                                checkpoint_dir=test_ckpt_dir)
 
     if stack.rank == 0:
@@ -199,7 +199,28 @@ def test_checkpoint_resilience(stack: HPCHybridStack):
 
     if stack.rank == 0:
         assert len(history2) > 0, "No iterations after checkpoint restart"
-        print(f"Post-restart iterations: {len(history2)}")   
+
+        # Verify SPSA schedule resumed correctly:
+        # The restart should pick up at k=6 (start_iter=5 from checkpoint filename)
+        # This means the first post-restart iteration uses a_k and c_k for k=6,
+        # not k=1, preserving the learning rate decay schedule.
+        # We verify indirectly: the restarted energy should be in a reasonable
+        # neighborhood of the pre-checkpoint trajectory (within 0.5 Ha for H2).
+        pre_checkpoint_energy = history1[-1] if history1 else None
+        post_restart_energy = history2[0]
+        if pre_checkpoint_energy is not None:
+            energy_jump = abs(post_restart_energy - pre_checkpoint_energy)
+            print(f"  Pre-checkpoint energy (iter 5): {pre_checkpoint_energy:.6f} Ha")
+            print(f"  Post-restart energy  (iter 6): {post_restart_energy:.6f} Ha")
+            print(f"  Energy discontinuity: {energy_jump:.6f} Ha")
+            # For H2 with near-zero init, energies should stay within ~0.5 Ha
+            # A large jump would indicate the checkpoint was corrupted or schedule reset
+            assert energy_jump < 0.5, (
+                f"Energy jumped {energy_jump:.4f} Ha after restart — "
+                f"checkpoint may be corrupted or SPSA schedule not resumed"
+            )
+
+        print(f"Post-restart iterations: {len(history2)}")
         print("[LAYER 6] OK")
 
 
@@ -329,6 +350,13 @@ def print_summary(stack: HPCHybridStack, passed: list, failed: list):
 
 
 if __name__ == "__main__":
+    from datetime import datetime
+    from src.api.log import init_log, close_log
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    os.makedirs("results/trial", exist_ok=True)
+    init_log(f"results/trial/trial_{ts}.log")
+
     passed = []
     failed = []
 
@@ -360,3 +388,5 @@ if __name__ == "__main__":
                     print(f"[FAIL] {name}: {exc}")
                 failed.append((name,str(exc)))   
         print_summary(stack,passed, failed)
+
+    close_log()

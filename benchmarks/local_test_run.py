@@ -248,7 +248,8 @@ if __name__ == "__main__":
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     os.makedirs("results", exist_ok=True)
-    init_log(f"results/run_{ts}.log")
+    os.makedirs("results/simulator", exist_ok=True)
+    init_log(f"results/simulator/run_{ts}.log")
 
     print(f"[Config] GPU={'requested' if USE_GPU else 'CPU mode'}")
     print(f"[Config] Molecules: {MOLECULES}")

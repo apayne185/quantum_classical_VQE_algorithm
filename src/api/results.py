@@ -17,11 +17,24 @@ def _git_commit():
 
 
 def save_results(data: dict, backend: str, results_dir: str = "results") -> str:
-    """Save run results as JSON. Returns the file path."""
-    os.makedirs(results_dir, exist_ok=True)
+    """Save run results as JSON. Returns the file path.
+
+    Files are organized into subdirectories by backend type:
+      results/simulator/  results/ibm/  results/baseline/
+    """
+    # Map backend to subdirectory
+    subdir_map = {
+        "simulator": "simulator",
+        "ibm_cloud": "ibm",
+        "serial_baseline": "baseline",
+    }
+    subdir = subdir_map.get(backend, backend)
+    out_dir = os.path.join(results_dir, subdir)
+    os.makedirs(out_dir, exist_ok=True)
+
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{backend}_{ts}.json"
-    path = os.path.join(results_dir, filename)
+    path = os.path.join(out_dir, filename)
 
     payload = {
         "timestamp": datetime.now().isoformat(),

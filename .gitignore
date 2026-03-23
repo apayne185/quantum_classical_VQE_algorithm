@@ -28,7 +28,7 @@ apps/vqe_molecule
 .devcontainer
 
 checkpoints/
-results/*.log
+results/**/*.log
 results/scaling/*.log
 
 *.egg-info/
