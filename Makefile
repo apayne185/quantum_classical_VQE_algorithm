@@ -34,8 +34,19 @@ trial:
 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
 	  $(IMAGE_NAME) \
  	  mpirun --allow-run-as-root -np $(NP) python3 tests/test_layers_run.py       
- 
 
+
+# RUN TEMPLATE SCRIPT
+example:
+	@echo "[Make] Running template (simulator, $(NP) ranks) ..."
+	docker run --rm \
+	  $(GPU_FLAG) \
+	  -e BACKEND=simulator \
+	  -e USE_GPU=$(GPU_AVAILABLE) \
+	  -v "$$(pwd)/results:/workspace/results" \
+	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
+	  $(IMAGE_NAME) \
+	  mpirun --allow-run-as-root -np $(NP) python3 template.py
 
 # FULL BENCHMARK - simualtor only
 run:
@@ -140,6 +151,16 @@ test:
 	  mpirun --allow-run-as-root -np 2 python3 tests/test_layers_run.py
 	@echo "[Make] All tests complete."
 
+
+
+# LIST AVAILABLE MOLECULES from the live registry
+molecules:
+	@docker run --rm $(IMAGE_NAME) python3 -c "\
+	from src.api.problems import MOLECULE_REGISTRY; \
+	print('Available molecules:'); \
+	print(f'{\"Name\":<8} {\"Qubits\":<8} {\"FCI (Ha)\":<14} {\"Description\"}'); \
+	print('-' * 60); \
+	[print(f'{k:<8} {\"--\":<8} {v[\"fci_energy\"]:<14.4f} {v[\"description\"]}') for k, v in MOLECULE_REGISTRY.items()]"
 
 
 shell:

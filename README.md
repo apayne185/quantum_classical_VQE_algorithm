@@ -14,8 +14,11 @@ git clone <repo-url> && cd quantum_classical_VQE_algorithm
 cp .env.example .env              # Add IBM Quantum credentials (optional, for QPU runs only)
 make build                        # Build Docker image (CUDA 12.2 + OpenMPI + Python 3.11)
 make trial                        # 7-layer diagnostic test (simulator, 2 MPI ranks)
+make example NP=2                 # Run template (H2 ground state, 2 MPI ranks)
 make run NP=2                     # Full chemistry benchmark (H2, LiH, BeH2, H2O)
 ```
+
+See [`template.py`](template.py) for a step-by-step walkthrough. See [`MOLECULES.md`](MOLECULES.md) for all available built-in molecules.
 
 ## Architecture
 
