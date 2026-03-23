@@ -181,8 +181,66 @@ def run_scaling_local(stack: HPCHybridStack):
     return result
 
 
+def run_weak_scaling(stack: HPCHybridStack):
+    """Weak scaling: increase problem size proportionally with rank count.
+    Each rank count gets a molecule whose Pauli term count roughly scales
+    with P, so per-rank workload stays approximately constant.
+    """
+    # Map rank count to molecule (increasing Pauli terms with P)
+    weak_scaling_map = {
+        1: "H2",      # 15 terms / 1 rank  = 15 terms/rank
+        2: "LiH",     # 631 terms / 2 ranks = 316 terms/rank
+        4: "BeH2",    # 666 terms / 4 ranks = 167 terms/rank
+        8: "H2O",     # 1086 terms / 8 ranks = 136 terms/rank
+    }
 
-    
+    mol_name = weak_scaling_map.get(stack.size)
+    if mol_name is None:
+        if stack.rank == 0:
+            print(f"[Weak Scaling] No molecule mapped for P={stack.size}, skipping.")
+        return None
+
+    if stack.rank == 0:
+        print(f"\n RUNNING WEAK SCALING (P={stack.size}, molecule={mol_name})")
+
+    problem = make_problem(mol_name)
+    if problem is None:
+        if stack.rank == 0:
+            print(f"[Weak Scaling] {mol_name} resolution failed, skipping.")
+        return None
+
+    # Fixed 10 iterations for consistency across rank counts
+    t0 = time.perf_counter()
+    _, history = stack.vqe_optimize(problem, max_iterations=10,
+                                    checkpoint_dir=f"checkpoints/weak_scaling")
+    t_total = time.perf_counter() - t0
+    t_per_iter = t_total / len(history) if history else 0
+
+    result = None
+    if stack.rank == 0 and history:
+        n_terms = len(problem.pauli_terms)
+        terms_per_rank = n_terms / stack.size
+        result_line = (f"P={stack.size} mol={mol_name} terms={n_terms} "
+                       f"terms/rank={terms_per_rank:.0f} T_total={t_total:.4f} "
+                       f"T/iter={t_per_iter:.4f} final_E={history[-1]:+.6f}")
+        print(f"[Weak Scaling] {result_line}")
+
+        os.makedirs("results/scaling", exist_ok=True)
+        with open(f"results/scaling/weak_scaling_P{stack.size}.txt", "w") as f:
+            f.write(result_line + "\n")
+
+        result = {
+            "ranks": stack.size,
+            "molecule": mol_name,
+            "pauli_terms": n_terms,
+            "terms_per_rank": terms_per_rank,
+            "wall_time": t_total,
+            "time_per_iter": t_per_iter,
+            "final_energy": history[-1],
+            "iterations": len(history),
+        }
+    return result
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
@@ -225,6 +283,7 @@ if __name__ == "__main__":
         # Finance problem kept in codebase but excluded from chemistry-focused benchmarks
         # finance_result = run_finance_local(stack)
         scaling_result = run_scaling_local(stack)
+        weak_scaling_result = run_weak_scaling(stack)
 
         if stack.rank == 0:
             print("\n\n\n---ALL LOCAL BENCHMARKS COMPLETE ----")
@@ -249,6 +308,7 @@ if __name__ == "__main__":
                 "gpu": stack.use_gpu,
                 "molecules": results,
                 "scaling": scaling_result,
+                "weak_scaling": weak_scaling_result,
             }, backend=BACKEND)
 
     close_log()

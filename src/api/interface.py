@@ -13,6 +13,16 @@ import mpi4py
 mpi4py.rc.initialize = False
 from mpi4py import MPI
 
+# GPU-accelerated statevector: try AerSimulator with cuStateVec, fall back to Qiskit Statevector
+_GPU_SV_AVAILABLE = False
+_AerSimulator = None
+try:
+    from qiskit_aer import AerSimulator as _AerSim
+    _AerSimulator = _AerSim
+    # Actual GPU availability checked at runtime in _build_statevector()
+except ImportError:
+    pass
+
 
 class HPCHybridStack:
     def __init__(self, use_gpu: bool | None = None, backend:str = 'simulator'):
@@ -22,7 +32,7 @@ class HPCHybridStack:
 
         self.use_gpu = use_gpu
         self.backend = backend
-        self._ibm_session = None
+        self._ibm_session= None
         self._ibm_estimator = None
         self._ibm_transpiled = None
         self._ibm_observable = None
@@ -44,8 +54,34 @@ class HPCHybridStack:
                     print(f"Rank {self.rank}: GPU initialization failed, falling back to CPU.  Error: {e}")
                 self.use_gpu = False
 
+        # Detect GPU statevector capability (cuStateVec via Aer)
+        self._gpu_sv = False
+        if self.use_gpu and _AerSimulator is not None:
+            try:
+                test_sim = _AerSimulator(method='statevector', device='GPU')
+                self._gpu_sv = True
+                self._aer_gpu = test_sim
+                if self.rank == 0:
+                    print("[Stack] GPU statevector (cuStateVec) available")
+            except Exception:
+                if self.rank == 0:
+                    print("[Stack] GPU requested but cuStateVec unavailable — using CPU Statevector")
+
         if self.rank == 0:
-            print(f"[Stack]  Initialized {self.size} MPI rank(s), GPU={'enabled' if self.use_gpu else 'disabled'}, backend='{self.backend}'")
+            print(f"[Stack]  Initialized {self.size} MPI rank(s), GPU={'enabled' if self.use_gpu else 'disabled'}, "
+                  f"SV_backend={'GPU (cuStateVec)' if self._gpu_sv else 'CPU (Qiskit)'}, backend='{self.backend}'")
+
+
+    def _build_statevector(self, bound_circuit):
+        """Build statevector from bound circuit. Uses GPU (cuStateVec) if available, CPU otherwise."""
+        if self._gpu_sv:
+            from qiskit import transpile
+            # AerSimulator with GPU-accelerated statevector
+            t_circ = transpile(bound_circuit, self._aer_gpu)
+            result = self._aer_gpu.run(t_circ).result()
+            return Statevector(result.get_statevector())
+        else:
+            return Statevector(bound_circuit)
 
 
     # Runs SPSA VQE loop
@@ -277,8 +313,8 @@ class HPCHybridStack:
         bound_minus = ansatz.assign_parameters(
             {p: v for p, v in zip(sorted_params, theta_minus)})
 
-        sv_plus = Statevector(bound_plus)
-        sv_minus = Statevector(bound_minus)
+        sv_plus = self._build_statevector(bound_plus)
+        sv_minus = self._build_statevector(bound_minus)
 
         # Partition Pauli terms across MPI ranks
         local_terms = self.partition(problem.pauli_terms)
@@ -304,7 +340,8 @@ class HPCHybridStack:
         # M = T_accel / T_comm — measures how well compute masks communication
         masking_metric = (t_accel / t_comm) if t_comm > 1e-9 else 0.0
 
-        path = f"Statevector MPI-distributed ({self.size} ranks)"
+        sv_type = "GPU-cuStateVec" if self._gpu_sv else "CPU-Statevector"
+        path = f"{sv_type} MPI-distributed ({self.size} ranks)"
         return float(e_plus_global[0]), float(e_minus_global[0]), masking_metric, path
 
 
@@ -314,7 +351,7 @@ class HPCHybridStack:
         bound = ansatz.assign_parameters(
             {p: v for p, v in zip(sorted(ansatz.parameters, key=lambda x: x.name), theta)})
 
-        sv = Statevector(bound)
+        sv = self._build_statevector(bound)
         pauli_op = SparsePauliOp.from_list(problem.pauli_terms)
         energy = sv.expectation_value(pauli_op).real
         return float(energy)
@@ -401,8 +438,8 @@ class HPCHybridStack:
         bound_minus = ansatz.assign_parameters(
             {p: v for p, v in zip(sorted_ansatz_params, theta_minus)})
 
-        sv_plus = Statevector(bound_plus)
-        sv_minus = Statevector(bound_minus)
+        sv_plus = self._build_statevector(bound_plus)
+        sv_minus = self._build_statevector(bound_minus)
 
         # Distribute Pauli terms across ranks (same as simulator path)
         local_terms = self.partition(problem.pauli_terms)
