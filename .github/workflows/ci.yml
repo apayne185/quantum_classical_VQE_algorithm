@@ -5,6 +5,7 @@ on:
     branches: [main, feature/ci-workflow]
   pull_request:
     branches: [main]
+  workflow_dispatch:    # Manual trigger for IBM QPU tests
 
 jobs:
   build-and-test:
@@ -53,4 +54,45 @@ jobs:
               if stack.rank == 0:
                   print(f'H2 smoke test: {len(hist)} iters, final E={hist[-1]:.4f}')
                   assert len(hist) > 0, 'No iterations completed'
+          "
+
+  # IBM QPU test — manual trigger only to conserve QPU time
+  # Trigger from GitHub Actions tab → "Run workflow" button
+  ibm-qpu-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'workflow_dispatch'
+    needs: build-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: make build
+
+      - name: Run IBM QPU smoke test (H2, 3 iterations)
+        env:
+          IBM_QUANTUM_TOKEN: ${{ secrets.IBM_QUANTUM_TOKEN }}
+          IBM_QUANTUM_INSTANCE: ${{ secrets.IBM_QUANTUM_INSTANCE }}
+          IBM_QUANTUM_BACKEND: ${{ secrets.IBM_QUANTUM_BACKEND }}
+          IBM_QUANTUM_REGION: ${{ secrets.IBM_QUANTUM_REGION }}
+        run: |
+          docker run --rm \
+            -e BACKEND=ibm_cloud \
+            -e USE_GPU=no \
+            -e IBM_QUANTUM_TOKEN="$IBM_QUANTUM_TOKEN" \
+            -e IBM_QUANTUM_INSTANCE="$IBM_QUANTUM_INSTANCE" \
+            -e IBM_QUANTUM_BACKEND="$IBM_QUANTUM_BACKEND" \
+            -e IBM_QUANTUM_REGION="$IBM_QUANTUM_REGION" \
+            vqe-mpi-gpu \
+            mpirun --allow-run-as-root -np 2 python3 -c "
+          from src.api.interface import HPCHybridStack
+          from src.api.problems import ChemistryProblem
+          with HPCHybridStack(use_gpu=False, backend='ibm_cloud') as stack:
+              p = ChemistryProblem.from_registry('H2')
+              _, hist = stack.vqe_optimize(p, max_iterations=3, seed=42)
+              if stack.rank == 0:
+                  print(f'IBM QPU test: {len(hist)} iters, final E={hist[-1]:.4f}')
+                  assert len(hist) > 0, 'No QPU iterations completed'
           "

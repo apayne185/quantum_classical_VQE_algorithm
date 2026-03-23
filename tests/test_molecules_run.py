@@ -2,10 +2,15 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath("./build"))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from src.api.molecule_resolver import (MoleculeResolver, MoleculeTooBigError, ResolutionError)   
-# sys.path.insert(0, os.path.abspath("."))
-from rdkit import RDLogger
-RDLogger.DisableLog('rdApp.*')
+from src.api.molecule_resolver import (MoleculeResolver, MoleculeTooBigError, ResolutionError)
+
+try:
+    from rdkit import RDLogger
+    RDLogger.DisableLog('rdApp.*')
+    HAS_RDKIT = True
+except ImportError:
+    HAS_RDKIT = False
+    print("[WARN] rdkit not installed — SMILES-based tests will be skipped")
 
 
 resolver = MoleculeResolver(max_qubits=20,allow_network=True, cache_dir=".pubchem_cache")
@@ -24,7 +29,10 @@ test_cases = [
 
 print("MOLECULE RESOLVER tests")
 
-for label, inp, kwargs in test_cases: 
+for label, inp, kwargs in test_cases:
+    if label == "SMILES" and not HAS_RDKIT:
+        print(f"\n[{label}] Input: '{inp}' — SKIPPED (rdkit not installed)")
+        continue
     print(f"\n[{label}] Input: '{inp}'")
     try:
         result = resolver.resolve(inp, **kwargs)
