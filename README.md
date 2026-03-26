@@ -12,7 +12,7 @@ A hybrid quantum-classical middleware stack that implements the Variational Quan
 ```bash
 git clone <repo-url> && cd quantum_classical_VQE_algorithm
 cp .env.example .env              # Add IBM Quantum credentials (optional, for QPU runs only)
-make build                        # Build Docker image (CUDA 12.2 + OpenMPI + Python 3.11)
+make build                        # Build Docker image (CUDA 12.6 + OpenMPI + Python 3.11)
 make trial                        # 7-layer diagnostic test (simulator, 2 MPI ranks)
 make example NP=2                 # Run template (H2 ground state, 2 MPI ranks)
 make run NP=2                     # Full chemistry benchmark (H2, LiH, BeH2, H2O)
@@ -42,6 +42,9 @@ The stack supports three evaluation backends, selected automatically:
 | **Statevector (MPI)** | `BACKEND=simulator` | Exact statevector simulation distributed across MPI ranks. Each rank builds the full statevector and evaluates its partition of Pauli terms. Supports GPU acceleration via cuStateVec when available, with automatic CPU fallback. |
 | **IBM QPU** | `BACKEND=ibm_cloud` | Submits circuits to IBM Quantum via EstimatorV2. Concurrent classical statevector computation overlaps with QPU round-trip time. |
 | **C++ Dispatcher** | Fallback / Layer 3 test | MPI-coordinated dispatch through the C++ bridge with CUDA kernel or CPU mean-field approximation. |
+
+
+
 
 ### Data Flow
 
@@ -154,7 +157,7 @@ python benchmarks/run_analysis.py --plot   # convergence plots (requires matplot
 ## Dependencies
 
 **Core:** qiskit ≥1.0, qiskit-nature, qiskit-ibm-runtime ≥0.45, pyscf, mpi4py, numpy, scipy
-**Build:** CMake 3.18+, pybind11, nlohmann_json, libcurl, OpenMPI, CUDA 12.2
+**Build:** CMake 3.18+, pybind11, nlohmann_json, libcurl, OpenMPI, CUDA 12.6
 **Optional:** cupy (GPU), rdkit (SMILES), matplotlib (plots)
 
 All dependencies are included in the Docker image — no local installation required. See `requirements.txt` for Python packages.
@@ -188,7 +191,7 @@ All dependencies are included in the Docker image — no local installation requ
 │   └── run_analysis.py       # Results analysis + plotting
 ├── results/                  # Auto-organized: simulator/, ibm/, baseline/, scaling/, trial/
 ├── checkpoints/              # Rolling SPSA checkpoints (per-molecule subdirs)
-├── Dockerfile                # CUDA 12.2 + OpenMPI + Python 3.11 container
+├── Dockerfile                # CUDA 12.6 + OpenMPI + Python 3.11 container
 ├── Makefile                  # Build and run orchestration
 ├── CMakeLists.txt            # C++ build configuration
 ├── .env.example              # IBM Quantum credential template
