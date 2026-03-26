@@ -23,8 +23,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
  && update-alternatives --install /usr/bin/python  python  /usr/bin/python3.11 1
 
-
 RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
+
+# Core dependencies (install WITHOUT qiskit-aer so GPU version takes priority)
 RUN pip3 install --no-cache-dir \
     numpy \
     scipy \
@@ -33,9 +34,17 @@ RUN pip3 install --no-cache-dir \
     qiskit \
     qiskit-nature \
     qiskit-ibm-runtime \
-    pyscf \
-    qiskit-aer-gpu \
-    cupy-cuda12x
+    pyscf
+
+# GPU acceleration: install cupy first, then qiskit-aer-gpu
+# cupy-cuda12x works with CUDA 12.x (any minor version)
+# qiskit-aer-gpu replaces qiskit-aer with GPU-enabled build
+RUN pip3 install --no-cache-dir cupy-cuda12x
+RUN pip3 install --no-cache-dir qiskit-aer-gpu
+
+# Verify GPU packages installed correctly
+RUN python3 -c "import cupy; print(f'CuPy: {cupy.__version__}')" && \
+    python3 -c "from qiskit_aer import AerSimulator; print('Aer imported OK')"
 
 WORKDIR /workspace
 COPY . /workspace
@@ -47,6 +56,8 @@ RUN mkdir -p build && cd build && \
     && make -j$(nproc)
 
 ENV PYTHONPATH="/workspace/build:/workspace"
+ENV CUDA_HOME="/usr/local/cuda"
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH}"
 
 ENV IBM_QUANTUM_TOKEN=""
 ENV IBM_QUANTUM_INSTANCE=""
