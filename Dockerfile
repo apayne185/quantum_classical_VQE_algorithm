@@ -37,9 +37,9 @@ RUN pip3 install --no-cache-dir \
     qiskit-ibm-runtime \
     pyscf
 
-# GPU acceleration: cupy for CUDA, qiskit-aer built from source for cuStateVec
+# GPU acceleration: cupy for CUDA, qiskit-aer built from source with GPU support
 RUN pip3 install --no-cache-dir cupy-cuda12x
-RUN pip3 install --no-cache-dir qiskit-aer --no-binary qiskit-aer
+RUN AER_THRUST_BACKEND=CUDA pip3 install --no-cache-dir qiskit-aer --no-binary qiskit-aer
 
 WORKDIR /workspace
 COPY . /workspace
