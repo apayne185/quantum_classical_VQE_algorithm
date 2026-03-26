@@ -40,10 +40,10 @@ RUN pip3 install --no-cache-dir \
 RUN pip3 install --no-cache-dir cupy-cuda12x
 RUN pip3 install --no-cache-dir qiskit-aer-gpu
 
-# Verify both installed correctly
+# Verify packages installed (Aer GPU requires NVIDIA runtime libs, only available with --gpus)
 RUN python3 -c "import cupy; print(f'CuPy: {cupy.__version__}')" && \
     python3 -c "import qiskit; print(f'Qiskit: {qiskit.__version__}')" && \
-    python3 -c "from qiskit_aer import AerSimulator; print('Aer GPU: OK')"
+    pip3 show qiskit-aer-gpu | head -2
 
 WORKDIR /workspace
 COPY . /workspace
