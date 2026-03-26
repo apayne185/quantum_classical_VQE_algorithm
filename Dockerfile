@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenmpi-dev \
     openmpi-bin \
     libcurl4-openssl-dev \
+    libopenblas-dev \
     python3.11 \
     python3.11-dev \
     python3-pip \
@@ -25,25 +26,20 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
 RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
 
-# Core dependencies — pin qiskit<2.0 for qiskit-aer-gpu compatibility
+# Core dependencies
 RUN pip3 install --no-cache-dir \
     numpy \
     scipy \
     mpi4py \
     pybind11 \
-    "qiskit>=1.0,<2.0" \
-    "qiskit-nature>=0.7,<1.0" \
-    "qiskit-ibm-runtime>=0.20" \
+    qiskit \
+    qiskit-nature \
+    qiskit-ibm-runtime \
     pyscf
 
-# GPU acceleration: cupy + qiskit-aer-gpu (requires qiskit <2.0)
+# GPU acceleration: cupy for CUDA, qiskit-aer built from source for cuStateVec
 RUN pip3 install --no-cache-dir cupy-cuda12x
-RUN pip3 install --no-cache-dir qiskit-aer-gpu
-
-# Verify packages installed (Aer GPU requires NVIDIA runtime libs, only available with --gpus)
-RUN python3 -c "import cupy; print(f'CuPy: {cupy.__version__}')" && \
-    python3 -c "import qiskit; print(f'Qiskit: {qiskit.__version__}')" && \
-    pip3 show qiskit-aer-gpu | head -2
+RUN pip3 install --no-cache-dir qiskit-aer --no-binary qiskit-aer
 
 WORKDIR /workspace
 COPY . /workspace
