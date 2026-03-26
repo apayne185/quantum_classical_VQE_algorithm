@@ -19,9 +19,9 @@ _AerSimulator = None
 try:
     from qiskit_aer import AerSimulator as _AerSim
     _AerSimulator = _AerSim
-    # Actual GPU availability checked at runtime in _build_statevector()
-except ImportError:
-    pass
+except ImportError as e:
+    import sys
+    print(f"[Stack] qiskit-aer not available ({e}) — GPU statevector disabled", file=sys.stderr)
 
 
 class HPCHybridStack:
@@ -63,9 +63,10 @@ class HPCHybridStack:
                 self._aer_gpu = test_sim
                 if self.rank == 0:
                     print("[Stack] GPU statevector (cuStateVec) available")
-            except Exception:
+            except Exception as e:
                 if self.rank == 0:
-                    print("[Stack] GPU requested but cuStateVec unavailable — using CPU Statevector")
+                    print(f"[Stack] GPU requested but cuStateVec unavailable: {e}")
+                    print("[Stack] Falling back to CPU Statevector")
 
         if self.rank == 0:
             print(f"[Stack]  Initialized {self.size} MPI rank(s), GPU={'enabled' if self.use_gpu else 'disabled'}, "
