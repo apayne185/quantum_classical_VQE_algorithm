@@ -1,0 +1,93 @@
+[    0.00s] Log started
+[Config] GPU= requested 
+[Config] Backend= ibm_cloud 
+[Config] WARNING: This run submits real jobs to IBM Quantum.
+ Each iteration incurs QPU time. Monitor usage at  https://quantum.cloud.ibm.com 
+
+
+[Chemistry:H2] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[  534.20s] Log closed
+ore=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[IBM] Connecting to ibm_marrakesh (us-east) ...
+[IBM] Ansatz transpiled: 156 physical qubits, depth 73
+[IBM] EstimatorV2 ready (4096 shots)
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72qe2mqdfbc73d2i69g, classical work proceeding...
+[IBM] Job completed in 56.6s (T_accel=0.20s, residual_wait=56.4s, M=0.0035)
+[IBM] Classical SV estimate: E+=-0.038094, E-=-0.035420
+[IBM] QPU measured:          E+=-0.123275, E-=-0.121549
+Iter 0001 | Energy: -0.122412 | Delta: inf | M: 0.0035 | Path: IBM QPU + Classical SV (async)
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72qefhamkec73a1kbg0, classical work proceeding...
+[IBM] Job completed in 31.8s (T_accel=0.19s, residual_wait=31.7s, M=0.0059)
+[IBM] Classical SV estimate: E+=-0.044772, E-=-0.024024
+[IBM] QPU measured:          E+=-0.129654, E-=-0.112126
+Iter 0002 | Energy: -0.120890 | Delta: 1.52e-03 | M: 0.0059 | Path: IBM QPU + Classical SV (async)
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72qenmqdfbc73d2i700, classical work proceeding...
+[IBM] Job completed in 52.5s (T_accel=0.19s, residual_wait=52.3s, M=0.0036)
+[IBM] Classical SV estimate: E+=-0.054972, E-=-0.033493
+[IBM] QPU measured:          E+=-0.135207, E-=-0.122188
+Iter 0003 | Energy: -0.128697 | Delta: 7.81e-03 | M: 0.0036 | Path: IBM QPU + Classical SV (async)
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72qf4pamkec73a1kc9g, classical work proceeding...
+[IBM] Job completed in 34.8s (T_accel=0.19s, residual_wait=34.6s, M=0.0054)
+[IBM] Classical SV estimate: E+=-0.007662, E-=-0.044889
+[IBM] QPU measured:          E+=-0.092212, E-=-0.119125
+Iter 0004 | Energy: -0.105669 | Delta: 2.30e-02 | M: 0.0054 | Path: IBM QPU + Classical SV (async)
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72qfdmv3u3c73ej0650, classical work proceeding...
+[IBM] Job completed in 49.7s (T_accel=0.19s, residual_wait=49.5s, M=0.0038)
+[IBM] Classical SV estimate: E+=-0.025539, E-=-0.067171
+[IBM] QPU measured:          E+=-0.106808, E-=-0.146894
+Iter 0005 | Energy: -0.126851 | Delta: 2.12e-02 | M: 0.0038 | Path: IBM QPU + Classical SV (async)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/H2_ibm/checkpoint_iter_0005.npy. 
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72qfpuqdfbc73d2i82g, classical work proceeding...
+[IBM] Job completed in 32.2s (T_accel=0.19s, residual_wait=32.0s, M=0.0059)
+[IBM] Classical SV estimate: E+=-0.058913, E-=-0.035657
+[IBM] QPU measured:          E+=-0.161461, E-=-0.153087
+Iter 0006 | Energy: -0.157274 | Delta: 3.04e-02 | M: 0.0059 | Path: IBM QPU + Classical SV (async)
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72qg26v3u3c73ej06r0, classical work proceeding...
+[IBM] Job completed in 177.8s (T_accel=0.19s, residual_wait=177.6s, M=0.0011)
+[IBM] Classical SV estimate: E+=-0.054101, E-=-0.050418
+[IBM] QPU measured:          E+=-0.130026, E-=-0.129826
+Iter 0007 | Energy: -0.129926 | Delta: 2.73e-02 | M: 0.0011 | Path: IBM QPU + Classical SV (async)
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72qheeqdfbc73d2i9rg, classical work proceeding...
+[IBM] Job completed in 32.4s (T_accel=0.19s, residual_wait=32.2s, M=0.0058)
+[IBM] Classical SV estimate: E+=-0.057099, E-=-0.039789
+[IBM] QPU measured:          E+=-0.123198, E-=-0.116933
+Iter 0008 | Energy: -0.120066 | Delta: 9.86e-03 | M: 0.0058 | Path: IBM QPU + Classical SV (async)
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72qhmhamkec73a1kf2g, classical work proceeding...
+[IBM] Job completed in 32.4s (T_accel=0.19s, residual_wait=32.2s, M=0.0059)
+[IBM] Classical SV estimate: E+=-0.023613, E-=-0.081457
+[IBM] QPU measured:          E+=-0.133176, E-=-0.160911
+Iter 0009 | Energy: -0.147044 | Delta: 2.70e-02 | M: 0.0059 | Path: IBM QPU + Classical SV (async)
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72qhumqdfbc73d2iaeg, classical work proceeding...
+[IBM] Job completed in 31.8s (T_accel=0.19s, residual_wait=31.6s, M=0.0059)
+[IBM] Classical SV estimate: E+=-0.104800, E-=-0.010340
+[IBM] QPU measured:          E+=-0.197467, E-=-0.128712
+Iter 0010 | Energy: -0.163089 | Delta: 1.60e-02 | M: 0.0059 | Path: IBM QPU + Classical SV (async)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/H2_ibm/checkpoint_iter_0010.npy. 
+
+[H2-IBM] Final energy : -0.163089 Ha 
+[H2-IBM] Reference FCI : -1.137284 Ha
+[H2-IBM] Absolute error: +0.974195 Ha 
+[H2-IBM] Iterations run: 10
+[H2-IBM] Wall time: 532.24s (includes QPU queue + RTT)
+[H2-IBM] Time/iter: 53.22s
+[H2-IBM] Path: IBM EstimatorV2 (Python)
+
+---ALL IBM QPU BENCHMARKS COMPLETE ----
+Ranks used : 2
+GPU : True
+Backend : ibm_cloud 
+[Results] Saved to results/ibm/ibm_cloud_20260326_214602.json
+[  534.21s] Log closed
