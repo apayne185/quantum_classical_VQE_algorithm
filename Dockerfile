@@ -25,28 +25,25 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
 RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
 
-# Core dependencies (install WITHOUT qiskit-aer so GPU version takes priority)
+# Core dependencies — pin qiskit<2.0 for qiskit-aer-gpu compatibility
 RUN pip3 install --no-cache-dir \
     numpy \
     scipy \
     mpi4py \
     pybind11 \
-    qiskit \
-    qiskit-nature \
-    qiskit-ibm-runtime \
+    "qiskit>=1.0,<2.0" \
+    "qiskit-nature>=0.7,<1.0" \
+    "qiskit-ibm-runtime>=0.20" \
     pyscf
 
-# GPU acceleration: install cupy first, then qiskit-aer-gpu
-# cupy-cuda12x works with CUDA 12.x (any minor version)
-# qiskit-aer-gpu replaces qiskit-aer with GPU-enabled build
+# GPU acceleration: cupy + qiskit-aer-gpu (requires qiskit <2.0)
 RUN pip3 install --no-cache-dir cupy-cuda12x
-RUN pip3 install --no-cache-dir "qiskit-aer-gpu" || \
-    echo "WARNING: qiskit-aer-gpu install failed — GPU statevector will use CPU fallback"
+RUN pip3 install --no-cache-dir qiskit-aer-gpu
 
-# Verify cupy installed; aer-gpu may fail on Qiskit 2.x — stack handles this gracefully
-RUN python3 -c "import cupy; print(f'CuPy: {cupy.__version__}')"
-RUN python3 -c "from qiskit_aer import AerSimulator; print('Aer GPU: OK')" 2>/dev/null || \
-    echo "NOTE: qiskit-aer-gpu incompatible with installed Qiskit version — CPU statevector will be used"
+# Verify both installed correctly
+RUN python3 -c "import cupy; print(f'CuPy: {cupy.__version__}')" && \
+    python3 -c "import qiskit; print(f'Qiskit: {qiskit.__version__}')" && \
+    python3 -c "from qiskit_aer import AerSimulator; print('Aer GPU: OK')"
 
 WORKDIR /workspace
 COPY . /workspace
