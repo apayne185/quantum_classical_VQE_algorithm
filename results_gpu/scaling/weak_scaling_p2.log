@@ -1,0 +1,41 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.2.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+hpc_core and interface imported.
+hpc_core and interface imported.
+[Resolver] 'LiH' found in local registry 
+[Stack]  Initialized 2 MPI rank(s), GPU=enabled, SV_backend=CPU (Qiskit), backend='simulator'
+
+ RUNNING WEAK SCALING (P=2, molecule=LiH)
+[Resolver] 'LiH' found in local registry 
+[Chemistry:LiH] 631 Pauli terms, 12 qubits, 96 params, reps=2. FCI reference: -7.8825 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.979). Adaptive HWE with full entanglement recommended.
+[Chemistry:LiH] 631 Pauli terms, 12 qubits, 96 params, reps=2. FCI reference: -7.8825 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.979). Adaptive HWE with full entanglement recommended.
+Iter 0001 | Energy: -0.437437 | Delta: inf | M: 1452.3728 | Path: CPU-Statevector MPI-distributed (2 ranks)
+Iter 0002 | Energy: -0.393192 | Delta: 4.42e-02 | M: 3527.1812 | Path: CPU-Statevector MPI-distributed (2 ranks)
+Iter 0003 | Energy: -0.553293 | Delta: 1.60e-01 | M: 20.8088 | Path: CPU-Statevector MPI-distributed (2 ranks)
+Iter 0004 | Energy: -0.834170 | Delta: 2.81e-01 | M: 3268.6442 | Path: CPU-Statevector MPI-distributed (2 ranks)
+Iter 0005 | Energy: -0.815492 | Delta: 1.87e-02 | M: 3329.0280 | Path: CPU-Statevector MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/weak_scaling/checkpoint_iter_0005.npy. 
+Iter 0006 | Energy: -0.826345 | Delta: 1.09e-02 | M: 3841.1048 | Path: CPU-Statevector MPI-distributed (2 ranks)
+Iter 0007 | Energy: -0.828213 | Delta: 1.87e-03 | M: 862.2812 | Path: CPU-Statevector MPI-distributed (2 ranks)
+Iter 0008 | Energy: -0.841580 | Delta: 1.34e-02 | M: 98.3673 | Path: CPU-Statevector MPI-distributed (2 ranks)
+Iter 0009 | Energy: -0.828479 | Delta: 1.31e-02 | M: 4051.6894 | Path: CPU-Statevector MPI-distributed (2 ranks)
+Iter 0010 | Energy: -0.839530 | Delta: 1.11e-02 | M: 326.6061 | Path: CPU-Statevector MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/weak_scaling/checkpoint_iter_0010.npy. 
+[Weak Scaling] P=2 mol=LiH terms=631 terms/rank=316 T_total=0.7186 T/iter=0.0719 final_E=-0.839530

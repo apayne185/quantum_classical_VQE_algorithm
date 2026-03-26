@@ -18,15 +18,15 @@ Before running this file:
            make molecules           # prints the live molecule registry
 
     4. Run this template file:
-           make example NP=2         # 2 MPI ranks (recommended minimum ranks)
-           make example NP=4         # 4 MPI ranks (more parallelism)
+           make example NP=2         # 2 MPI ranks (the recommended minimum ranks)
+           make example NP=4         # 4 MPI ranks (if you want more parallelism)
 
     Or run directly inside Docker (run this command in the terminal):
            docker run --rm vqe-mpi-gpu mpirun --allow-run-as-root -np 2 python3 template.py
 
            
 Where results are stored:
-    - Terminal output: printed live during the run
+    - Terminal output: printed during the run
     - Iteration logs: results/simulator/run_<timestamp>.log (every print statement)
     - Structured data:results/simulator/simulator_<timestamp>.json (energies, timing, history)
     - Checkpoints: checkpoints/<molecule>/checkpoint_iter_XXXX.npy (recoverable state)
@@ -130,13 +130,13 @@ with HPCHybridStack(backend=BACKEND) as stack:
         print("HAMILTONIAN")
         print("-" * 60)
         n_terms = len(problem.pauli_terms)
-        print(f"  {n_terms} Pauli terms, {problem.num_qubits} qubits")
+        print(f"{n_terms} Pauli terms, {problem.num_qubits} qubits")
         for op, coeff in problem.pauli_terms[:5]:
-            print(f"    {op}  {coeff:+.6f}")
+            print(f"{op}  {coeff:+.6f}")
         if n_terms > 7:
-            print(f"    ... ({n_terms - 7} more terms)")
+            print(f"... ({n_terms-7} more terms)")
         for op, coeff in problem.pauli_terms[-2:]:
-            print(f"    {op}  {coeff:+.6f}")
+            print(f"{op}  {coeff:+.6f}")
         print()
 
     # Synchronize before starting VQE
@@ -170,8 +170,7 @@ with HPCHybridStack(backend=BACKEND) as stack:
             report_iter = len(history)
             crossed_fci = False
 
-        print()
-        print("RESULTS")
+        print("\n\nRESULTS")
         print("=" * 60)
         print(f"Molecule: {problem.name}")
         print(f"Qubits: {problem.num_qubits}")
