@@ -33,7 +33,9 @@ RUN pip3 install --no-cache-dir \
     qiskit \
     qiskit-nature \
     qiskit-ibm-runtime \
-    pyscf
+    pyscf \
+    qiskit-aer-gpu \
+    cupy-cuda12x
 
 WORKDIR /workspace
 COPY . /workspace

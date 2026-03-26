@@ -1,0 +1,16 @@
+[    0.00s] Log started
+[Config] GPU= requested 
+[Config] Backend= ibm_cloud 
+[Config] WARNING: This run submits real jobs to IBM Quantum.
+ Each iteration incurs QPU time. Monitor usage at  https://quantum.cloud.ibm.com 
+
+
+[Chemistry:H2] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_rati[Chemistry:H2] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[IBM] Connecting to ibm_marrakesh (us-east) ...
+[IBM] Ansatz transpiled: 156 physical qubits, depth 73
+[IBM] EstimatorV2 ready (4096 shots)
+[IBM] Submitting job (2 PUBs, 4096 shots)...
+[IBM] Job submitted: d72blthamkec73a12fhg, classical work proceeding...
