@@ -1,0 +1,52 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.6.3
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+hpc_core and interface imported.
+hpc_core and interface imported.
+[Stack] GPU statevector (cuStateVec) available
+[Stack]  Initialized 2 MPI rank(s), GPU=enabled, SV_backend=GPU (cuStateVec), backend='simulator'
+
+ RUNNING WEAK SCALING (P=2, molecule=LiH)
+[Resolver] 'LiH' found in local registry 
+[Resolver] 'LiH' found in local registry 
+[Chemistry:LiH] 631 Pauli terms, 12 qubits, 96 params, reps=2. FCI reference: -7.8825 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.979). Adaptive HWE with full entanglement recommended.
+[Chemistry:LiH] 631 Pauli terms, 12 qubits, 96 params, reps=2. FCI reference: -7.8825 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.979). Adaptive HWE with full entanglement recommended.
+/usr/local/lib/python3.11/dist-packages/samplomatic/__init__.py:20: UserWarning: 
+You have imported samplomatic==0.17.1 which is in 
+beta development. Please expect breaking changes between 
+minor versions and pin your dependencies accordingly.
+  _warn_once_per_version(
+/usr/local/lib/python3.11/dist-packages/samplomatic/__init__.py:20: UserWarning: 
+You have imported samplomatic==0.17.1 which is in 
+beta development. Please expect breaking changes between 
+minor versions and pin your dependencies accordingly.
+  _warn_once_per_version(
+Iter 0001 | Energy: -0.460078 | Delta: inf | M: 10147.3988 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0002 | Energy: -0.418892 | Delta: 4.12e-02 | M: 117.1273 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0003 | Energy: -0.650803 | Delta: 2.32e-01 | M: 23.6361 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0004 | Energy: -1.863199 | Delta: 1.21e+00 | M: 44.4666 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0005 | Energy: -1.929548 | Delta: 6.63e-02 | M: 9506.7514 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/weak_scaling/checkpoint_iter_0005.npy. 
+Iter 0006 | Energy: -2.083640 | Delta: 1.54e-01 | M: 10698.6189 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0007 | Energy: -3.490202 | Delta: 1.41e+00 | M: 12876.4229 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0008 | Energy: -4.303671 | Delta: 8.13e-01 | M: 5727.5083 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0009 | Energy: -4.273728 | Delta: 2.99e-02 | M: 73.6391 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0010 | Energy: -4.996064 | Delta: 7.22e-01 | M: 33.8491 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/weak_scaling/checkpoint_iter_0010.npy. 
+[Weak Scaling] P=2 mol=LiH terms=631 terms/rank=316 T_total=2.9601 T/iter=0.2960 final_E=-4.996064

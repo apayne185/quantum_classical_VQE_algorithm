@@ -1,0 +1,92 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.6.3
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+hpc_core and interface imported.
+[Resolver] 'H2O' found in local registry 
+[Resolver] 'H2O' found in local registry 
+[Resolver] 'H2O' found in local registry 
+[Resolver] 'H2O' found in local registry 
+[Resolver] 'H2O' found in local registry 
+[Resolver] 'H2O' found in local registry 
+[Stack] GPU statevector (cuStateVec) available
+[Stack]  Initialized 8 MPI rank(s), GPU=enabled, SV_backend=GPU (cuStateVec), backend='simulator'
+
+ RUNNING WEAK SCALING (P=8, molecule=H2O)
+[Resolver] 'H2O' found in local registry 
+[Resolver] 'H2O' found in local registry 
+[Chemistry:H2O] 1086 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -75.0124 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.986). Adaptive HWE with full entanglement recommended.
+[Chemistry:H2O] 1086 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -75.0124 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.986). Adaptive HWE with full entanglement recommended.
+[Chemistry:H2O] 1086 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -75.0124 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.986). Adaptive HWE with full entanglement recommended.
+[Chemistry:H2O] 1086 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -75.0124 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.986). Adaptive HWE with full entanglement recommended.
+[Chemistry:H2O] 1086 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -75.0124 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.986). Adaptive HWE with full entanglement recommended.
+[Chemistry:H2O] 1086 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -75.0124 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.986). Adaptive HWE with full entanglement recommended.
+[Chemistry:H2O] 1086 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -75.0124 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.986). Adaptive HWE with full entanglement recommended.
+[Chemistry:H2O] 1086 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -75.0124 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.986). Adaptive HWE with full entanglement recommended.
+/usr/local/lib/python3.11/dist-packages/samplomatic/__init__.py:20: UserWarning: 
+You have imported samplomatic==0.17.1 which is in 
+beta development. Please expect breaking changes between 
+minor versions and pin your dependencies accordingly.
+  _warn_once_per_version(
+/usr/local/lib/python3.11/dist-packages/samplomatic/__init__.py:20: UserWarning: 
+You have imported samplomatic==0.17.1 which is in 
+beta development. Please expect breaking changes between 
+minor versions and pin your dependencies accordingly.
+  _warn_once_per_version(
+/usr/local/lib/python3.11/dist-packages/samplomatic/__init__.py:20: UserWarning: 
+You have imported samplomatic==0.17.1 which is in 
+beta development. Please expect breaking changes between 
+minor versions and pin your dependencies accordingly.
+  _warn_once_per_version(
+/usr/local/lib/python3.11/dist-packages/samplomatic/__init__.py:20: UserWarning: 
+You have imported samplomatic==0.17.1 which is in 
+beta development. Please expect breaking changes between 
+minor versions and pin your dependencies accordingly.
+  _warn_once_per_version(
+Iter 0001 | Energy: -3.309616 | Delta: inf | M: 29.0959 | Path: GPU-cuStateVec MPI-distributed (8 ranks)
+Iter 0002 | Energy: -12.961334 | Delta: 9.65e+00 | M: 11.0298 | Path: GPU-cuStateVec MPI-distributed (8 ranks)
+Iter 0003 | Energy: -52.568623 | Delta: 3.96e+01 | M: 10.0475 | Path: GPU-cuStateVec MPI-distributed (8 ranks)
+Iter 0004 | Energy: -53.883888 | Delta: 1.32e+00 | M: 9.2662 | Path: GPU-cuStateVec MPI-distributed (8 ranks)
+Iter 0005 | Energy: -54.731626 | Delta: 8.48e-01 | M: 10.2567 | Path: GPU-cuStateVec MPI-distributed (8 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/weak_scaling/checkpoint_iter_0005.npy. 
+Iter 0006 | Energy: -59.051486 | Delta: 4.32e+00 | M: 13.6557 | Path: GPU-cuStateVec MPI-distributed (8 ranks)
+Iter 0007 | Energy: -59.041208 | Delta: 1.03e-02 | M: 13.1968 | Path: GPU-cuStateVec MPI-distributed (8 ranks)
+Iter 0008 | Energy: -60.478798 | Delta: 1.44e+00 | M: 9.2905 | Path: GPU-cuStateVec MPI-distributed (8 ranks)
+Iter 0009 | Energy: -60.151783 | Delta: 3.27e-01 | M: 9.7796 | Path: GPU-cuStateVec MPI-distributed (8 ranks)
+Iter 0010 | Energy: -60.807538 | Delta: 6.56e-01 | M: 10.2810 | Path: GPU-cuStateVec MPI-distributed (8 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/weak_scaling/checkpoint_iter_0010.npy. 
+[Weak Scaling] P=8 mol=H2O terms=1086 terms/rank=136 T_total=3.4960 T/iter=0.3496 final_E=-60.807538
