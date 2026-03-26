@@ -77,10 +77,14 @@ class HPCHybridStack:
         """Build statevector from bound circuit. Uses GPU (cuStateVec) if available, CPU otherwise."""
         if self._gpu_sv:
             from qiskit import transpile
-            # AerSimulator with GPU-accelerated statevector
-            t_circ = transpile(bound_circuit, self._aer_gpu)
+            from qiskit.quantum_info import Statevector as _SV
+            # AerSimulator GPU path: must save_statevector() explicitly
+            circ = bound_circuit.copy()
+            circ.save_statevector()
+            t_circ = transpile(circ, self._aer_gpu)
             result = self._aer_gpu.run(t_circ).result()
-            return Statevector(result.get_statevector())
+            sv_data = result.get_statevector(t_circ)
+            return _SV(sv_data)
         else:
             return Statevector(bound_circuit)
 
