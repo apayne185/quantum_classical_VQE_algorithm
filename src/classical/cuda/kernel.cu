@@ -143,26 +143,7 @@ extern "C" double run_cuda_pauli_expectation(
 
 
 // LEGACY: kept for backward compatibility with old dispatcher path
-extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
-    if (n <= 0) return 0.0;
-
-    float *d_params = nullptr;
-    double *d_result = nullptr;
-    double h_result = 0.0;
-
-    cudaMalloc(&d_params, n * sizeof(float));
-    cudaMalloc(&d_result, sizeof(double));
-    cudaMemset(d_result, 0, sizeof(double));
-    cudaMemcpy(d_params, h_params, n * sizeof(float), cudaMemcpyHostToDevice);
-
-    // Simple fallback: sum of -0.5*cos(θ_i)
-    // This is NOT physically meaningful — use run_cuda_pauli_expectation instead
-    int blockSize = 256;
-    int gridSize = (n + blockSize - 1) / blockSize;
-
-    // Inline a minimal kernel via the old entry point
-    // (kept only so old code compiles; not used in production)
-    cudaFree(d_params);
-    cudaFree(d_result);
-    return 0.0;  // Deprecated — returns 0 to force fallback to CPU path
+// Deprecated — returns 0 to force fallback to CPU path
+extern "C" double run_cuda_vqe_fp32(const float* /*h_params*/, int /*n*/) {
+    return 0.0;
 }
