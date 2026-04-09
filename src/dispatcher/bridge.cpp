@@ -1,9 +1,9 @@
 /*Uses pybind11 to expose C++ structures to Python - uses MPI foe API metadata*/
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>          // for std::vector conversion
+#include <pybind11/stl.h>             // for std::vector conversion
 #include "stack_types.h"
 #include <mpi.h>
-#include <cuda_runtime.h>     // for CUDA API calls
+#include <cuda_runtime.h>            // for CUDA API calls
 #include <stdexcept>
 #include <string>
 
@@ -22,7 +22,7 @@ int init_mpi(){
     return provided;
 }  
 
-void finalize_mpi(){    //for clean exits
+void finalize_mpi(){          //for clean exit
     int finalized = 0;
     MPI_Finalized(&finalized);
     if (!finalized) {
@@ -30,7 +30,7 @@ void finalize_mpi(){    //for clean exits
     }
 }
 
-// determines which node/rank we are in - needed to determine master v workers
+// Determines current rank - needed to determine master v workers
 int get_rank() {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);

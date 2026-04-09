@@ -12,7 +12,7 @@ Before running this file:
            make build
 
     2. Verify the stack is functional and ready for usage:
-           make trial                # runs a 7 layer diagnostic test
+           make trial                # runs 7 layer diagnostic test
 
     3. (Optional) View all available built in molecules:
            make molecules           # prints the live molecule registry
@@ -33,14 +33,14 @@ Where results are stored:
 
     
 For IBM Quantum (real QPU) runs:
-    1. Copy .env.example to .env and fill in your personal IBM credentials (ensure these remain private). 
+    1. Copy .env.example to .env and fill in your personal IBM credentials (ensure it remains private). 
     2. Run on terminal:  make run-ibm NP=2
 
     (See the README file for detailed IBM setup instructions).
 
 For full documentation:
     - README.md - project overview, all make targets, architecture
-    - MOLECULES.md - built-in molecules, custom input formats, Optional: adding new molecules
+    - MOLECULES.md - built-in molecules, custom input formats, optionalally adding new molecules
 
     """
 
@@ -62,23 +62,24 @@ os.makedirs("results/simulator", exist_ok=True)
 init_log(f"results/simulator/template_{_ts}.log")
 
 
-# ═══════════════════════════════════════════════════════════════
-# Edit this section for your experiment
-# ═══════════════════════════════════════════════════════════════
+# =================================================
+# Edit this section for your personal experiment
+# =================================================
 
-# Molecule Selection  ────────────────────────────────────────
+# Molecule Selection  ---------------------------------
 
-# Option A: Built-in molecule (run 'make molecules' on terminal to see full list of avaliable molecules) 
+# Option A: Built in molecule (run 'make molecules' on terminal to see our full list of avaliable molecules) 
 MOLECULE = "H2"
 problem = ChemistryProblem.from_name(MOLECULE)
 
 
-# Option B: Custom geometry (atom positions in Angstroms, separated by ; and ,)
+# Option B: Custom geometry (atom positions in Angstroms)
 # problem = ChemistryProblem(
 #     "O 0 0 0; H 0.757 0.587 0; H -0.757 0.587 0",
 #     name="water",
 #     reps=2,                   # ansatz depth (higher= more expressive but slower)
 # )
+
 
 # Option C: Molecule resolver (common names, SMILES strings, PubChem lookup)
 # from src.api.molecule_resolver import MoleculeResolver
@@ -87,24 +88,24 @@ problem = ChemistryProblem.from_name(MOLECULE)
 # problem = ChemistryProblem(info.geometry, name=info.name)
 
 
-# Optimizer Settings   ────────────────────────────────────────
+# Optimizer Settings   ---------------------------------
 MAX_ITERATIONS = 200            # more iterations = better accuracy, longer runtimes (rule of thumb: 200 for H2, 800+ for LiH/BeH2/H2O)
 SEED = 42                        # fixed seed for reproducibility 
 CONVERGENCE_TOL= 1.6e-3         # chemical accuracy threshold in Hartrees
 
 
-# Backend Selection ─────────────────────────────────────────
+# Backend Selection ---------------------------------
 BACKEND = "simulator"       # "simulator" = exact statevector (noiseless, fast) or "ibm_cloud" = real QPU (requires .env credentials files)
 
 
 
-# Execution ─────────────────────────────────────────
+# Execution ---------------------------------
 with HPCHybridStack(backend=BACKEND) as stack:
 
     # All ranks prepare the problem (needed for MPI-distributed evaluation)
     problem.prepare()
 
-    # Print experiment configuration and circuit (rank 0 only)
+    # Print experiment configuration and circuit (by rank 0 only)
     if stack.rank == 0:
         print("VQE Ground-State Energy Computation")
         print("=" * 60)
@@ -157,7 +158,7 @@ with HPCHybridStack(backend=BACKEND) as stack:
         fci = problem.fci_energy
         final_energy = history[-1]
 
-        # Check if best physical energy was tracked (HWE may cross below FCI)
+        # Check if best physical energy was tracked (with HWE, may cross below FCI)
         best_energy = getattr(stack,'_best_physical_energy', final_energy)
         best_iter = getattr(stack,'_best_physical_iter', len(history))     
 

@@ -1,9 +1,4 @@
-"""Dual-output logger: captures all stdout to both console and log file.
-
-When init_log() is called, ALL print() output (from interface.py, problems.py, etc.)
-is automatically duplicated to the log file. No code changes needed in other modules.
-"""
-
+# Dual output logger - captures all stdout to both console and log file.
 import os
 import sys
 import time
@@ -14,7 +9,7 @@ _original_stdout = None
 
 
 class _TeeStream:
-    """Writes to both the original stdout and the log file."""
+    # Writes to original stdout and log file
     def __init__(self, original, log_file):
         self._original = original
         self._log_file = log_file
@@ -30,19 +25,19 @@ class _TeeStream:
         if self._log_file is not None:
             self._log_file.flush()
 
-    # Support any attribute access that stdout might need
+    # supports any attribute access stdout might need   
     def __getattr__(self, name):
         return getattr(self._original, name)
 
 
 def init_log(path: str):
-    """Start logging: all subsequent print() output goes to both console and file."""
+    # Starts logging, all subsequent print() output goes to both console and file
     global _log_file, _start_time, _original_stdout
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     _log_file = open(path, "w")
     _start_time = time.time()
 
-    # Redirect stdout through tee
+    # Redirect stdout through tee       
     _original_stdout = sys.stdout
     sys.stdout = _TeeStream(_original_stdout, _log_file)
 
@@ -50,8 +45,7 @@ def init_log(path: str):
 
 
 def log(msg: str, tag: str = ""):
-    """Write a timestamped message. Also usable standalone, but not required —
-    plain print() is captured too when init_log() has been called."""
+    # Writes a timestamped message  - also usable standalone,  not required 
     prefix = ""
     if _start_time is not None:
         elapsed = time.time() - _start_time
@@ -64,11 +58,11 @@ def log(msg: str, tag: str = ""):
 
 
 def close_log():
-    """Stop logging and restore original stdout."""
+    # Stop logging and restores original stdout 
     global _log_file, _original_stdout
     if _log_file is not None:
         log("Log closed")
-        # Restore original stdout before closing
+        # Restore original stdout before closing     
         if _original_stdout is not None:
             sys.stdout = _original_stdout
             _original_stdout = None

@@ -20,8 +20,8 @@ test_cases = [
     ("Registry lookup", "BeH2", {}),
     ("Common name","water", {}),                # PubChem
     ("Common name","ethanol",{}),               # PubChem
-    ("SMILES","CCO",{}),                 # ethanol RDKit
-    ("SMILES","C", {}),                     #methane
+    ("SMILES","CCO",{}),                       # ethanol RDKit
+    ("SMILES","C", {}),                         #methane
     ("Raw geometry","C 0 0 0; H 0 0 1.09", {}),
     ("Too big (rejected)", "adenine",{}),            # >20 
     ("Force no-freeze","BeH2",{"freeze_core": False}),    

@@ -63,7 +63,7 @@ run:
 
 
 
-# # FULL BENCHMArk - IBM quantum QPU 
+# # FULL BENCHMARK - IBM quantum QPU 
 run-ibm:
 	@[ -n "$(IBM_QUANTUM_TOKEN)" ] || (echo "ERROR: IBM_QUANTUM_TOKEN not set in .env"; exit 1)
 	@[ -n "$(IBM_QUANTUM_INSTANCE)" ] || (echo "ERROR: IBM_QUANTUM_INSTANCE not set in .env"; exit 1)
@@ -153,7 +153,7 @@ test:
 
 
 
-# LIST AVAILABLE MOLECULES from the live registry
+# LIST AVAILABLE MOLECULES - from the live registry
 molecules:
 	@docker run --rm $(IMAGE_NAME) python3 -c "\
 	from src.api.problems import MOLECULE_REGISTRY; \

@@ -137,7 +137,7 @@ def test_vqe_loop(stack: HPCHybridStack):
 
 
 
-# --- FINANCE PROBLEM (extensibility demonstration, not active in chemistry-focused benchmarks) ---
+# FINANCE PROBLEM (extensibility demonstration, not in chemistry focused benchmarks)
 def test_finance_layer(stack: HPCHybridStack):
     section("LAYER 5: Finance QUBO (4 assets, 10 iterations)")
     np.random.seed(0)
@@ -163,7 +163,7 @@ def test_finance_layer(stack: HPCHybridStack):
 def test_checkpoint_resilience(stack: HPCHybridStack):
     section("LAYER 6: Checkpoint Resilience")
 
-    # Use a dedicated test directory to avoid conflicts with old checkpoints
+    # Dedicated test directory to avoid conflicts with old checkpoints
     test_ckpt_dir = "checkpoints/_resilience_test"
     if stack.rank == 0:
         import shutil
@@ -201,11 +201,7 @@ def test_checkpoint_resilience(stack: HPCHybridStack):
         assert len(history2) > 0, "No iterations after checkpoint restart"
 
         # Verify SPSA schedule resumed correctly:
-        # The restart should pick up at k=6 (start_iter=5 from checkpoint filename)
-        # This means the first post-restart iteration uses a_k and c_k for k=6,
-        # not k=1, preserving the learning rate decay schedule.
-        # We verify indirectly: the restarted energy should be in a reasonable
-        # neighborhood of the pre-checkpoint trajectory (within 0.5 Ha for H2).
+        # Restart should pick up at k=6 (start_iter=5 from checkpoint filename)
         pre_checkpoint_energy = history1[-1] if history1 else None
         post_restart_energy = history2[0]
         if pre_checkpoint_energy is not None:
@@ -213,8 +209,7 @@ def test_checkpoint_resilience(stack: HPCHybridStack):
             print(f"  Pre-checkpoint energy (iter 5): {pre_checkpoint_energy:.6f} Ha")
             print(f"  Post-restart energy  (iter 6): {post_restart_energy:.6f} Ha")
             print(f"  Energy discontinuity: {energy_jump:.6f} Ha")
-            # For H2 with near-zero init, energies should stay within ~0.5 Ha
-            # A large jump would indicate the checkpoint was corrupted or schedule reset
+            # For H2 with near zero init, energies should stay within 0.5 Ha - large jumps indicate checkpoint was corrupted/schedule reset
             assert energy_jump < 0.5, (
                 f"Energy jumped {energy_jump:.4f} Ha after restart — "
                 f"checkpoint may be corrupted or SPSA schedule not resumed"
@@ -226,18 +221,15 @@ def test_checkpoint_resilience(stack: HPCHybridStack):
 
 
 def test_latency_spiking(stack: HPCHybridStack):
-    """STRESS TEST 1: QPU Latency Spiking
-    Injects random delays (0.5-2.0s) into a subset of MPI ranks' evaluation
-    to simulate cloud QPU congestion. Verifies the stack maintains global
-    synchronization and produces correct results despite variable per-rank timing.
-    """
+    # STRESS TEST 1 -  QPU Latency Spiking, injects random delays (0.5-2.0s) into a subset of MPI ranks' evaluation
+    # simulate cloud QPU congestion. 
     section("STRESS TEST: QPU Latency Spiking")
     import time as _time
     import random
 
     problem = ChemistryProblem("H 0 0 0; H 0 0 0.74")
 
-    # Monkey-patch the statevector evaluation to inject delays on odd ranks
+    # Monkey patch the statevector evaluation to inject delays on odd ranks
     original_eval = stack._evaluate_distributed_statevector
 
     def delayed_eval(prob, combined_params):
@@ -260,7 +252,8 @@ def test_latency_spiking(stack: HPCHybridStack):
     if stack.rank == 0:
         assert len(history) == 10, f"Expected 10 iterations, got {len(history)}"
         assert all(np.isfinite(e) for e in history), "Non-finite energy detected"
-        # Verify energy is moving (optimizer not stuck)
+        # Verify energy is moving  
+
         spread = max(history) - min(history)
         print(f"  Completed {len(history)} iterations in {t_total:.2f}s under latency spiking")
         print(f"  Energy range: {spread:.6f} Ha")
@@ -269,13 +262,7 @@ def test_latency_spiking(stack: HPCHybridStack):
 
 
 def test_dropout_recovery(stack: HPCHybridStack):
-    """STRESS TEST 2: Network Drop-Out Recovery
-    Runs a VQE for 10 iterations (checkpointing at iter 5 and 10),
-    then simulates a crash by discarding the final state. Restarts from
-    the iter-5 checkpoint and verifies the optimization resumes correctly
-    with no loss of progress — the post-restart energy should be at or
-    below the energy at iteration 5.
-    """
+    # STRESS TEST 2 - Network Drop-Out Recovery, runs 10 iterations (checkpointing at iter 5,10), then simulates crash by deleting the final state. 
     section("STRESS TEST: Drop-Out Recovery")
     import shutil
     import time as _time
@@ -288,7 +275,7 @@ def test_dropout_recovery(stack: HPCHybridStack):
 
     problem = ChemistryProblem("H 0 0 0; H 0 0 0.74")
 
-    # Phase 1: Run 10 iterations (checkpoints at iter 5 and 10)
+    # Run 10 iterations (checkpoints at iter 5, 10)
     _, history1 = stack.vqe_optimize(problem, max_iterations=10,
                                       checkpoint_dir=test_dir, seed=42)
 
@@ -301,7 +288,7 @@ def test_dropout_recovery(stack: HPCHybridStack):
         assert os.path.exists(ckpt_5), f"Checkpoint at iter 5 not found: {ckpt_5}"
         print(f"  Phase 1: {len(history1)} iterations, E(5)={energy_at_5:.6f}, E(10)={energy_at_10:.6f}")
 
-        # Simulate crash: delete the iter-10 checkpoint (as if crash happened before save)
+        # Simulate crash, delete the iter-10 checkpoint (before save)
         ckpt_10 = os.path.join(test_dir, "checkpoint_iter_0010.npy")
         if os.path.exists(ckpt_10):
             os.remove(ckpt_10)
@@ -309,7 +296,7 @@ def test_dropout_recovery(stack: HPCHybridStack):
 
     stack.comm.Barrier()
 
-    # Phase 2: Restart from iter-5 checkpoint
+    # Restart from iter-5 checkpoint
     problem2 = ChemistryProblem("H 0 0 0; H 0 0 0.74")
     ckpt_path = os.path.join(test_dir, "checkpoint_iter_0005.npy")
     _, history2 = stack.vqe_optimize(problem2, max_iterations=10,
@@ -320,8 +307,7 @@ def test_dropout_recovery(stack: HPCHybridStack):
         assert len(history2) > 0, "No iterations after dropout recovery"
         recovered_energy = history2[-1]
         print(f"  Phase 2: {len(history2)} post-recovery iterations, final E={recovered_energy:.6f}")
-        # The recovered run should reach at least as low as the pre-crash run
-        # (same seed, resuming from iter 5, so should track similar trajectory)
+        # Recovered run should be as low as the precrash run    - same seed, resuming from iter 5, so should track similar trajectory 
         print(f"  Recovery successful: optimization resumed from checkpoint without data loss")
         print("[STRESS TEST: Drop-Out Recovery] OK")
 
@@ -368,7 +354,7 @@ if __name__ == "__main__":
             ("C++ Dispatcher", lambda: test_dispatcher_layer(
                                           stack, ChemistryProblem("H 0 0 0; H 0 0 0.74"))),
             ("VQE Loop",lambda: test_vqe_loop(stack)),
-            # ("Finance QUBO", lambda: test_finance_layer(stack)),  # Extensibility demo — uncomment to test
+            # ("Finance QUBO", lambda: test_finance_layer(stack)),            # Extensibility demo, uncomment to test
             ("Checkpoint Resilience", lambda: test_checkpoint_resilience(stack)),
             ("Latency Spiking", lambda: test_latency_spiking(stack)),
             ("Drop-Out Recovery", lambda: test_dropout_recovery(stack)),
