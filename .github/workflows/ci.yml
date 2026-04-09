@@ -1,0 +1,97 @@
+name: CI — Build & Test
+
+on:
+  push:
+    branches: [main, feature/ci-workflow]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:       # manual trigger — gates the ibm-qpu-test job below
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: make build
+
+      - name: Run 7-layer diagnostic (make trial)
+        run: make trial
+
+      - name: Run molecule resolver tests
+        run: |
+          docker run --rm vqe-mpi-gpu python3 tests/test_molecules_run.py
+
+      - name: Run serial baseline (H2 only, fast)
+        run: |
+          docker run --rm vqe-mpi-gpu python3 -c "
+          from benchmarks.serial_baseline import serial_vqe
+          e, t, iters, best = serial_vqe('H2', 'H 0 0 0; H 0 0 0.74', -1.13727, reps=1, max_iterations=50)
+          assert abs(e - (-1.13727)) < 0.5, f'H2 energy {e} too far from FCI'
+          print(f'H2 quick check passed: E={e:.4f}, error={abs(e-(-1.13727)):.4f}')
+          "
+
+      - name: Run distributed VQE smoke test (H2, NP=2, 50 iters)
+        run: |
+          docker run --rm \
+            -e BACKEND=simulator \
+            -e USE_GPU=no \
+            -e MOLECULES=H2 \
+            vqe-mpi-gpu \
+            mpirun --allow-run-as-root -np 2 python3 -c "
+          from src.api.interface import HPCHybridStack
+          from src.api.problems import ChemistryProblem
+          with HPCHybridStack(use_gpu=False, backend='simulator') as stack:
+              p = ChemistryProblem.from_name('H2')
+              _, hist = stack.vqe_optimize(p, max_iterations=50, seed=42)
+              if stack.rank == 0:
+                  print(f'H2 smoke test: {len(hist)} iters, final E={hist[-1]:.4f}')
+                  assert len(hist) > 0, 'No iterations completed'
+          "
+
+  # IBM QPU test, manual trigger so to conserve 10 min of QPU time
+  ibm-qpu-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'workflow_dispatch'
+    needs: build-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: make build
+
+      - name: Run IBM QPU smoke test (H2, 3 iterations)
+        env:
+          IBM_QUANTUM_TOKEN: ${{ secrets.IBM_QUANTUM_TOKEN }}
+          IBM_QUANTUM_INSTANCE: ${{ secrets.IBM_QUANTUM_INSTANCE }}
+          IBM_QUANTUM_BACKEND: ${{ secrets.IBM_QUANTUM_BACKEND }}
+          IBM_QUANTUM_REGION: ${{ secrets.IBM_QUANTUM_REGION }}
+        run: |
+          docker run --rm \
+            -e BACKEND=ibm_cloud \
+            -e USE_GPU=no \
+            -e IBM_QUANTUM_TOKEN="$IBM_QUANTUM_TOKEN" \
+            -e IBM_QUANTUM_INSTANCE="$IBM_QUANTUM_INSTANCE" \
+            -e IBM_QUANTUM_BACKEND="$IBM_QUANTUM_BACKEND" \
+            -e IBM_QUANTUM_REGION="$IBM_QUANTUM_REGION" \
+            vqe-mpi-gpu \
+            mpirun --allow-run-as-root -np 2 python3 -c "
+          from src.api.interface import HPCHybridStack
+          from src.api.problems import ChemistryProblem
+          with HPCHybridStack(use_gpu=False, backend='ibm_cloud') as stack:
+              p = ChemistryProblem.from_name('H2')
+              _, hist = stack.vqe_optimize(p, max_iterations=3, seed=42)
+              if stack.rank == 0:
+                  print(f'IBM QPU test: {len(hist)} iters, final E={hist[-1]:.4f}')
+                  assert len(hist) > 0, 'No QPU iterations completed'
+          "

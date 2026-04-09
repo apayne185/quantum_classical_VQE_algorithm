@@ -1,6 +1,6 @@
-/* Defines "Contract", allows Python UI/C++ engine to function together. Contains:
- HybridWorkload - input packet for BE, 
- StackResult - output packet for future performance analysis */
+// Defines contract, allows Python UI/C++ engine to function together.
+//      HybridWorkload - input packet for backend 
+//      StackResult - output packet for future performance analysis 
 
 #ifndef STACK_TYPES_H
 #define STACK_TYPES_H
@@ -9,31 +9,46 @@
 #include <vector>
 #include <string>
 
-struct HybridWorkload {
-    int num_qubits;
-    std::vector<double> parameters;      // theta value
-    int circuit_depth;
-    bool requires_gpu;
-    std::string backend_target;       // "simulator", "hpc_cluster", "qpu"
-    std::string circuit_qasm;
-    int job_id;                   // for async tracking
+// Pauli term - single operation str and coefficient 
+struct PauliTerm {
+    std::string op;         // ex  IIZI
+    double coeff;           // ex -0.81
 };
 
-// both C++ disptacher and python bridge needed to agree on workload
+// Input packet from Python to C++ dispatcher
+struct HybridWorkload {
+    int num_qubits = 0;
+    std::vector<double> parameters;      // variational θ vector
+    int circuit_depth =0;
+    bool requires_gpu = true;
+    std::string backend_target;       // "simulator" or "ibm_cloud"
+    std::string circuit_qasm;
+    std::string job_id = "";                    // for async tracking
+    std::vector<PauliTerm> pauli_terms;         // hamiltonian decomposition
+    int num_shots = 1024;                       // QPU measuremnt shots
+};
 
 
+// Output packet returned to Python
 struct StackResult {
-    double energy;       // vqe eigenvalue
-    double execution_time;             //for benchmarking
-    double variance;                   //for noise analysis
-    std::string success_msg;          // errors or status updates 
-    std::string used_path;             // cpu gpu or simulator
+    double energy = 0.0;                      // SPSA E(θ + ck * Δ)
+    double e_minus= 0.0;                     // SPSA E(θ - ck * Δ)
+    double execution_time = 0.0;             // wall clock time 
+    double variance = 0.0;                   //for shot noise variance of expectation value
+    double masking_metric = 0.0;             // M = T_accel / T_comm   - determines performanc metric
+    std::string success_msg;                 // errors/status updates 
+    std::string used_path;                   // MPI+CUDA, MPI+CPU  Fallback, ..
 }; 
+
+
 
 StackResult route_workload(HybridWorkload& wl);
 
-//connects CUDA function to C++
-// extern "C" double run_cuda_vqe(const double* h_params, int n);
-extern "C" double run_cuda_vqe_fp32(const float* h_params, int n);
+// CUDA kernel entry points
+extern "C" double run_cuda_vqe_fp32(const float* h_params, int n);          // Legacy fallback
+extern "C" double run_cuda_pauli_expectation(
+    const double* h_coeffs, const char* h_ops, const float* h_params,
+    int n_terms, int n_qubits, int n_params
+);
 
 #endif

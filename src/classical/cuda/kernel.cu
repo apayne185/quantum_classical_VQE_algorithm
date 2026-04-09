@@ -1,26 +1,69 @@
-// currently placeholders, but Q state vector logic will be here in later phases
+// CUDA kernel for Pauli-term expectation value computation
+// Uses mean-field approximation: ⟨P⟩ = Π_i f(op_i, θ_i)
+// where f(Z,θ)=cos(θ), f(X,θ)=sin(θ), f(Y,θ)=sin(θ), f(I,θ)=1
+//
+// Mixed precision -  FP32 trigonometry for throughput, FP64 accumulation for accuracy
+// One thread per Pauli term → tree reduction → total energy
+
 #include <cuda_runtime.h>
-#include <vector>
 #include <device_launch_parameters.h>
 #include <stdio.h>
+#include <math.h>
 
 
+// Flattened Pauli term for GPU -  operator string encoded as char array
+// Each term -  coeff (double) + op chars (padded to max_qubits)
+// Layout in d_terms buffer -  [coeff_0][op_0_0..op_0_q] [coeff_1][op_1_0..op_1_q] ..
 
-__global__ void compute_vqe_energy_kernel(const float* params, double* result, int n) {
+
+// KERNEL - one thread per Pauli term
+// Each thread computes coeff * product of single-qubit expectations
+// FP32 trig (cosf/sinf) → widen to FP64 for accumulation
+__global__ void pauli_expectation_kernel(
+    const double* __restrict__ coeffs,     // [n_terms] Pauli coefficients
+    const char*   __restrict__ ops,        // [n_terms * max_qubits] operator chars ('I','X','Y','Z')
+    const float*  __restrict__ params,     // [n_params] variational parameters θ
+    double*       result,                  // [1] output energy accumulator
+    int n_terms,
+    int n_qubits,
+    int n_params
+) {
     __shared__ double sdata[256];
 
     unsigned int tid = threadIdx.x;
-    unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int idx = blockIdx.x * blockDim.x + tid;
 
-    double val = 0.0;
-    if (idx < n) {
-        // simulate expectation value contribution - mixed precision 
-        val = (double)params[idx] * 0.5;
+    double term_val = 0.0;
+
+    if (idx < (unsigned int)n_terms) {
+        double expectation = 1.0;
+        double stride = (n_qubits > 0) ? (double)n_params / (double)n_qubits : 1.0;
+
+        // Compute product of single-qubit expectations (mean-field)
+        for (int q = 0; q < n_qubits; q++) {
+            char op = ops[idx * n_qubits + q];
+            if (op == 'I') continue;
+
+            int param_idx = (int)(q * stride);
+            if (param_idx >= n_params) param_idx = n_params - 1;
+
+            // FP32 trig for throughput, widen to FP64
+            float theta = params[param_idx];
+            switch (op) {
+                case 'Z': expectation *= (double)cosf(theta); break;
+                case 'X': expectation *= (double)sinf(theta); break;
+                case 'Y': expectation *= (double)sinf(theta); break;
+                default: break;
+            }
+        }
+
+        term_val = coeffs[idx] * expectation;
     }
-    sdata[tid] = val;
+
+    // Tree reduction in shared memory (FP64)
+    sdata[tid] = term_val;
     __syncthreads();
 
-    // inplace tree reduction in shared memory
     for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
         if (tid < s) {
             sdata[tid] += sdata[tid + s];
@@ -28,60 +71,81 @@ __global__ void compute_vqe_energy_kernel(const float* params, double* result, i
         __syncthreads();
     }
 
-    // onyl first thread of each block writes to global mem
+    // 1st thread of each block writes to global accumulator
     if (tid == 0) {
         atomicAdd(result, sdata[0]);
     }
 }
 
-extern "C" double run_cuda_vqe_fp32(const float* h_params, int n) {
-    if (n <= 0) return -999.0;    // DEBUG LINE
-    float *d_params = nullptr;
-    double *d_result = nullptr;
-    double h_result= 0.0;
+
+
+// HOST ENTRY POINT - computes E = Σ_i coeff_i * ⟨P_i⟩ on GPU
+// Receives Pauli data from C++ dispatcher
+extern "C" double run_cuda_pauli_expectation(
+    const double* h_coeffs,        // [n_terms] coefficients
+    const char*   h_ops,           // [n_terms * n_qubits] operator chars
+    const float*  h_params,        // [n_params] θ values (FP32)
+    int n_terms,
+    int n_qubits,
+    int n_params
+) {
+    if (n_terms <= 0 || n_params <= 0) return 0.0;
+
+    double *d_coeffs = nullptr, *d_result = nullptr;
+    char   *d_ops = nullptr;
+    float  *d_params = nullptr;
+    double h_result = 0.0;
     cudaError_t err;
 
-    // if (cudaMalloc(&d_params, n * sizeof(float)) != cudaSuccess || cudaMalloc(&d_result, sizeof(double)) != cudaSuccess)  {     //DEBUG LINE
-    //     printf("CUDA Malloc Failed!\n");
-    //     return -888.0;
-    // }
 
-    err = cudaMalloc(&d_params, n * sizeof(float));
-    if (err != cudaSuccess) {
-        printf("CUDA Error (Params Malloc): %s\n", cudaGetErrorString(err));
-        return -888.0;
-    }
+    // Allocate device memory
+    err = cudaMalloc(&d_coeffs, n_terms * sizeof(double));
+    if (err != cudaSuccess) { fprintf(stderr, "[CUDA] Malloc coeffs: %s\n", cudaGetErrorString(err)); return 0.0; }
+
+    err = cudaMalloc(&d_ops, n_terms * n_qubits * sizeof(char));
+    if (err != cudaSuccess) { fprintf(stderr, "[CUDA] Malloc ops: %s\n", cudaGetErrorString(err)); cudaFree(d_coeffs); return 0.0; }
+
+    err = cudaMalloc(&d_params, n_params * sizeof(float));
+    if (err != cudaSuccess) { fprintf(stderr, "[CUDA] Malloc params: %s\n", cudaGetErrorString(err)); cudaFree(d_coeffs); cudaFree(d_ops); return 0.0; }
 
     err = cudaMalloc(&d_result, sizeof(double));
-    if (err != cudaSuccess) {
-        printf("CUDA Error (Result Malloc): %s\n", cudaGetErrorString(err));
-        cudaFree(d_params); // Clean up previous allocation
-        return -888.0;
-    }
+    if (err != cudaSuccess) { fprintf(stderr, "[CUDA] Malloc result: %s\n", cudaGetErrorString(err)); cudaFree(d_coeffs); cudaFree(d_ops); cudaFree(d_params); return 0.0; }
 
 
-    // init result on GPU to 0, copy params over
+    // Copy data to device
     cudaMemset(d_result, 0, sizeof(double));
-    cudaMemcpy(d_params, h_params, n * sizeof(float), cudaMemcpyHostToDevice);
-    
-    //launch kernel     
+    cudaMemcpy(d_coeffs, h_coeffs, n_terms * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_ops, h_ops, n_terms * n_qubits * sizeof(char), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_params, h_params, n_params * sizeof(float), cudaMemcpyHostToDevice);
+
+
+    // Launch - one thread per Pauli term
     int blockSize = 256;
-    int gridSize = (n + blockSize - 1) / blockSize;
-    compute_vqe_energy_kernel<<<gridSize, blockSize>>>(d_params, d_result, n);
-    // compute_vqe_energy_kernel<<<(n+255)/256, 256>>>(d_data, n);
-    
-    // Catch kernel launch errors
+    int gridSize = (n_terms + blockSize - 1) / blockSize;
+    pauli_expectation_kernel<<<gridSize, blockSize>>>(
+        d_coeffs, d_ops, d_params, d_result,
+        n_terms, n_qubits, n_params
+    );
+
     cudaDeviceSynchronize();
     cudaError_t errSync = cudaGetLastError();
     if (errSync != cudaSuccess) {
-        printf("Sync kernel error: %s\n", cudaGetErrorString(errSync));
+        fprintf(stderr, "[CUDA] Kernel error: %s\n", cudaGetErrorString(errSync));
     }
 
-    // final calculation sends back to CPU
+    // Copy result back (FP64)
     cudaMemcpy(&h_result, d_result, sizeof(double), cudaMemcpyDeviceToHost);
 
+    cudaFree(d_coeffs);
+    cudaFree(d_ops);
     cudaFree(d_params);
     cudaFree(d_result);
 
-    return h_result; 
+    return h_result;
+}
+
+
+// LEGACY - kept for backward compatibility with old dispatcher path
+extern "C" double run_cuda_vqe_fp32(const float* /*h_params*/, int /*n*/) {
+    return 0.0;
 }

@@ -5,6 +5,7 @@ obj/
 
 __pycache__/
 .pytest_cache/
+.pubchem_cache/ 
 *.pyc
 
 .env
@@ -12,7 +13,29 @@ venv
 
 *.pyd
 *.so
+*.o
+
+
+.vscode/
+.idea/
+*.swp
+
+.docker/
 
 hpc_core.cp313-win_amd64.pyd
 apps/vqe_molecule
 
+.devcontainer
+
+checkpoints/
+results/**/*.log
+results/scaling/*.log
+
+*.egg-info/
+.DS_Store
+
+CLAUDE.md
+MEMORY.md
+
+thesis_new_sections.tex
+thesis_data_tables.tex
