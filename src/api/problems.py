@@ -1,4 +1,3 @@
-# standardizes all inputs to handle quantum chem, finance, optimization, etc
 from abc import ABC, abstractmethod
 import numpy as np
 from qiskit import qasm3
@@ -21,7 +20,6 @@ def estimate_correlation_strength(pauli_terms: list) -> dict:
         return {"correlation_score": 0.0, "recommended_tier": "hwe","reasoning": "No Pauli terms — defaulting to HWE."}
  
     coeffs = np.array([abs(c) for _, c in pauli_terms])
-    ops= [op for op, _ in pauli_terms]
  
     diagonal_coeffs = []   
     off_diagonal_coeffs= []  
@@ -74,11 +72,8 @@ def estimate_correlation_strength(pauli_terms: list) -> dict:
  
  
 def build_ansatz(num_qubits: int, tier: str, reps: int, mol_problem=None, mapper=None):
-    """Build ansatz circuit for the given tier.
-
-    For 'uccsd' tier, mol_problem and mapper are required to construct the
-    particle-number-conserving UCCSD ansatz with HartreeFock initial state.
-    """
+    # Builds ansatz circuit for the given tier 
+    # for 'uccsd' tier, mol_problem and mapper are required to construct UCCSD ansatz with HF initial state
     if tier == "hwe":
         ansatz = EfficientSU2(
             num_qubits,
@@ -100,8 +95,7 @@ def build_ansatz(num_qubits: int, tier: str, reps: int, mol_problem=None, mapper
         num_particles = mol_problem.num_particles
         num_spatial_orbitals = mol_problem.num_spatial_orbitals
 
-        # UCCSD circuit depth grows rapidly — only practical for smaller systems
-        if num_qubits <= 12:
+        if num_qubits <= 12:        # UCCSD depth grows fast, therefore impractical beyond 12
             try:
                 hf_init = HartreeFock(
                     num_spatial_orbitals=num_spatial_orbitals,
@@ -116,11 +110,10 @@ def build_ansatz(num_qubits: int, tier: str, reps: int, mol_problem=None, mapper
                     initial_state=hf_init,
                     reps=min(reps, 1),
                 )
-                # DO NOT decompose — decompose() breaks UCC parameter ties
-                # and destroys particle-number conservation
+                # Do not decompose - breaks UCC parameter ties and particle-number conservation
                 print(f"[Ansatz] UCCSD built: {ansatz.num_parameters} UCC amplitudes, {num_particles} particles, {num_spatial_orbitals} spatial orbitals")
             except Exception as e:
-                print(f"[Ansatz] UCCSD construction failed: {e} — falling back to HWE-adaptive")
+                print(f"[Ansatz] UCCSD construction failed: {e} - falling back to HWE-adaptive")
                 adaptive_reps = min(reps + 1, 3)
                 ansatz = EfficientSU2(
                     num_qubits,
@@ -128,8 +121,7 @@ def build_ansatz(num_qubits: int, tier: str, reps: int, mol_problem=None, mapper
                     entanglement="full",
                 ).decompose()
         else:
-            # Fall back to HWE-adaptive for larger molecules (>12 qubits)
-            print(f"[Ansatz] UCCSD impractical for {num_qubits} qubits — using HWE-adaptive instead")
+            print(f"[Ansatz] UCCSD impractical for {num_qubits} qubits - using HWE-adaptive instead")
             adaptive_reps = min(reps + 1, 3)
             ansatz = EfficientSU2(
                 num_qubits,
@@ -137,8 +129,7 @@ def build_ansatz(num_qubits: int, tier: str, reps: int, mol_problem=None, mapper
                 entanglement="full",
             ).decompose()
 
-    else:
-        # Fallback: TwoLocal for non-chemistry or missing mol_problem
+    else:              # fallback for non chemistry problems/missing mol_problem
         ucc_reps = min(reps, 2)
         ansatz = TwoLocal(
             num_qubits,
@@ -154,9 +145,8 @@ def build_ansatz(num_qubits: int, tier: str, reps: int, mol_problem=None, mapper
 
 
 
-# MOLECULE REGISTRY - reference FCIs (hartrees), recommended ansatz reps - increasingly more complex
-# Source - STO-3G basis 
-MOLECULE_REGISTRY= {     
+# STO-3G basis, FCI energies from PySCF
+MOLECULE_REGISTRY = {     
     "H2": {
         "geometry": "H 0 0 0; H 0 0 0.74",     
         "fci_energy": -1.13727,
@@ -223,7 +213,7 @@ class QuantumProblem(ABC):
 
 
 class ChemistryProblem(QuantumProblem):
-    def __init__(self, atom_coordinates:str, reps: int=1, name:str = "custom", force_tier: str | None=None):     #user will provide the raw geometry 
+    def __init__(self, atom_coordinates:str, reps: int=1, name:str = "custom", force_tier: str | None=None):
         super().__init__()
         self.coords = atom_coordinates
         self.reps= reps
@@ -253,7 +243,6 @@ class ChemistryProblem(QuantumProblem):
         if self._prepared:
             return
 
-        # molecular physics
         driver = PySCFDriver(atom=self.coords, basis="sto-3g", unit=DistanceUnit.ANGSTROM)
         mol_problem = driver.run()
 
@@ -261,13 +250,14 @@ class ChemistryProblem(QuantumProblem):
         mapper = JordanWignerMapper()
         qubit_op = mapper.map(hamiltonian)
 
-        raw = qubit_op.to_list()                                 #[("IIZI", (- 0.81+0j)), ..]
+        raw = qubit_op.to_list()        # [("IIZI", (-0.81+0j)), ...]
         self.pauli_terms = [(op, float(coeff.real)) for op, coeff in raw]
 
         self.num_qubits = qubit_op.num_qubits
         self.diagnostics = estimate_correlation_strength(self.pauli_terms)
 
-        # Compute exact FCI energy directly from PySCF for ground truth validation
+
+        # Compute FCI ground truth  (will override registry value if available)
         try:
             from pyscf import gto, fci as pyscf_fci
             pyscf_mol = gto.M(atom=self.coords.replace(";", "\n"), basis="sto-3g", unit="Angstrom")
@@ -286,19 +276,20 @@ class ChemistryProblem(QuantumProblem):
             self.ansatz_tier = self.diagnostics["recommended_tier"]
             tier_source = "auto"
 
-        # Pass mol_problem and mapper for UCCSD ansatz construction
         ansatz, n_params = build_ansatz(
             self.num_qubits, self.ansatz_tier, self.reps,
             mol_problem=mol_problem, mapper=mapper)
         self.num_params = n_params
         self.ansatz_circuit = ansatz
-        # QASM export may fail for non-decomposed UCCSD — only needed for C++ dispatcher
-        try:
+
+
+        try:        # QASM export can fail for nondecomposed UCCSD
             self.circuit_qasm = qasm3.dumps(ansatz)
         except Exception:
             self.circuit_qasm = qasm3.dumps(ansatz.decompose())
         fci_str = (f"FCI reference: {self.fci_energy:.4f} Ha" if self.fci_energy is not None else "")
         tier_label = ANSATZ_TIERS.get(self.ansatz_tier, {}).get("label", self.ansatz_tier)
+
 
         print(f"[Chemistry:{self.name}] {len(self.pauli_terms)} Pauli terms, {self.num_qubits} qubits, {self.num_params} params, reps={self.reps}. {fci_str} ")
         print(f"[Ansatz] {tier_label} ({tier_source}) | corr_score={self.diagnostics['correlation_score']:.3f} | off_diag_ratio={self.diagnostics['off_diag_ratio']:.3f}")
@@ -332,12 +323,8 @@ class ChemistryProblem(QuantumProblem):
 
 
 class FinanceProblem(QuantumProblem):
-    """Portfolio optimization via QUBO -> Ising mapping.
-
-    Demonstrates stack extensibility beyond chemistry. Not included in
-    primary benchmarks -- see ChemistryProblem for the active application.
-    """
-
+    # Portfolio optimization with QUBO - Ising mapping.
+    # Demonstrates stack beyond chemistry. Not included in currest benchmarking
     def __init__(self, covariance_matrix: np.ndarray, expected_returns: np.ndarray|None = None, risk_factor: float=1.0):
         super().__init__()
         self.matrix = np.array(covariance_matrix, dtype=float)
@@ -351,7 +338,7 @@ class FinanceProblem(QuantumProblem):
         if self._prepared:                 
             return 
         
-        # Logic to map Mean-Varince Portfolio Optimization to Ising Hamiltonian using QUBO formulation
+        # QUBO -> Ising: map mean-variance portfolio to Pauli Hamiltonian
         n = self.num_qubits
         sigma = self.matrix
         mu = self.returns
@@ -359,13 +346,13 @@ class FinanceProblem(QuantumProblem):
         pauli_terms: list[tuple[str, float]] = []
 
 
-        for i in range(n):              # Diagonal terms - Zi coefficients 
+        for i in range(n):  # diagonal Zi terms
             zi_coeff = 0.5* mu[i] - 0.5 * lam *sigma[i,i]
             op = "I" * i + "Z" + "I" * (n-i-1)
             if abs(zi_coeff) > 1e-12:
                 pauli_terms.append((op, zi_coeff))
 
-        for i in range(n):               # Off diagonal terms - Zi Zj coefficients 
+        for i in range(n):  # off-diagonal ZiZj terms
             for j in range(i+1, n): 
                 zizj_coeff = 0.25*lam * sigma[i,j]
                 if abs(zizj_coeff) > 1e-12:

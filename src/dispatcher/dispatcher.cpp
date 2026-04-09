@@ -55,7 +55,7 @@ static double pauli_expectation(const std::string& op, const std::vector<double>
 
 
 
-// LOCAL HAMILTONIAN EXPECTATION VALUE: sums coeff * P over ranks partition of pauli terms
+// LOCAL HAMILTONIAN EXPECTATION VALUE -  sums coeff * P over ranks partition of pauli terms
 // uses mean-field approximation (independent qubits) - valid for product states
 // entangled ansatzes (HWE/UCC), use Python statevector path instead.
 static double compute_hamiltonian_expectation(const std::vector<PauliTerm>& pauli_terms, const std::vector<double>& theta) {
@@ -68,10 +68,9 @@ static double compute_hamiltonian_expectation(const std::vector<PauliTerm>& paul
 
 
 
-// CUDA PATH: computes E = Σ_i coeff_i * ⟨P_i⟩ on GPU
-// Uses mean-field approximation: ⟨P⟩ = Π_q f(op_q, θ_q)
-// where f(Z,θ)=cos(θ), f(X,θ)=sin(θ), f(Y,θ)=sin(θ), f(I,θ)=1
-// Mixed precision: FP32 trig on GPU cores, FP64 accumulation in shared memory
+// CUDA PATH -  computes E = Σ_i coeff_i * ⟨P_i⟩   on GPU
+// Uses mean-field approximation -   ⟨P⟩ = Π_q f(op_q, θ_q) where f(Z,θ)=cos(θ), f(X,θ)=sin(θ), f(Y,θ)=sin(θ), f(I,θ)=1
+// Mixed precision: FP32 trig on GPU cores, FP64 in shared memory
 static double compute_expectation_cuda(const std::vector<double>& theta, const std::vector<PauliTerm>& pauli_terms) {
     int n_terms = static_cast<int>(pauli_terms.size());
     int n_params = static_cast<int>(theta.size());
@@ -116,7 +115,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
     const double start_time = MPI_Wtime();
 
-    // BROADCAST:  metadata syncronization 
+    // BROADCAST - metadata syncronization 
     int param_size = static_cast<int>(wl.parameters.size());
     int qasm_size =  static_cast<int>(wl.circuit_qasm.size());
     int n_pauli =  static_cast<int>(wl.pauli_terms.size()); 
@@ -145,7 +144,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
 
 
-    //BROADCAST NONBLOCKING: θ, QASM   
+    //BROADCAST NONBLOCKING -  θ, QASM   
     MPI_Request requests[2];                    // tracks async broadcasts
 
     // starts async broadcast 
@@ -172,7 +171,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
     }
 
-    //WAIT FOR BROADCASTS: ensures data arrives before starting CUDA kernls
+    //WAIT FOR BROADCASTS -  ensures data arrives before starting CUDA kernls
     MPI_Waitall(2, requests, MPI_STATUSES_IGNORE);
     if (rank != 0) {
         wl.circuit_qasm = std::string(qasm_buffer.begin(), qasm_buffer.begin() + qasm_size);
@@ -185,7 +184,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
 
 
-    // ACCELERATION LAYER: Pauli expectation value eval
+    // ACCELERATION LAYER -  Pauli expectation value eval
     double t_accel_start = MPI_Wtime();
     double e_plus_local = 0.0;
     double e_minus_local = 0.0; 
@@ -195,7 +194,7 @@ StackResult route_workload(HybridWorkload& wl) {
     const bool use_cuda = wl.requires_gpu && (deviceCount > 0);
 
     if (use_cuda) {
-        // CUDA kernel: per-Pauli-term mean-field expectation (FP32 trig → FP64 reduction)
+        // CUDA kernel - per-Pauli-term mean-field expectation (FP32 trig → FP64 reduction)
         // Exact for diagonal (Z/I) Hamiltonians; approximate for X/Y terms in entangled states.
         // For full statevector accuracy, use the Python simulator path.
         e_plus_local = compute_expectation_cuda(theta_plus, wl.pauli_terms);
@@ -228,7 +227,7 @@ StackResult route_workload(HybridWorkload& wl) {
 
 
 
-    // GLOBAL REDUCTION:  non-blocking 
+    // GLOBAL REDUCTION - non-blocking 
     double e_plus_global = 0.0;
     double e_minus_global = 0.0;
     MPI_Allreduce(&e_plus_local, &e_plus_global, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -239,7 +238,7 @@ StackResult route_workload(HybridWorkload& wl) {
     }
 
 
-    // PACK RESULT: simulator (energy comes form pauli eval), ibm_cloud (energy comes from measured expectation value, repalces estimate)
+    // PACK RESULT - simulator (energy comes form pauli eval), ibm_cloud (energy comes from measured expectation value, repalces estimate)
     if (wl.backend_target == "ibm_cloud") {
         res.energy= qpu_val;
         res.e_minus = qpu_val;      
@@ -248,7 +247,7 @@ StackResult route_workload(HybridWorkload& wl) {
         res.e_minus = e_minus_global;
     }   
 
-    res.success_msg = "OK";       //success
+    res.success_msg = "OK";       //success !
     res.execution_time = MPI_Wtime() - start_time;
 
     double t_accel = t_accel_end - t_accel_start;

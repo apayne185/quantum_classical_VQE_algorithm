@@ -16,7 +16,7 @@ problem = ChemistryProblem.from_name("H2")     # any name from the table below
 | `H2O` | H₂O | 10 (8 active) | 14 | 1086 | -75.0129 | 2 | Frozen 2 core electrons |
 | `NH3` | NH₃ | 10 | 16 | ~1500 | -55.4546 | 3 | NISQ upper limit; long runtime |
 
-All use the **STO-3G** minimal basis set. FCI energies are computed via PySCF Full Configuration Interaction.
+All use the **STO-3G** minimal basis set. FCI energies are computed with PySCF Full Configuration Interaction.
 
 ## Custom Molecules
 
@@ -28,7 +28,7 @@ Provide atom coordinates directly (Angstroms):
 # Single bond distance
 problem = ChemistryProblem("H 0 0 0; H 0 0 0.74", name="H2_custom")
 
-# Multi-atom
+# Multi atom
 problem = ChemistryProblem("C 0 0 0; O 0 0 1.128", name="CO")
 
 # 3D geometry
@@ -40,7 +40,7 @@ problem = ChemistryProblem(
 
 ### Option B: Molecule Resolver (SMILES, PubChem)
 
-The resolver automatically looks up geometry from multiple sources:
+The resolver automatically looks up geometry from multiple sources
 
 ```python
 from src.api.molecule_resolver import MoleculeResolver
@@ -70,7 +70,7 @@ make run NP=2 MOLECULES="H2 BeH2 H2O"      # any combination
 
 ## Qubit Limits
 
-The resolver enforces a configurable qubit cap (default: 20) to prevent accidentally submitting circuits too large for NISQ hardware. Molecules exceeding this limit are rejected with a `MoleculeTooBigError`.
+The resolver enforces a configurable qubit cap (default 20) to prevent accidentally submitting circuits too large for NISQ hardware. Molecules exceeding this limit will be rejected with a `MoleculeTooBigError`.
 
 ## Adding New Molecules
 

@@ -1,4 +1,4 @@
-"""Structured JSON results persistence for VQE runs."""
+# Structured JSON results persistence for  VQE runs 
 
 import json
 import os
@@ -17,11 +17,9 @@ def _git_commit():
 
 
 def save_results(data: dict, backend: str, results_dir: str = "results") -> str:
-    """Save run results as JSON. Returns the file path.
+    # Save run results as JSON, returns the file path.
+    # Files are organized into subdirectories by backend type:
 
-    Files are organized into subdirectories by backend type:
-      results/simulator/  results/ibm/  results/baseline/
-    """
     # Map backend to subdirectory
     subdir_map = {
         "simulator": "simulator",

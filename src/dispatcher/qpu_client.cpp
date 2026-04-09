@@ -3,7 +3,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include <cstdlib>          // getenv
+#include <cstdlib>         
 
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
@@ -12,7 +12,6 @@ using json = nlohmann::json;
 
 
 
-// libcurl write callback    
 static size_t curl_write_cb(char* ptr, size_t size, size_t nmemb, std::string* out) {
     out->append(ptr, size * nmemb);    
     return size * nmemb; 
@@ -24,7 +23,6 @@ static std::string http_request(const std::string& url,const std::string& bearer
     if (!curl) throw std::runtime_error("[QPU] curl_easy_init() failed ");
 
     struct curl_slist* headers = nullptr;
-    // std::string auth_hdr = "Authorization: Bearer " + token;
     headers = curl_slist_append(headers, ("Authorization: Bearer " + bearer_token).c_str());
     headers = curl_slist_append(headers, ("Service-CRN: " + crn).c_str());
     headers = curl_slist_append(headers, "IBM-API-Version: 2025-05-01");
@@ -99,8 +97,8 @@ static std::string get_iam_bearer_token(const std::string& api_key) {
 
 
 
-// subitmit QPU job - OpenQASM3 to IBM Quantum Sampler primitive  
-std::string submit_qpu_job(const std::string& qasm,const std::string&  /*backend_hint*/, int num_shots) {
+// Submit OpenQASM3 circuit to IBM Quantum EstimatorV2 via REST
+std::string submit_qpu_job(const std::string& qasm, const std::string& /*backend_hint*/, int num_shots) {
     const char* api_key_env = std::getenv("IBM_QUANTUM_TOKEN");
     const char* crn_env = std::getenv("IBM_QUANTUM_INSTANCE");
     const char* device_env= std::getenv("IBM_QUANTUM_BACKEND");  
@@ -119,7 +117,7 @@ std::string submit_qpu_job(const std::string& qasm,const std::string&  /*backend
     const std::string bearer = get_iam_bearer_token(token);
     const std::string crn = instance;
 
-    json observable = "Z";          // simplest valid observable for connectivity test
+    json observable = "Z";          // minimal observable for connectivity validation
 
     json payload = {
         {"program_id","estimator"},
@@ -144,8 +142,7 @@ std::string submit_qpu_job(const std::string& qasm,const std::string&  /*backend
     const std::string body_str = payload.dump();
      
 
-    std::cout << "[QPU] Submitting job to " << device << jobs_url << " … " << std::endl;
-    // std::string response = http_request(url, token, body_str);
+    std::cout << "[QPU] Submitting job to " << device << " (" << jobs_url << ") ..." << std::endl;
     std::string response = http_request(jobs_url, bearer, crn, body_str);
     json resp_json = json::parse(response);
 
@@ -180,9 +177,6 @@ double poll_qpu_job(const std::string& job_id) {
     const std::string crn= crn_env ? crn_env : "";
     const std::string region = region_env ? region_env : "us-east";
 
-    // const std::string token = token_env;
-    // const std::string url ="https://api.quantum-computing.ibm.com/runtime/jobs/" + job_id;
-
     std::string base_url = "https://quantum.cloud.ibm.com/api/v1";
     if (region == "eu-de")
         base_url = "https://eu-de.quantum.cloud.ibm.com/api/v1";   
@@ -191,9 +185,8 @@ double poll_qpu_job(const std::string& job_id) {
     const std::string result_url = base_url + "/jobs/" + job_id + "/results"; 
 
 
-    // Back-off schedule - poll every 2 s, doubling up to 30 s, max is  20 minutes.
-    int delay_s = 2; 
-    int max_wait_s = 1200;
+    int delay_s = 2;                // exponential backoff: 2s -> 30s cap
+    int max_wait_s = 1200;          // 20 min timeout
     int waited_s= 0;   
         
     while (waited_s < max_wait_s) {
@@ -212,7 +205,6 @@ double poll_qpu_job(const std::string& job_id) {
             json result_json = json::parse(result_resp);
 
             try {
-                // double ev = resp["results"][0]["data"]["evs"][0].get<double>();
                 auto& evs = result_json["results"][0]["data"]["evs"];
                 double ev = 0.0;    
                 if (evs.is_array())

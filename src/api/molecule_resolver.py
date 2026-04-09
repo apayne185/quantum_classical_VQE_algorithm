@@ -30,7 +30,7 @@ CORE_ELECTRONS = {
 class ResolutionResult:
     name:str
     geometry:str                # PySCF atom string
-    source:str              #registry, pubchem, smiles, raw
+    source:str                   #registry, pubchem, smiles, raw
     total_electrons: int
     active_electrons: int
     active_orbitals:Optional[int] 
@@ -100,8 +100,7 @@ class MoleculeResolver:
             raise ResolutionError(f"Could not resolve '{molecule_input}'.")
         result = self._apply_active_space(result, freeze_core)
 
-        #feasibility gate
-        if result.estimated_qubits > self.max_qubits:
+        if result.estimated_qubits > self.max_qubits:  # enforce qubit cap
             raise MoleculeTooBigError(f"'{result.name}' requires {result.estimated_qubits} qubits after active space reduction (limit:{self.max_qubits})  ")
         return result    
     
