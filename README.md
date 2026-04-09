@@ -37,20 +37,18 @@ CUDA Kernels (src/classical/cuda/)
 
 **Orchestration Layer** - Rank 0 holds the global SPSA optimizer state and broadcasts variational parameters $\theta^+$ and $\theta^-$ to all MPI ranks with `MPI_Ibcast` (non-blocking) in the C++ dispatcher and `comm.Bcast` / `comm.Allreduce` in the Python path. After the local computation, `MPI_Allreduce(SUM)` aggregates the partial energies from all ranks.
 
-**Acceleration Layer** - Each rank constructs the full $2^n$ statevector (main per-iteration cost) and evaluates its subset of Pauli terms. If a GPU is available, statevector construction and gate operations are offloaded to NVIDIA's cuStateVec library via Qiskit Aer's GPU backend. A custom CUDA kernel handles Pauli-term expectation values using mixed-precision arithmetic: FP32 trigonometry (`cosf`/`sinf`) for throughput with FP64 tree reduction and `atomicAdd` accumulation for numerical accuracy.
+**Acceleration Layer** - Each rank constructs the full $2^n$ statevector (main per-iteration cost) and evaluates its subset of Pauli terms. If a GPU is available, statevector construction and gate operations are offloaded to NVIDIA's cuStateVec library via Qiskit Aer's GPU backend. Custom CUDA kernel handles Pauli-term expectation values using mixed-precision arithmetic: FP32 trigonometry (`cosf`/`sinf`) for throughput with FP64 tree reduction and `atomicAdd` accumulation for numerical accuracy.
 
 **Quantum Interface Layer** - Abstracts the backend (simulator, GPU, or cloud QPU) from the upper layers. For IBM Quantum, the Python EstimatorV2 path bundles both $E(\theta^+)$ and $E(\theta^-)$ as two Primitive Unified Blocs (PUBs) in a single job, reducing QPU round-trips by 50%. The C++ path uses `std::async` for non-blocking QPU job submission via a REST client.
 
 
 ### Evaluation Paths
 
-The stack supports three evaluation backends, to be selected automatically based on environment and avaliable hardware:
-
 | Path | When Used | Description |
 |------|-----------|-------------|
-| **Statevector (MPI)** | `BACKEND=simulator` | Exact statevector simulation distributed across MPI ranks. Each rank builds the full statevector and evaluates its partition of Pauli terms. Supports GPU acceleration via cuStateVec when available with an automatic CPU fallback. |
-| **IBM QPU** | `BACKEND=ibm_cloud` | Submits circuits to IBM Quantum via EstimatorV2. Concurrent classical statevector computation asynchronously overlaps with QPU round-trip time. |
-| **C++ Dispatcher** | Fallback / Layer 3 test | MPI coordinated dispatch through the C++ bridge with CUDA kernel or CPU mean-field approximation. |
+| **Statevector (MPI)** | `BACKEND=simulator` | Exact statevector simulation, GPU-accelerated when available, CPU fallback. |
+| **IBM QPU** | `BACKEND=ibm_cloud` | EstimatorV2 with async classical overlap during QPU RTT. |
+| **C++ Dispatcher** | Fallback / Layer 3 test | MPI dispatch via pybind11 bridge, CUDA kernel or CPU mean-field. |
 
 
 ### Data Flow
@@ -168,7 +166,7 @@ Key finding: CPU only MPI distribution provides speedup only for larger molecule
 | 4 | 488.25 | 13.0% | 160.72 | 41.5% |
 | 8 | 1038.50 | 3.0% | 150.25 | 22.2% |
 
-The CPU only path regresses at P>=4 due to each rank redundantly constructing the full $2^n$ statevector (the $O(2^n)$ serial bottleneck), and the shared memory contention from a single Docker host. GPU acceleration reduces the statevector cost sufficiently for MPI Pauli term distribution to provide continued benefit. If on a multinode cluster with dedicated per-rank resources, efficiency would improve significantly.
+CPU-only regression at P>=4 is due to redundant per-rank $O(2^n)$ statevector construction and shared-memory contention on a single Docker host. GPU acceleration reduces this cost sufficiently for MPI distribution to remain beneficial.
 
 ### Weak Scaling (Problem Size Grows with P)
 
@@ -179,7 +177,7 @@ The CPU only path regresses at P>=4 due to each rank redundantly constructing th
 | 4 | BeH₂| 666  | 167 | 2.411  | 1.793  | 0.241 | 0.179 |
 | 8 | H₂O | 1086 | 136 | 14.398 | 2.389  | 1.440 | 0.239 |
 
-GPU acceleration reduced H₂O at P=8 from 14.4s to 2.4s (6x improvement). The per-iteration GPU time remains relatively stable (0.005-0.239s) across scaling, compared to the CPU path where $T_{\text{iter}}$ grows from 0.005s to 1.440s, confirming that GPU acceleration resolves the statevector construction bottleneck.
+GPU acceleration reduced H₂O at P=8 from 14.4s to 2.4s (6x improvement), with per-iteration GPU time remaining stable (0.005-0.239s) versus the CPU path's growth from 0.005s to 1.440s.
 
 ### Communication Masking
 
@@ -253,7 +251,7 @@ Random delays of 0.5-2.0s were injected into odd MPI ranks in 10 iterations for 
 
 ### Stress Test: Drop-Out Recovery
 
-After 10 iterations, the iteration 10 checkpoint was deleted. The stack detected the missing checkpoint, fell back to iteration 5, and resumed optimization from the correct $\theta$ state and SPSA schedule position. The postrecovery energy trajectory continued descending which confirms no optimization progress was permanently lost.
+After 10 iterations, iteration 10 checkpoint was deleted. The stack detected the missing checkpoint, fell back to iteration 5, and resumed optimization from the correct $\theta$ state and SPSA schedule position. The postrecovery energy trajectory continued descending which confirms no optimization progress was permanently lost.
 
 ---
 
@@ -285,19 +283,12 @@ After 10 iterations, the iteration 10 checkpoint was deleted. The stack detected
    ```
 3. Run: `make run-ibm NP=2`
 
-Uses EstimatorV2 with `mode=backend` (compatible with open/free plan, no Sessions), 4096 shots, and T-REx measurement error mitigation (resilience level 1). Each SPSA iteration bundles $E(\theta^+)$ and $E(\theta^-)$ as two PUBs in a single job to reduce QPU round-trips by 50%.
+Uses EstimatorV2 with `mode=backend` (compatible with open/free plan, no Sessions), 4096 shots, and T-REx measurement error mitigation (resilience level 1).
 
 
 ## Supported Molecules
 
-| Molecule | Qubits | Pauli Terms | FCI Energy (Ha) | Ansatz | Notes |
-|----------|--------|-------------|-----------------|--------|-------|
-| H₂ | 4 | 15 | -1.1373 | HWE-adaptive | Fastest; good for QPU testing |
-| LiH | 12 | 631 | -7.8825 | HWE-adaptive | Frozen 2 core electrons |
-| BeH₂ | 14 | 666 | -15.5952 | HWE-adaptive | Frozen 2 core electrons |
-| H₂O | 14 | 1,086 | -75.0129 | HWE-adaptive | Frozen 2 core electrons |
-
-Custom molecules via `MoleculeResolver`: registry names, raw geometry strings, SMILES notation, or PubChem lookup.
+Built-in: H₂, LiH, BeH₂, H₂O (see [MOLECULES.md](MOLECULES.md) for full details, qubit counts, and FCI references). Custom molecules supported with `MoleculeResolver`: registry names, raw geometry strings, SMILES notation, or PubChem lookup.
 
 
 ## Results Output
@@ -337,17 +328,15 @@ The following extensions are planned to address current limitations and broaden 
 
 - **Application Extensibility** - The stack already includes a `FinanceProblem` class that maps portfolio optimization to a QUBO/Ising Hamiltonian as the middleware is not limited to quantum chemistry. Future work will extend this to combinatorial optimization (MaxCut, TSP) and materials science (periodic Hamiltonians) using same MPI distribution and QPU dispatch infrastructure.
 
-- **Hardware Portability**  - The current dual-path architecture (C++ dispatcher for MPI coordination, Python primitives for QPU access) gives a natural extension point for a plug in feature for additional quantum backends such as Amazon Braket and Azure Quantum.
+- **Hardware Portability**  - The current dual path architecture (C++ dispatcher for MPI coordination, Python primitives for QPU access) gives a natural extension point for a plug in feature for additional quantum backends such as Amazon Braket and Azure Quantum.
 
 ---
 
 ## Known Limitations
 
-- **HWE particle-number violation**: The Hardware-Efficient Ansatz does not conserve electron number. After sufficient SPSA iterations, the optimizer can push $\theta$ into unphysical Hilbert space sectors, producing energies below FCI. Mitigated via near-zero initialization ($\mathcal{U}(-0.1, 0.1)$) and best-physical-energy tracking, but only fully resolved by switching to a particle-conserving ansatz (UCCSD).
-- **Single-host scaling**: Current benchmarks run on one machine with shared CPU cores. CPU-only MPI scaling regresses at P>=4 (0.24x at P=8 for H₂O) due to resource contention. GPU acceleration mitigates this (1.51x at P=8), but multi-node InfiniBand deployment would further improve scaling.
-- **$O(2^n)$ per-rank statevector cost**: Each MPI rank independently constructs the full statevector. Only the Pauli-term evaluations are distributed. This redundant computation is the primary scaling bottleneck, reduced by GPU acceleration but not eliminated.
-- **Consumer GPU bandwidth**: The GTX 1650 Mobile's 128 GB/s bandwidth is insufficient for cuStateVec to outperform the CUDA thrust backend at the tested circuit sizes (<=14 qubits). Data center GPUs with HBM would show cuStateVec's intended performance advantage (A100, H100).
-- **Single seed**: All results use seed=42 for reproducibility. Reported times capture one OS-scheduling outcome (not averaged across multiple runs).
+- **$O(2^n)$ per-rank statevector cost**: Each MPI rank independently constructs the full statevector; only Pauli-term evaluations are distributed. Primary scaling bottleneck reduced by GPU acceleration, not eliminated.
+- **Single seed**: All results use seed=42 for reproducibility. Reported times captured one OS-scheduling outcome (not averaged across multiple runs).
+- Additional limitations (HWE particle number violation, single host contention, consumer GPU bandwidth)
 
 ---
 
