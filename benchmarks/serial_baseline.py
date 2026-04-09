@@ -29,13 +29,11 @@ def serial_vqe(mol_name, coords, fci_ref, reps=1, max_iterations=500,seed=42):
     n_qubits= qubit_op.num_qubits 
         
              
-    adaptive_reps = min(reps + 1, 3) if n_qubits > 4 else reps             # Adaptive reps for larger molecules
+    adaptive_reps = min(reps + 1, 3) if n_qubits > 4 else reps           #for larger molecules
     ansatz = EfficientSU2(n_qubits,reps=adaptive_reps, entanglement="full").decompose() 
     n_params = ansatz.num_parameters     
-    # Scale iterations by param count - same as stack
     max_iterations = max(200, n_params * 8)
-    # Initialize near zero,  keeps state close to HF reference |00... 0>
-    theta = np.random.uniform(-0.1, 0.1, n_params)   
+    theta = np.random.uniform(-0.1, 0.1, n_params)                  # near-zero, stays close to HF reference   
 
 
     def energy(t):
@@ -45,7 +43,7 @@ def serial_vqe(mol_name, coords, fci_ref, reps=1, max_iterations=500,seed=42):
         return float(sv.expectation_value(pauli_op).real)
 
 
-    # SPSA w same hyperparams as stack
+    # SPSA hyperparams match HPCHybridStack -  fair comparison
     c = 0.1
     a = 0.628 / np.sqrt(n_params / 8.0)
     A = max_iterations * 0.1
@@ -55,7 +53,7 @@ def serial_vqe(mol_name, coords, fci_ref, reps=1, max_iterations=500,seed=42):
     history = [] 
     best_physical_energy = None
     best_physical_iter = 0
-    t0= time.perf_counter()     # Timer starts  
+    t0 = time.perf_counter()
 
 
     for k in range(1, max_iterations + 1):
@@ -69,8 +67,7 @@ def serial_vqe(mol_name, coords, fci_ref, reps=1, max_iterations=500,seed=42):
         gradient = (e_plus-e_minus) / (2 * ck * delta)
         theta -= ak * gradient
 
-        # Tracks best physical energy - above FCI scores
-        if current >= fci_ref:   
+        if current >= fci_ref:  # track best energy in physical (above-FCI) sector   
             if best_physical_energy is None or current < best_physical_energy:
                 best_physical_energy = current
                 best_physical_iter = k
@@ -83,7 +80,6 @@ def serial_vqe(mol_name, coords, fci_ref, reps=1, max_iterations=500,seed=42):
 
     t_total = time.perf_counter() - t0
 
-    # Reports best physical energy - if final crossed below FCI 
     if history[-1] < fci_ref and best_physical_energy is not None:
         report_energy = best_physical_energy
         report_iter= best_physical_iter   
@@ -128,7 +124,6 @@ if __name__ == "__main__":
     for name, d in all_results.items():
         print(f"{name:<10} {d['energy']:<16.6f} {d['error']:+.4f} Ha   {d['iterations']:<8} {d['wall_time']:<10.2f}")
 
-    # Save results to results/baseline/
     out_path = f"results/baseline/serial_baseline_{ts}.json"
 
     with open(out_path, "w") as f:

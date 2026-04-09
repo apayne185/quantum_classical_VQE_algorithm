@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 
-# so python can find C++ module and src package
+# Add project root and C++ build dir to import path
 _root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, _root)
 sys.path.insert(0, os.path.join(_root, "build"))
@@ -61,8 +61,7 @@ def run_chemistry_local(stack: HPCHybridStack, molecule_input: str, force_tier: 
         return None, None
     
     t0 = time.perf_counter()
-    # Scale iterations by parameter count — more params need more SPSA steps
-    max_iters = max(200, problem.num_params * 8)
+    max_iters = max(200, problem.num_params * 8)  # scale with parameter count
     ckpt_dir = os.path.join("checkpoints", problem.name)
     theta, history = stack.vqe_optimize(problem,
                                         max_iterations=max_iters,
@@ -76,7 +75,6 @@ def run_chemistry_local(stack: HPCHybridStack, molecule_input: str, force_tier: 
         final_e = history[-1]
         fci = problem.fci_energy
 
-        # Use best physical energy (above FCI) if final energy went below
         best_physical = getattr(stack, '_best_physical_energy', None)
         if fci is not None and final_e < fci - 1e-6 and best_physical is not None:
             report_e = best_physical
@@ -118,9 +116,8 @@ def run_finance_local(stack:HPCHybridStack):
     if stack.rank == 0: print("\n\n\n--- RUNNING FINANCE (4-Assest Portfolio QUBO) TASK ---")
     np.random.seed(42)
     n_assets = 4
-    #  synthetic positive definite covariance matrix
     A = np.random.rand(n_assets, n_assets)
-    cov = A @ A.T / n_assets
+    cov = A @ A.T / n_assets  # synthetic positive-definite covariance
     mu  = np.random.uniform(0.02, 0.15, n_assets)
 
     problem = FinanceProblem(cov, expected_returns=mu, risk_factor=1.0)
@@ -182,16 +179,12 @@ def run_scaling_local(stack: HPCHybridStack):
 
 
 def run_weak_scaling(stack: HPCHybridStack):
-    """Weak scaling: increase problem size proportionally with rank count.
-    Each rank count gets a molecule whose Pauli term count roughly scales
-    with P, so per-rank workload stays approximately constant.
-    """
-    # Map rank count to molecule (increasing Pauli terms with P)
+    # Molecule scales with P so per-rank Pauli term count stays relatively constant
     weak_scaling_map = {
-        1: "H2",      # 15 terms / 1 rank  = 15 terms/rank
-        2: "LiH",     # 631 terms / 2 ranks = 316 terms/rank
-        4: "BeH2",    # 666 terms / 4 ranks = 167 terms/rank
-        8: "H2O",     # 1086 terms / 8 ranks = 136 terms/rank
+        1: "H2",        # 15 terms / 1 rank  =15 terms/rank
+        2: "LiH",        # 631 terms / 2 ranks = 316 terms/rank
+        4: "BeH2",       # 666 terms / 4 ranks = 167 terms/rank
+        8: "H2O",       # 1086 terms / 8 ranks = 136 terms/rank
     }
 
     mol_name = weak_scaling_map.get(stack.size)
@@ -209,7 +202,6 @@ def run_weak_scaling(stack: HPCHybridStack):
             print(f"[Weak Scaling] {mol_name} resolution failed, skipping.")
         return None
 
-    # Fixed 10 iterations for consistency across rank counts
     t0 = time.perf_counter()
     _, history = stack.vqe_optimize(problem, max_iterations=10,
                                     checkpoint_dir=f"checkpoints/weak_scaling")
@@ -266,7 +258,6 @@ if __name__ == "__main__":
                     fci = getattr(problem, "fci_energy", None)
                     final_e = history[-1]
                     best_phys = getattr(stack, '_best_physical_energy', None)
-                    # Report best physical energy if final went below FCI
                     if fci is not None and final_e < fci - 1e-6 and best_phys is not None:
                         report_e = best_phys
                     else:
@@ -281,8 +272,9 @@ if __name__ == "__main__":
                         "history": history,
                     }
 
-        # Finance problem kept in codebase but excluded from chemistry-focused benchmarks
+        # Finance problem - kept in codebase but excluded from chemistry-focused benchmarks (additional work, will be extended in future)
         # finance_result = run_finance_local(stack)
+        
         scaling_result = run_scaling_local(stack)
         weak_scaling_result = run_weak_scaling(stack)
 
