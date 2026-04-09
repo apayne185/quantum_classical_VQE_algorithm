@@ -1,12 +1,10 @@
-from qiskit import qasm3
 import sys
 import os
 import numpy as np
 import time
 from datetime import datetime
 
-
-# so python can find C++ module and src package
+# Adds project root, C++ build dir to import path
 _root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, _root)
 sys.path.insert(0, os.path.join(_root, "build"))
@@ -21,6 +19,7 @@ try:
 except ImportError as e:
     print(f"failed to import hpc_core module: {e}")
     sys.exit(1)
+
 
 
 USE_GPU = os.environ.get("USE_GPU", "yes").strip().lower() == "yes"
@@ -47,7 +46,7 @@ def check_credentials():
 
 
 def run_chemistry_ibm(stack: HPCHybridStack):
-    if stack.rank == 0: print("\n--- RUNNING IBM QPU CHEMISTRY TASK (H2 Ground State) ---")
+    if stack.rank == 0: print("\n--- RUNNING IBM QPU CHEMISTRY TASK (H2 Ground State) ----")
 
     problem = ChemistryProblem.from_name("H2")
     t0 = time.perf_counter()
@@ -162,12 +161,12 @@ if __name__ == "__main__":
 
     with HPCHybridStack(use_gpu=USE_GPU, backend=BACKEND) as stack:
         chem_result = run_chemistry_ibm(stack)
-        # Uncomment these when QPU time budget allows:
+        # Disabled for now to conserve IBM open access QPU time
         # finance_result = run_finance_ibm(stack)
         # scaling_result = run_scaling_ibm(stack)
 
         if stack.rank == 0:
-            print("\n---ALL IBM QPU BENCHMARKS COMPLETE ----")
+            print("\n--- ALL IBM QPU BENCHMARKS COMPLETE ----")
             print(f"Ranks used : {stack.size}")
             print(f"GPU : {stack.use_gpu}")
             print(f"Backend : {BACKEND} ")

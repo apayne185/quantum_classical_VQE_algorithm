@@ -11,7 +11,6 @@ PLOTS_DIR = os.path.join(RESULTS_DIR, "plots")
 
 def load_results():
     files = sorted(glob.glob(os.path.join(RESULTS_DIR, "**", "*.json"), recursive=True))
-    # Exclude anything inside the plots directory
     files = [f for f in files if not f.startswith(PLOTS_DIR)]
     runs = []
     for f in files:
@@ -42,8 +41,7 @@ def print_summary(runs):
         tag = r["_file"][:27]
         mols = r.get("molecules", {})
 
-        # Handles the ibm_cloud format (single chemistry result)
-        chem = r.get("chemistry")
+        chem = r.get("chemistry")  # IBM runs store results here instead of "molecules"
         if chem and isinstance(chem, dict) and "molecule" in chem:
             mol = chem["molecule"]
             energy = chem.get("energy", 0)
@@ -67,9 +65,10 @@ def print_summary(runs):
             print(f"{tag:<28} {mol:<8} {energy:<14.6f} {fci_str:<14} {err_str:<12} {tier:<18} {iters:<6} {wall:<8.2f}")
 
 
-# ---------------------------------------------------------------------------
-# Plotting
-# ---------------------------------------------------------------------------
+
+
+
+# PLOTTING 
 
 MOLECULES = ["H2", "LiH", "BeH2", "H2O"]
 MOL_LABELS = {"H2": "H₂", "LiH": "LiH", "BeH2": "BeH₂", "H2O": "H₂O"}
@@ -77,13 +76,13 @@ COLORS = {"H2": "#1f77b4", "LiH": "#ff7f0e", "BeH2": "#2ca02c", "H2O": "#d62728"
 
 
 def _ensure_dirs():
-    """Create the plot output directories."""
+    # Create the plot output directories 
     for sub in ["convergence", "scaling", "accuracy", "ibm"]:
         os.makedirs(os.path.join(PLOTS_DIR, sub), exist_ok=True)
 
 
 def _pick_latest_sim(runs, ranks=2):
-    """Return the most recent simulator run with the given rank count."""
+    # Return most recent simulator run with the given rank count 
     candidates = [r for r in runs
                   if r.get("backend") == "simulator"
                   and r.get("mpi_ranks") == ranks
@@ -92,17 +91,16 @@ def _pick_latest_sim(runs, ranks=2):
 
 
 def _pick_latest_baseline(runs):
-    """Return the most recent serial baseline."""
+    # Returns most recent serial baseline
     candidates = [r for r in runs if "baseline" in r["_path"]]
     return candidates[-1] if candidates else None
-
 
 def _pick_ibm_runs(runs):
     return [r for r in runs if r.get("backend") == "ibm_cloud" and "chemistry" in r]
 
 
 def plot_convergence_per_molecule(runs, plt):
-    """One convergence plot per molecule, showing all available runs."""
+    # One convergence plot per molecule for all available runs
     _ensure_dirs()
     sim_runs = [r for r in runs if "molecules" in r and r.get("backend") == "simulator"]
 
@@ -143,6 +141,7 @@ def plot_convergence_per_molecule(runs, plt):
         print(f"  Saved {out}")
 
 
+
 def plot_convergence_combined(runs, plt):
     """Single plot with the latest P=2 run for each molecule."""
     _ensure_dirs()
@@ -169,7 +168,7 @@ def plot_convergence_combined(runs, plt):
 
     ax.set_xlabel("SPSA Iteration")
     ax.set_ylabel("Energy (Ha)")
-    ax.set_title("VQE Convergence — All Molecules (P=2, Latest Run)")
+    ax.set_title("VQE Convergence - All Molecules (P=2, Latest Run)")
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.3)
     out = os.path.join(PLOTS_DIR, "convergence", "convergence_all_molecules.png")
@@ -178,8 +177,11 @@ def plot_convergence_combined(runs, plt):
     print(f"  Saved {out}")
 
 
+
+
+
 def plot_wall_time_comparison(runs, plt):
-    """Bar chart: serial baseline vs distributed P=2 wall-clock times."""
+    # Bar chart - serial baseline vs distributed P=2 wall-clock times
     _ensure_dirs()
     baseline = _pick_latest_baseline(runs)
     sim = _pick_latest_sim(runs, ranks=2)
@@ -226,24 +228,24 @@ def plot_wall_time_comparison(runs, plt):
     print(f"  Saved {out}")
 
 
+
+
 def plot_strong_scaling(runs, plt):
-    """Strong scaling: wall-clock time and efficiency across rank counts for each molecule."""
+    # Strong scaling - wall-clock time and efficiency across rank counts for each molecule
     _ensure_dirs()
-    # Gather all simulator runs grouped by rank count (latest per rank)
-    by_ranks = {}
+    by_ranks = {}               # latest run per rank count, time sorted
     for r in runs:
         if r.get("backend") != "simulator" or "molecules" not in r:
             continue
         p = r.get("mpi_ranks")
         if p is not None:
-            by_ranks[p] = r  # latest wins since runs are sorted by time
+            by_ranks[p] = r
 
     if len(by_ranks) < 2:
         return
 
     rank_counts = sorted(by_ranks.keys())
 
-    # --- Wall-clock time per molecule across ranks ---
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
     for mol in MOLECULES:
         times = []
@@ -259,13 +261,12 @@ def plot_strong_scaling(runs, plt):
 
     ax1.set_xlabel("MPI Ranks (P)")
     ax1.set_ylabel("Wall-Clock Time (s)")
-    ax1.set_title("Strong Scaling — Wall-Clock Time")
+    ax1.set_title("Strong Scaling - Wall-Clock Time")
     ax1.set_xticks(rank_counts)
     ax1.legend(fontsize=9)
     ax1.grid(True, alpha=0.3)
 
-    # --- Efficiency for H2O (largest molecule) ---
-    mol = "H2O"
+    mol = "H2O"                              # efficiency panel uses largest molecule
     times = []
     ranks_with_data = []
     for p in rank_counts:
@@ -296,8 +297,10 @@ def plot_strong_scaling(runs, plt):
     print(f"  Saved {out}")
 
 
+
+
 def plot_weak_scaling(plt):
-    """Weak scaling from the scaling .txt files."""
+    # Weak scaling from the scaling .txt file
     _ensure_dirs()
     weak_files = sorted(glob.glob(os.path.join(RESULTS_DIR, "scaling", "weak_scaling_P*.txt")))
     if not weak_files:
@@ -340,7 +343,7 @@ def plot_weak_scaling(plt):
     for i, t in enumerate(total_times):
         ax1.text(i, t + 0.2, f"{t:.2f}s", ha="center", fontsize=8)
 
-    # Per-iteration time
+    # Per iteration time
     ax2.bar(range(len(ranks)), iter_times, color=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"][:len(ranks)])
     ax2.set_xticks(range(len(ranks)))
     ax2.set_xticklabels([f"P={p}\n{m}" for p, m in zip(ranks, molecules)], fontsize=9)
@@ -356,8 +359,9 @@ def plot_weak_scaling(plt):
     print(f"  Saved {out}")
 
 
+
 def plot_accuracy_comparison(runs, plt):
-    """Bar chart of absolute energy error per molecule: serial vs distributed."""
+    #Bar chart of absolute energy error per molecule - serial vs distributed.
     _ensure_dirs()
     baseline = _pick_latest_baseline(runs)
     sim = _pick_latest_sim(runs, ranks=2)
@@ -385,8 +389,7 @@ def plot_accuracy_comparison(runs, plt):
     ax.bar(x - w/2, serial_err, w, label="Serial Baseline", color="#7f8c8d")
     ax.bar(x + w/2, dist_err, w, label="Distributed P=2", color="#2980b9")
 
-    # Chemical accuracy line
-    ax.axhline(1.6e-3, color="red", linestyle="--", linewidth=1, alpha=0.7,
+    ax.axhline(1.6e-3, color="red", linestyle="--", linewidth=1, alpha=0.7,              # 1.6 mHa
                label="Chemical Accuracy (1.6 mHa)")
 
     ax.set_xticks(x)
@@ -402,8 +405,10 @@ def plot_accuracy_comparison(runs, plt):
     print(f"  Saved {out}")
 
 
+
+
 def plot_accuracy_final_vs_fci(runs, plt):
-    """Shows final energy vs FCI for each molecule from latest P=2 run."""
+    # final energy vs FCI for each molecule from most recent P=2 run. 
     _ensure_dirs()
     sim = _pick_latest_sim(runs, ranks=2)
     if not sim:
@@ -411,7 +416,7 @@ def plot_accuracy_final_vs_fci(runs, plt):
 
     mols_found = []
     energies = []
-    fcis = []
+    fcis = [] 
     for mol in MOLECULES:
         data = sim.get("molecules", {}).get(mol)
         if data and data.get("fci") is not None:
@@ -424,13 +429,14 @@ def plot_accuracy_final_vs_fci(runs, plt):
 
     import numpy as np
     x = np.arange(len(mols_found))
-    w = 0.35
-    fig, ax = plt.subplots(figsize=(8, 5))
+    w = 0.35  
+    fig, ax = plt.subplots(figsize=(8, 5))   
+
     ax.bar(x - w/2, fcis, w, label="FCI (Exact)", color="#27ae60", alpha=0.8)
     ax.bar(x + w/2, energies, w, label="VQE (Distributed P=2)", color="#2980b9", alpha=0.8)
     ax.set_xticks(x)
-    ax.set_xticklabels(mols_found)
-    ax.set_ylabel("Energy (Ha)")
+    ax.set_xticklabels(mols_found)     
+    ax.set_ylabel("Energy (Ha)")      
     ax.set_title("VQE Energy vs FCI Ground Truth")
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.2, axis="y")
@@ -440,8 +446,9 @@ def plot_accuracy_final_vs_fci(runs, plt):
     print(f"  Saved {out}")
 
 
+
 def plot_ibm_convergence(runs, plt):
-    """IBM QPU iteration-by-iteration energy trajectory."""
+    # IBM QPU iteration-by-iteration energy trajectory
     _ensure_dirs()
     ibm_runs = _pick_ibm_runs(runs)
     if not ibm_runs:
@@ -468,7 +475,7 @@ def plot_ibm_convergence(runs, plt):
 
     ax.set_xlabel("SPSA Iteration")
     ax.set_ylabel("Energy (Ha)")
-    ax.set_title(f"IBM Quantum QPU — H₂ VQE Convergence (ibm_marrakesh)")
+    ax.set_title(f"IBM Quantum QPU - H₂ VQE Convergence (ibm_marrakesh)")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
     out = os.path.join(PLOTS_DIR, "ibm", "ibm_qpu_convergence.png")
@@ -477,14 +484,15 @@ def plot_ibm_convergence(runs, plt):
     print(f"  Saved {out}")
 
 
+
+
 def plot_ibm_rtt(runs, plt):
-    """IBM QPU round-trip time per iteration."""
+    # IBM QPU round-trip time per iteration. 
     _ensure_dirs()
     ibm_runs = _pick_ibm_runs(runs)
     if not ibm_runs:
         return
 
-    # Use the latest IBM run
     r = ibm_runs[-1]
     chem = r["chemistry"]
     wall = chem.get("wall_time", 0)
@@ -494,14 +502,12 @@ def plot_ibm_rtt(runs, plt):
     avg_rtt = wall / iters
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    # If we have per-iteration history, estimate time per iter
     if "history" in chem and iters > 0:
         iter_nums = list(range(1, iters + 1))
-        # We don't have per-iteration RTT in the JSON, so show the average
-        ax.bar(iter_nums, [avg_rtt] * iters, color="#e74c3c", alpha=0.7)
+        ax.bar(iter_nums, [avg_rtt] * iters, color="#e74c3c", alpha=0.7)             # uniform, no per-iter RTT in JSON
         ax.set_xlabel("Iteration")
         ax.set_ylabel("Avg Time Per Iteration (s)")
-        ax.set_title(f"IBM QPU — Avg {avg_rtt:.1f}s/iter (dominated by QPU RTT)")
+        ax.set_title(f"IBM QPU - Avg {avg_rtt:.1f}s/iter (dominated by QPU RTT)")
         ax.set_xticks(iter_nums)
         ax.grid(True, alpha=0.2, axis="y")
 
@@ -511,8 +517,9 @@ def plot_ibm_rtt(runs, plt):
     print(f"  Saved {out}")
 
 
+
 def plot_speedup_by_molecule(runs, plt):
-    """Speedup (serial/distributed) per molecule across all available rank counts."""
+    # Speedup (serial/distributed) per molecule across all available rank counts.
     _ensure_dirs()
     baseline = _pick_latest_baseline(runs)
     if not baseline:
@@ -565,26 +572,19 @@ def plot_all(runs):
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
-        print("\nmatplotlib not installed — skipping plots.")
+        print("\nmatplotlib not installed - skipping plots.")
         return
 
-    print("\nGenerating plots...")
 
-    # Convergence
+    print("\nGenerating plots...")
     plot_convergence_per_molecule(runs, plt)
     plot_convergence_combined(runs, plt)
-
-    # Scaling
     plot_wall_time_comparison(runs, plt)
     plot_strong_scaling(runs, plt)
     plot_weak_scaling(plt)
     plot_speedup_by_molecule(runs, plt)
-
-    # Accuracy
     plot_accuracy_comparison(runs, plt)
     plot_accuracy_final_vs_fci(runs, plt)
-
-    # IBM QPU
     plot_ibm_convergence(runs, plt)
     plot_ibm_rtt(runs, plt)
 

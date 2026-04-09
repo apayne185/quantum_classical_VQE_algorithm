@@ -5,7 +5,7 @@ on:
     branches: [main, feature/ci-workflow]
   pull_request:
     branches: [main]
-  workflow_dispatch:       # Manual trigger for IBM QPU free access run
+  workflow_dispatch:       # manual trigger — gates the ibm-qpu-test job below
 
 jobs:
   build-and-test:
