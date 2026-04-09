@@ -5,7 +5,7 @@ on:
     branches: [main, feature/ci-workflow]
   pull_request:
     branches: [main]
-  workflow_dispatch:    # Manual trigger for IBM QPU tests
+  workflow_dispatch:       # Manual trigger for IBM QPU free access run
 
 jobs:
   build-and-test:
@@ -56,8 +56,7 @@ jobs:
                   assert len(hist) > 0, 'No iterations completed'
           "
 
-  # IBM QPU test — manual trigger only to conserve QPU time
-  # Trigger from GitHub Actions tab → "Run workflow" button
+  # IBM QPU test, manual trigger so to conserve 10 min of QPU time
   ibm-qpu-test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
