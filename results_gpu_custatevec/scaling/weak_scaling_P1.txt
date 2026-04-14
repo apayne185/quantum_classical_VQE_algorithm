@@ -1,1 +1,0 @@
-P=1 mol=H2 terms=15 terms/rank=15 T_total=2.4416 T/iter=0.2442 final_E=-0.056199

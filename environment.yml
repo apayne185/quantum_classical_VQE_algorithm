@@ -1,24 +1,25 @@
 name: hybrid-vqe
-channels: 
+channels:
   - conda-forge
   - defaults
-dependencies: 
+dependencies:
   - python=3.11
-  - qiskit
   - pybind11
-  - mpi4py
-  - mpich
-  - cupy
   - cmake
-  - pip
   - numpy
   - scipy
-  - matplotlib 
+  - matplotlib
+  - mpi4py
+  - mpich
+  - pip
   - pip:
-      - qiskit>=1.0.0
+      - qiskit>=1.0,<2.0
       - qiskit-aer>=0.14.0
+      - qiskit-aer-gpu; platform_system == "Linux"
       - qiskit-algorithms>=0.3.0
-      - qiskit-nature
-      - pylatexenc  
-      - pyscf
-
+      - qiskit-nature>=0.7
+      - qiskit-ibm-runtime>=0.20
+      - pyscf>=2.4
+      - pylatexenc
+      - cupy-cuda12x; platform_system == "Linux"
+      - rdkit
