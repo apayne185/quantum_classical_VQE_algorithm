@@ -16,7 +16,8 @@ else
 endif     
 
 
-.PHONY: build trial run run-ibm scaling baseline clean shell
+.PHONY: build trial run run-ibm scaling baseline clean shell \
+        native-install native-trial native-run slurm-trial slurm-run
 
 build:
 	@echo "[Make] Building Docker image '$(IMAGE_NAME)' ..."
@@ -178,3 +179,36 @@ clean:
 	rm -rf results/scaling/
 	rm -f *.log *.npy
 	find checkpoints/ -name "*.npy" -delete 2>/dev/null || true
+
+
+# ============================================================
+# NATIVE (conda) PATH - for HPC clusters where Docker is unavailable.
+# Uses environment.yml + a native CMake build of the C++/CUDA module.
+# For local reproducible runs, prefer the Docker targets above.
+# ============================================================
+
+# Install miniforge env + build hpc_core natively.
+# Set SCRATCH=/scratch/$USER to install the env on fast local SSD (HPC recommended).
+native-install:
+	@echo "[Make] Native install (conda + CMake)..."
+	bash scripts/install_native.sh
+
+# Run the 7-layer diagnostic natively (no Docker, no Slurm).
+native-trial:
+	@echo "[Make] Native diagnostic trial ($(NP) ranks) ..."
+	PYTHONPATH=./build:. mpirun -np $(NP) python tests/test_layers_run.py
+
+# Run full simulator benchmark natively.
+native-run:
+	@echo "[Make] Native benchmark ($(NP) ranks) ..."
+	PYTHONPATH=./build:. mpirun -np $(NP) python benchmarks/local_test_run.py
+
+# Submit the 7-layer diagnostic to Slurm.
+slurm-trial:
+	@mkdir -p results/slurm
+	sbatch scripts/slurm_trial.sh
+
+# Submit the full simulator benchmark to Slurm (1 GPU).
+slurm-run:
+	@mkdir -p results/slurm
+	sbatch scripts/slurm_gpu.sh

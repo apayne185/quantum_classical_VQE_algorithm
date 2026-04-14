@@ -1,1 +1,0 @@
-P=4 mol=BeH2 terms=666 terms/rank=166 T_total=1.7927 T/iter=0.1793 final_E=-7.626978
