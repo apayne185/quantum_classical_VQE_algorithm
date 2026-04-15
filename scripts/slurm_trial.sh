@@ -31,4 +31,6 @@ export BACKEND="simulator"
 export USE_GPU="yes"
 
 NP="${SLURM_NTASKS:-2}"
+export UCX_TLS=sm,self          # single-node: shared memory only, skip RDMA
+export UCX_NET_DEVICES=          # disable network devices entirely
 mpirun -bootstrap fork -n "$NP" python tests/test_layers_run.py

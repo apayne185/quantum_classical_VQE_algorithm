@@ -41,4 +41,6 @@ export USE_GPU="yes"
 nvidia-smi
 
 NP="${SLURM_NTASKS:-2}"
+export UCX_TLS=sm,self          # single-node: shared memory only, skip RDMA
+export UCX_NET_DEVICES=          # disable network devices entirely
 mpirun -bootstrap fork -n "$NP" python benchmarks/local_test_run.py
