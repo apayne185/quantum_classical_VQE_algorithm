@@ -30,5 +30,5 @@ export PYTHONPATH="$REPO_ROOT/build:$REPO_ROOT:${PYTHONPATH:-}"
 export BACKEND="simulator"
 export USE_GPU="yes"
 
-SRUN="$(command -v srun || echo /usr/bin/srun)"
-"$SRUN" python tests/test_layers_run.py
+NP="${SLURM_NTASKS:-2}"
+mpirun -bootstrap fork -n "$NP" python tests/test_layers_run.py

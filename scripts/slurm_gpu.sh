@@ -40,5 +40,5 @@ export USE_GPU="yes"
 
 nvidia-smi
 
-SRUN="$(command -v srun || echo /usr/bin/srun)"
-"$SRUN" python benchmarks/local_test_run.py
+NP="${SLURM_NTASKS:-2}"
+mpirun -bootstrap fork -n "$NP" python benchmarks/local_test_run.py
