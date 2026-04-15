@@ -40,4 +40,5 @@ export USE_GPU="yes"
 
 nvidia-smi
 
-srun python benchmarks/local_test_run.py
+SRUN="$(command -v srun || echo /usr/bin/srun)"
+"$SRUN" python benchmarks/local_test_run.py
