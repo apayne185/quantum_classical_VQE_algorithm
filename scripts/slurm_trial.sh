@@ -30,4 +30,5 @@ export PYTHONPATH="$REPO_ROOT/build:$REPO_ROOT:${PYTHONPATH:-}"
 export BACKEND="simulator"
 export USE_GPU="yes"
 
-srun python tests/test_layers_run.py
+SRUN="$(command -v srun || echo /usr/bin/srun)"
+"$SRUN" python tests/test_layers_run.py
