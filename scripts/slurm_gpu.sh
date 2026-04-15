@@ -12,7 +12,7 @@
 #SBATCH --time=04:00:00
 #SBATCH --output=results/slurm/vqe-gpu_%j.log
 
-set -euo pipefail
+set -eo pipefail
 
 REPO_ROOT="${REPO_ROOT:-$HOME/quantum_classical_VQE_algorithm}"
 ENV_PATH="${ENV_PATH:-/scratch/$USER/hybrid-vqe}"
