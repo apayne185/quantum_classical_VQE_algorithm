@@ -17,7 +17,8 @@ endif
 
 
 .PHONY: build trial run run-ibm scaling baseline clean shell \
-        native-install native-trial native-run slurm-trial slurm-run
+        native-install native-trial native-run \
+        slurm-trial slurm-run slurm-scaling slurm-weak-scaling
 
 build:
 	@echo "[Make] Building Docker image '$(IMAGE_NAME)' ..."
@@ -212,3 +213,15 @@ slurm-trial:
 slurm-run:
 	@mkdir -p results/slurm
 	sbatch scripts/slurm_gpu.sh
+
+# Submit 4 jobs for the strong-scaling sweep (P=1,2,4,8).
+# local_test_run.py runs the full benchmark + weak-scaling routine per job.
+slurm-scaling:
+	@mkdir -p results/slurm
+	JOB_PREFIX=vqe-scale bash scripts/slurm_scaling.sh
+
+# Weak-scaling sweep. Uses the same script path; named separately for
+# clarity in the log filenames so results don't get mixed up.
+slurm-weak-scaling:
+	@mkdir -p results/slurm
+	JOB_PREFIX=vqe-weak bash scripts/slurm_scaling.sh
