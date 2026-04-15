@@ -5,7 +5,8 @@
 #SBATCH --job-name=vqe-trial
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=4
+#SBATCH --ntasks=2
+#SBATCH --cpus-per-task=2
 #SBATCH --mem=16G
 #SBATCH --time=00:30:00
 #SBATCH --output=results/slurm/vqe-trial_%j.log
@@ -29,4 +30,4 @@ export PYTHONPATH="$REPO_ROOT/build:$REPO_ROOT:${PYTHONPATH:-}"
 export BACKEND="simulator"
 export USE_GPU="yes"
 
-mpirun -np "$NP" python tests/test_layers_run.py
+srun python tests/test_layers_run.py
