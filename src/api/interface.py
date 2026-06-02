@@ -1,5 +1,6 @@
 import hpc_core     # compiled C++ pybind11 bridge (build/hpc_core.so)
 from src.api.problems import QuantumProblem
+from src.api.hardware import HardwareProfile
 
 import glob as _glob
 import os
@@ -24,12 +25,16 @@ except ImportError as e:
 
 class HPCHybridStack:
     def __init__(self, use_gpu: bool | None = None, backend:str = 'simulator'):
+        # Hardware auto-detection (GPU vendor/class, libs, MPI). Researchers
+        # override via VQE_PRECISION / VQE_BACKEND / USE_GPU env vars.
+        self.hw = HardwareProfile.detect()
+
         if use_gpu is None:
-            env_val = os.environ.get("USE_GPU", "yes").strip().lower()
-            use_gpu = (env_val == "yes")
+            use_gpu = self.hw.want_gpu()
 
         self.use_gpu = use_gpu
         self.backend = backend
+        self.precision = "auto"           # resolved per-problem in vqe_optimize
         self._ibm_session= None
         self._ibm_estimator = None
         self._ibm_transpiled = None
@@ -67,20 +72,28 @@ class HPCHybridStack:
                     print("[Stack] Falling back to CPU Statevector")
 
         if self.rank == 0:
+            print(self.hw.describe())
+            for n in self.hw.notes:
+                print(f"[hw] note: {n}")
             print(f"[Stack]  Initialized {self.size} MPI rank(s), GPU={'enabled' if self.use_gpu else 'disabled'}, "
                   f"SV_backend={'GPU (cuStateVec)' if self._gpu_sv else 'CPU (Qiskit)'}, backend='{self.backend}'")
 
 
     def _build_statevector(self, bound_circuit):
-        # Build statevector from bound circuit, uses GPU (cuStateVec) if available, else CPU 
+        # Build statevector from bound circuit, uses GPU (cuStateVec) if available, else CPU.
         if self._gpu_sv:
             from qiskit import transpile
             from qiskit.quantum_info import Statevector as _SV
-            # AerSimulator GPU path -  must save_statevector() explicitly
+            aer_precision = "double" if self.precision == "fp64" else "single"
+            sim = self._aer_gpu.from_backend(self._aer_gpu) if hasattr(self._aer_gpu, 'from_backend') else self._aer_gpu
+            try:
+                sim.set_options(precision=aer_precision)
+            except Exception:
+                pass
             circ = bound_circuit.copy()
             circ.save_statevector()
-            t_circ = transpile(circ, self._aer_gpu)
-            result = self._aer_gpu.run(t_circ).result()
+            t_circ = transpile(circ, sim)
+            result = sim.run(t_circ).result()
             sv_data = result.get_statevector(t_circ)
             return _SV(sv_data)
         else:
@@ -100,6 +113,13 @@ class HPCHybridStack:
             raise ValueError(
                 "problem.num_params= 0 after prepare(), check that ansatz was built correctly. "
             )
+
+        # Resolve precision policy for this problem size (once per optimize call).
+        self.precision = self.hw.recommend_precision(num_qubits)
+        if self.rank == 0:
+            max_fit = self.hw.max_qubits_fit(self.precision)
+            extra = f" (GPU fits up to ~{max_fit} qubits at this precision)" if max_fit else ""
+            print(f"[Stack] Precision: {self.precision} for {num_qubits}-qubit problem{extra}")
 
         os.makedirs(checkpoint_dir, exist_ok=True)
         theta = np.zeros(num_params, dtype=np.float64)

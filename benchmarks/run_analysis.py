@@ -14,11 +14,18 @@ def load_results():
     files = [f for f in files if not f.startswith(PLOTS_DIR)]
     runs = []
     for f in files:
-        with open(f) as fh:
-            data = json.load(fh)
-            data["_file"] = os.path.basename(f)
-            data["_path"] = f
-            runs.append(data)
+        try:
+            with open(f) as fh:
+                data = json.load(fh)
+        except (json.JSONDecodeError, OSError) as exc:
+            print(f"  [warn] Skipping {f}: {exc}", file=sys.stderr)
+            continue
+        if not isinstance(data, dict):
+            print(f"  [warn] Skipping {f}: expected a JSON object", file=sys.stderr)
+            continue
+        data["_file"] = os.path.basename(f)
+        data["_path"] = f
+        runs.append(data)
 
     return runs
 
@@ -70,9 +77,9 @@ def print_summary(runs):
 
 # PLOTTING 
 
-MOLECULES = ["H2", "LiH", "BeH2", "H2O"]
-MOL_LABELS = {"H2": "H₂", "LiH": "LiH", "BeH2": "BeH₂", "H2O": "H₂O"}
-COLORS = {"H2": "#1f77b4", "LiH": "#ff7f0e", "BeH2": "#2ca02c", "H2O": "#d62728"}
+MOLECULES = ["H2", "LiH", "BeH2", "H2O", "NH3"]
+MOL_LABELS = {"H2": "H₂", "LiH": "LiH", "BeH2": "BeH₂", "H2O": "H₂O", "NH3": "NH₃"}
+COLORS = {"H2": "#1f77b4", "LiH": "#ff7f0e", "BeH2": "#2ca02c", "H2O": "#d62728", "NH3": "#9467bd"}
 
 
 def _ensure_dirs():
@@ -147,6 +154,7 @@ def plot_convergence_combined(runs, plt):
     _ensure_dirs()
     run = _pick_latest_sim(runs, ranks=2)
     if not run:
+        print("  [warn] plot_convergence_combined: no P=2 simulator run found, skipping", file=sys.stderr)
         return
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -186,6 +194,7 @@ def plot_wall_time_comparison(runs, plt):
     baseline = _pick_latest_baseline(runs)
     sim = _pick_latest_sim(runs, ranks=2)
     if not baseline or not sim:
+        print("  [warn] plot_wall_time_comparison: missing baseline or P=2 simulator run, skipping", file=sys.stderr)
         return
 
     mols_found = []
@@ -304,6 +313,7 @@ def plot_weak_scaling(plt):
     _ensure_dirs()
     weak_files = sorted(glob.glob(os.path.join(RESULTS_DIR, "scaling", "weak_scaling_P*.txt")))
     if not weak_files:
+        print("  [warn] plot_weak_scaling: no weak_scaling_P*.txt files found, skipping", file=sys.stderr)
         return
 
     ranks = []
@@ -366,6 +376,7 @@ def plot_accuracy_comparison(runs, plt):
     baseline = _pick_latest_baseline(runs)
     sim = _pick_latest_sim(runs, ranks=2)
     if not baseline or not sim:
+        print("  [warn] plot_accuracy_comparison: missing baseline or P=2 simulator run, skipping", file=sys.stderr)
         return
 
     import numpy as np
@@ -412,6 +423,7 @@ def plot_accuracy_final_vs_fci(runs, plt):
     _ensure_dirs()
     sim = _pick_latest_sim(runs, ranks=2)
     if not sim:
+        print("  [warn] plot_accuracy_final_vs_fci: no P=2 simulator run found, skipping", file=sys.stderr)
         return
 
     mols_found = []
@@ -452,6 +464,7 @@ def plot_ibm_convergence(runs, plt):
     _ensure_dirs()
     ibm_runs = _pick_ibm_runs(runs)
     if not ibm_runs:
+        print("  [warn] plot_ibm_convergence: no IBM cloud runs found, skipping", file=sys.stderr)
         return
 
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -491,6 +504,7 @@ def plot_ibm_rtt(runs, plt):
     _ensure_dirs()
     ibm_runs = _pick_ibm_runs(runs)
     if not ibm_runs:
+        print("  [warn] plot_ibm_rtt: no IBM cloud runs found, skipping", file=sys.stderr)
         return
 
     r = ibm_runs[-1]
@@ -523,6 +537,7 @@ def plot_speedup_by_molecule(runs, plt):
     _ensure_dirs()
     baseline = _pick_latest_baseline(runs)
     if not baseline:
+        print("  [warn] plot_speedup_by_molecule: no serial baseline found, skipping", file=sys.stderr)
         return
 
     by_ranks = {}

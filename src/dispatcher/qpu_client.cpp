@@ -41,13 +41,26 @@ static std::string http_request(const std::string& url,const std::string& bearer
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_body.c_str());
     }  
      
-    CURLcode rc = curl_easy_perform(curl);
+    // Retry up to 3 times on transient network errors (timeout, connection reset, etc.)
+    CURLcode rc = CURLE_OK;
+    for (int attempt = 0; attempt < 3; ++attempt) {
+        response_body.clear();
+        rc = curl_easy_perform(curl);
+        if (rc == CURLE_OK) break;
+        const bool transient = (rc == CURLE_OPERATION_TIMEDOUT
+                                || rc == CURLE_COULDNT_CONNECT
+                                || rc == CURLE_RECV_ERROR
+                                || rc == CURLE_SEND_ERROR);
+        if (!transient || attempt == 2) break;
+        std::cerr << "[QPU] curl transient error (" << curl_easy_strerror(rc)
+                  << "), retrying in 2s..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
-     
-    if (rc != CURLE_OK) {
-        throw std::runtime_error(std::string("[QPU] curl error: ")+ curl_easy_strerror(rc));  
-    } 
+
+    if (rc != CURLE_OK)
+        throw std::runtime_error(std::string("[QPU] curl error: ") + curl_easy_strerror(rc));
 
     return response_body;
 }
@@ -86,8 +99,8 @@ static std::string get_iam_bearer_token(const std::string& api_key) {
 
     json resp = json::parse(response_body);
     if (!resp.contains("access_token"))
-        throw std::runtime_error("[QPU] IAM response missing access_token. Response: "+ response_body);
-         
+        throw std::runtime_error("[QPU] IAM token exchange failed: access_token not present in response");
+
     return resp["access_token"].get<std::string>();
 }
 
@@ -205,23 +218,31 @@ double poll_qpu_job(const std::string& job_id) {
             json result_json = json::parse(result_resp);
 
             try {
+                if (!result_json.contains("results") || !result_json["results"].is_array()
+                        || result_json["results"].empty()) {
+                    throw std::runtime_error("results array is missing or empty");
+                }
                 auto& evs = result_json["results"][0]["data"]["evs"];
-                double ev = 0.0;    
-                if (evs.is_array())
+                double ev = 0.0;
+                if (evs.is_array()) {
+                    if (evs.empty()) throw std::runtime_error("evs array is empty");
                     ev = evs[0].get<double>();
-                else
+                } else {
                     ev = evs.get<double>();
+                }
                 std::cout << "[QPU] Expectation value = " << ev << std::endl;
-                return ev; 
+                return ev;
 
             } catch (const std::exception& ex) {
-                throw std::runtime_error(std::string("[QPU] Failed to parse result: ") + ex.what()+ " \nRaw response: " + result_resp);
+                throw std::runtime_error(std::string("[QPU] Failed to parse result: ") + ex.what());
             }
         }
         
         if (status == "ERROR" || status == "CANCELLED" || status == "Cancelled") {
+            // Omit raw JSON dump — status_json may echo back request headers containing tokens.
+            std::string reason = status_json.value("error", status_json.value("message", "no details available"));
             throw std::runtime_error(
-                "[QPU] Job " + job_id + " ended with status=" + status + "  \nDetails: " + status_json.dump(2));
+                "[QPU] Job " + job_id + " ended with status=" + status + ". Reason: " + reason);
         }
     }
 
