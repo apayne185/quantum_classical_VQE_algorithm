@@ -11,6 +11,8 @@ dependencies:
   - matplotlib
   - mpi4py
   - mpich
+  - gcc_linux-64
+  - gxx_linux-64
   - pip
   - pip:
       - qiskit>=1.0,<2.0
