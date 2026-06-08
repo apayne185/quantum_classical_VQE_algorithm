@@ -71,6 +71,6 @@ NP="${SLURM_NTASKS:-2}"
 export UCX_TLS=sm,self
 export UCX_NET_DEVICES=
 
-nvidia-smi | head -10
+nvidia-smi || true
 
 mpirun -bootstrap fork -n "$NP" python benchmarks/ibm_test_run.py
