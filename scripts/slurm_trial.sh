@@ -30,6 +30,10 @@ export PYTHONPATH="$REPO_ROOT/build:$REPO_ROOT:${PYTHONPATH:-}"
 export BACKEND="simulator"
 export USE_GPU="yes"
 
+# CUDA path (no module system on this cluster)
+export PATH="/usr/local/cuda/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH:-}"
+
 NP="${SLURM_NTASKS:-2}"
 export UCX_TLS=sm,self          # single-node: shared memory only, skip RDMA
 export UCX_NET_DEVICES=          # disable network devices entirely

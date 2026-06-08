@@ -38,6 +38,10 @@ export PYTHONPATH="$REPO_ROOT/build:$REPO_ROOT:${PYTHONPATH:-}"
 export BACKEND="simulator"
 export USE_GPU="yes"
 
+# CUDA path (no module system on this cluster)
+export PATH="/usr/local/cuda/bin:$PATH"
+export LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH:-}"
+
 nvidia-smi
 
 NP="${SLURM_NTASKS:-2}"
