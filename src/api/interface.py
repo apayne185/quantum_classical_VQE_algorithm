@@ -5,6 +5,16 @@ from src.api.hardware import HardwareProfile
 import glob as _glob
 import os
 import sys
+
+# Warn at import time if this is a CPU-only build
+if not hpc_core.cuda_build():
+    print(
+        "[VQE] WARNING: hpc_core was built without CUDA. "
+        "GPU acceleration is not available in this installation.\n"
+        "         All computation will run on CPU. "
+        "To enable GPU support, rebuild with the CUDA toolkit installed.",
+        file=sys.stderr
+    )
 import time as _time
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp, Statevector
@@ -31,6 +41,15 @@ class HPCHybridStack:
 
         if use_gpu is None:
             use_gpu = self.hw.want_gpu()
+
+        # If user requested GPU but this is a CPU-only build, warn and override
+        if use_gpu and not hpc_core.cuda_build():
+            print(
+                "[VQE] WARNING: use_gpu=True requested but this build has no CUDA support. "
+                "Falling back to CPU. Rebuild with CUDA toolkit to enable GPU.",
+                file=sys.stderr
+            )
+            use_gpu = False
 
         self.use_gpu = use_gpu
         self.backend = backend
