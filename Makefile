@@ -18,7 +18,7 @@ endif
 
 .PHONY: build trial run run-ibm scaling baseline clean shell \
         native-install native-trial native-run \
-        slurm-trial slurm-run slurm-scaling slurm-weak-scaling
+        slurm-trial slurm-run slurm-scaling slurm-weak-scaling slurm-ibm
 
 build:
 	@echo "[Make] Building Docker image '$(IMAGE_NAME)' ..."
@@ -203,6 +203,13 @@ native-trial:
 native-run:
 	@echo "[Make] Native benchmark ($(NP) ranks) ..."
 	PYTHONPATH=./build:. mpirun -np $(NP) python benchmarks/local_test_run.py
+
+# Submit IBM QPU run to Slurm. Requires .env with IBM credentials.
+# First-time setup: cp .env.example .env  then fill in your token.
+slurm-ibm:
+	@[ -f .env ] || (echo "ERROR: .env not found. Run: cp .env.example .env  then add your IBM credentials"; exit 1)
+	@mkdir -p results/slurm
+	sbatch scripts/slurm_ibm.sh
 
 # Submit the 7-layer diagnostic to Slurm.
 slurm-trial:
