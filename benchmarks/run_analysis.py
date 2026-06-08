@@ -486,9 +486,12 @@ def plot_ibm_convergence(runs, plt):
         plt.close(fig)
         return
 
+    # Read backend name from result data rather than hardcoding it
+    backends = list({r.get("backend", "ibm_cloud") for r in ibm_runs})
+    backend_label = backends[0] if len(backends) == 1 else "IBM QPU"
     ax.set_xlabel("SPSA Iteration")
     ax.set_ylabel("Energy (Ha)")
-    ax.set_title(f"IBM Quantum QPU - H₂ VQE Convergence (ibm_marrakesh)")
+    ax.set_title(f"IBM Quantum QPU - H₂ VQE Convergence ({backend_label})")
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
     out = os.path.join(PLOTS_DIR, "ibm", "ibm_qpu_convergence.png")

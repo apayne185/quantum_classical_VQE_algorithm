@@ -28,20 +28,29 @@ BACKEND = os.environ.get("BACKEND", "ibm_cloud")
 
 
 def check_credentials():
-    token= os.environ.get("IBM_QUANTUM_TOKEN", "")
+    token    = os.environ.get("IBM_QUANTUM_TOKEN", "")
     instance = os.environ.get("IBM_QUANTUM_INSTANCE", "")
-    backend= os.environ.get("IBM_QUANTUM_BACKEND", "ibm_brisbane")
-    region = os.environ.get("IBM_QUANTUM_REGION", "us-east")
+    backend  = os.environ.get("IBM_QUANTUM_BACKEND", "")
+    region   = os.environ.get("IBM_QUANTUM_REGION", "us-east")
 
-    if not token or not instance:
-        print("[ERROR] IBM_QUANTUM_TOKEN and IBM_QUANTUM_INSTANCE must be set w/in .env.")
-        print("Add to your .env file and run 'make run-ibm'")
+    missing = []
+    if not token:
+        missing.append("IBM_QUANTUM_TOKEN")
+    if not instance:
+        missing.append("IBM_QUANTUM_INSTANCE")
+    if not backend:
+        missing.append("IBM_QUANTUM_BACKEND")
+
+    if missing:
+        print(f"[ERROR] Missing credentials: {', '.join(missing)}")
+        print("Copy .env.example to .env and fill in your IBM Quantum credentials.")
+        print("Get your token and backend list at: https://quantum.cloud.ibm.com")
         sys.exit(1)
 
-    print(f"[IBM] Token: {'*' * 8}{token[-4:]} ")
-    print(f"[IBM] Instance: {instance[:40]}... ")
-    print(f"[IBM] Backend: {backend}")
-    print(f"[IBM] Region: {region}  ")
+    print(f"[IBM] Token:    {'*' * 8}{token[-4:]}")
+    print(f"[IBM] Instance: {instance[:40]}...")
+    print(f"[IBM] Backend:  {backend}")
+    print(f"[IBM] Region:   {region}")
 
 
 

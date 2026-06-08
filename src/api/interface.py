@@ -386,8 +386,20 @@ class HPCHybridStack:
         from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
         token = os.environ.get("IBM_QUANTUM_TOKEN", "")
-        backend_name = os.environ.get("IBM_QUANTUM_BACKEND", "ibm_marrakesh")
+        backend_name = os.environ.get("IBM_QUANTUM_BACKEND", "")
         region = os.environ.get("IBM_QUANTUM_REGION", "us-east")
+
+        if not token:
+            raise RuntimeError(
+                "[IBM] IBM_QUANTUM_TOKEN is not set. "
+                "Add it to your .env file (see .env.example)."
+            )
+        if not backend_name:
+            raise RuntimeError(
+                "[IBM] IBM_QUANTUM_BACKEND is not set. "
+                "Set it to the backend you have access to (e.g. ibm_brisbane, ibm_kyoto). "
+                "Check available backends at https://quantum.cloud.ibm.com"
+            )
 
         print(f"[IBM] Connecting to {backend_name} ({region}) ...")
         QiskitRuntimeService.save_account(token=token, overwrite=True, set_as_default=True)  # required by v0.45+
