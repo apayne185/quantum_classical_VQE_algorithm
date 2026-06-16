@@ -123,6 +123,22 @@ CUDACXX="$CUDA_HOME/bin/nvcc" /usr/bin/cmake "$REPO_ROOT" \
 make -j"$(nproc)"
 
 # ------------------------------------------------------------------
+# UCX sanity check - conda-forge ucx 1.20.0 ships a broken libuct
+# (missing ucs_netif_is_ipoib symbol) that breaks mpi4py import.
+# Auto-downgrade rather than letting the user hit it later.
+# ------------------------------------------------------------------
+echo "[install] Checking UCX compatibility ..."
+if ! python -c "from mpi4py import MPI" 2>/dev/null; then
+    echo "[install] mpi4py import failed - downgrading ucx<1.20 ..."
+    conda install -c conda-forge "ucx<1.20" --force-reinstall -y
+    python -c "from mpi4py import MPI" || {
+        echo "[install] ERROR: mpi4py still broken after ucx downgrade."
+        exit 1
+    }
+    echo "[install] UCX downgrade resolved the import."
+fi
+
+# ------------------------------------------------------------------
 # Smoke test
 # ------------------------------------------------------------------
 cd "$REPO_ROOT"
