@@ -32,7 +32,7 @@ export USE_GPU="yes"
 
 # CUDA path (no module system on this cluster)
 export PATH="/usr/local/cuda/bin:$PATH"
-export LD_LIBRARY_PATH="/usr/local/cuda/lib64:${LD_LIBRARY_PATH:-}"
+# LD_LIBRARY_PATH not modified - rely on conda env + pip nvidia-* wheels for runtime CUDA libs
 
 NP="${SLURM_NTASKS:-2}"
 export UCX_TLS=sm,self          # single-node: shared memory only, skip RDMA
