@@ -111,7 +111,7 @@ class HPCHybridStack:
                 pass
             circ = bound_circuit.copy()
             circ.save_statevector()
-            t_circ = transpile(circ, sim)
+            t_circ = transpile(circ, optimization_level=0)  # no target = no coupling map check
             result = sim.run(t_circ).result()
             sv_data = result.get_statevector(t_circ)
             return _SV(sv_data)
