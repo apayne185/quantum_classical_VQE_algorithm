@@ -101,19 +101,17 @@ class HPCHybridStack:
     def _build_statevector(self, bound_circuit):
         # Build statevector from bound circuit, uses GPU (cuStateVec) if available, else CPU.
         if self._gpu_sv:
-            from qiskit import transpile
             from qiskit.quantum_info import Statevector as _SV
+            sim = self._aer_gpu
             aer_precision = "double" if self.precision == "fp64" else "single"
-            sim = self._aer_gpu.from_backend(self._aer_gpu) if hasattr(self._aer_gpu, 'from_backend') else self._aer_gpu
             try:
                 sim.set_options(precision=aer_precision)
             except Exception:
                 pass
             circ = bound_circuit.copy()
             circ.save_statevector()
-            t_circ = transpile(circ, optimization_level=0)  # no target = no coupling map check
-            result = sim.run(t_circ).result()
-            sv_data = result.get_statevector(t_circ)
+            result = sim.run(circ).result()
+            sv_data = result.get_statevector(circ)
             return _SV(sv_data)
         else:
             return Statevector(bound_circuit)
