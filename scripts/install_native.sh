@@ -110,9 +110,11 @@ if [ ! -x "$CONDA_GXX" ]; then
     CONDA_GXX=""
 fi
 
-CUDACXX="$CUDA_HOME/bin/nvcc" /usr/bin/cmake "$REPO_ROOT" \
+/usr/bin/cmake "$REPO_ROOT" \
     -DPython_EXECUTABLE="$ENV_PATH/bin/python" \
     ${CONDA_GXX:+-DCMAKE_CXX_COMPILER="$CONDA_GXX"} \
+    -DCMAKE_CUDA_COMPILER="$CUDA_HOME/bin/nvcc" \
+    ${CONDA_GXX:+-DCMAKE_CUDA_HOST_COMPILER="$CONDA_GXX"} \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CUDA_ARCHITECTURES="$CUDA_ARCH" \
     -DMPI_CXX_SKIP_MPICXX=TRUE \
