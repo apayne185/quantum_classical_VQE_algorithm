@@ -26,6 +26,7 @@ except ImportError as e:
 
 USE_GPU = os.environ.get("USE_GPU", "yes").strip().lower() == "yes"
 BACKEND = os.environ.get("BACKEND", "simulator")
+SEED = int(os.environ.get("SEED", "42"))  # SPSA random seed (override for multi-seed runs)
 _env_molecules = os.environ.get("MOLECULES", "").strip()
 MOLECULES = _env_molecules.split() if _env_molecules else ["H2", "LiH", "BeH2", "H2O"]
 
@@ -67,7 +68,7 @@ def run_chemistry_local(stack: HPCHybridStack, molecule_input: str, force_tier: 
                                         max_iterations=max_iters,
                                         tolerance=1.6e-3,
                                         checkpoint_dir=ckpt_dir,
-                                        seed=42)
+                                        seed=SEED)
     
     t_total = time.perf_counter() - t0
     
@@ -299,6 +300,7 @@ if __name__ == "__main__":
             save_results({
                 "mpi_ranks": stack.size,
                 "gpu": stack.use_gpu,
+                "seed": SEED,
                 "molecules": results,
                 "scaling": scaling_result,
                 "weak_scaling": weak_scaling_result,
