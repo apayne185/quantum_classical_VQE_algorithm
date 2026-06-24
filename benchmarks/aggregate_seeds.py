@@ -17,10 +17,17 @@ import sys
 from glob import glob
 
 
-def load_seeded_results(backend: str, since: str | None) -> list[dict]:
+def load_seeded_results(backend: str, since: str | None,
+                        ranks: int | None) -> list[dict]:
+    """Load seeded JSON result files; optionally filter by mpi_ranks.
+
+    Deduplicates by (seed, mpi_ranks), keeping the most recent — guards against
+    accidental contamination when scaling sweeps reuse SEED=42 default and
+    produce JSONs at multiple P values.
+    """
     pattern = os.path.join("results", backend, f"{backend}_*.json")
     files = sorted(glob(pattern))
-    out = []
+    candidates = []
     for path in files:
         try:
             with open(path) as f:
@@ -32,9 +39,18 @@ def load_seeded_results(backend: str, since: str | None) -> list[dict]:
             continue
         if since and d.get("timestamp", "") < since:
             continue
+        if ranks is not None and d.get("mpi_ranks") != ranks:
+            continue
         d["_path"] = path
-        out.append(d)
-    return out
+        candidates.append(d)
+
+    # Dedup by (seed, mpi_ranks) - keep most recent timestamp.
+    by_key = {}
+    for d in candidates:
+        key = (d["seed"], d.get("mpi_ranks"))
+        if key not in by_key or d.get("timestamp", "") > by_key[key].get("timestamp", ""):
+            by_key[key] = d
+    return list(by_key.values())
 
 
 def aggregate(runs: list[dict]) -> dict[str, dict]:
@@ -100,17 +116,25 @@ def main():
                    help="results subdir: simulator | ibm | baseline (default: simulator)")
     p.add_argument("--since", default=None,
                    help="ISO timestamp prefix; ignore runs older than this (e.g. 2026-06-23)")
+    p.add_argument("--ranks", type=int, default=2,
+                   help="filter by mpi_ranks; default 2 (canonical config). "
+                        "Use 0 to include all.")
     args = p.parse_args()
 
-    runs = load_seeded_results(args.backend, args.since)
+    ranks_filter = args.ranks if args.ranks > 0 else None
+    runs = load_seeded_results(args.backend, args.since, ranks_filter)
     if not runs:
         print(f"No seeded {args.backend} runs found "
               f"(looking for JSON files in results/{args.backend}/ with 'seed' field).")
         if args.since:
             print(f"Filter: timestamp >= {args.since}")
+        if ranks_filter:
+            print(f"Filter: mpi_ranks == {ranks_filter}")
         sys.exit(1)
 
-    print(f"Found {len(runs)} {args.backend} run(s) with seed field:")
+    rank_label = f"P={ranks_filter}" if ranks_filter else "any P"
+    print(f"Found {len(runs)} unique {args.backend} run(s) at {rank_label} "
+          f"(deduped by seed+rank):")
     for r in runs:
         print(f"  seed={r['seed']:<4} {r.get('timestamp', '?')[:19]}  {r['_path']}")
 

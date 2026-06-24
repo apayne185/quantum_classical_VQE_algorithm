@@ -19,7 +19,7 @@ endif
 .PHONY: build trial run run-ibm scaling baseline clean shell \
         native-install native-trial native-run \
         slurm-trial slurm-run slurm-scaling slurm-weak-scaling slurm-ibm \
-        slurm-multi-seed aggregate-seeds
+        slurm-multi-seed aggregate-seeds aggregate-scaling
 
 build:
 	@echo "[Make] Building Docker image '$(IMAGE_NAME)' ..."
@@ -240,6 +240,10 @@ slurm-multi-seed:
 	@mkdir -p results/slurm
 	bash scripts/submit_multi_seed.sh
 
-# Aggregate seeded results into median +/- range statistics.
+# Aggregate seeded results into median +/- range statistics (at P=2 by default).
 aggregate-seeds:
 	python3 benchmarks/aggregate_seeds.py
+
+# Build strong-scaling table from scaling sweep JSONs (filtered to seed=42).
+aggregate-scaling:
+	python3 benchmarks/aggregate_scaling.py
