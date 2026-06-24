@@ -54,10 +54,16 @@ def load_seeded_results(backend: str, since: str | None,
 
 
 def aggregate(runs: list[dict]) -> dict[str, dict]:
-    """Group by molecule, collect (seed, energy, wall_time, iters) tuples."""
+    """Group by molecule, collect (seed, energy, wall_time, iters) tuples.
+
+    Supports two JSON shapes:
+      - simulator runs: top-level "molecules" dict keyed by name
+      - ibm runs: top-level "chemistry" with a "molecule" field naming the species
+    """
     by_mol: dict[str, list[dict]] = {}
     for run in runs:
         seed = run["seed"]
+        # Simulator shape
         for mol, data in run.get("molecules", {}).items():
             by_mol.setdefault(mol, []).append({
                 "seed": seed,
@@ -65,6 +71,17 @@ def aggregate(runs: list[dict]) -> dict[str, dict]:
                 "fci": data.get("fci"),
                 "wall_time": data.get("wall_time"),
                 "iters": data.get("iters"),
+            })
+        # IBM shape — single chemistry record per run
+        chem = run.get("chemistry")
+        if chem and isinstance(chem, dict) and "energy" in chem:
+            mol = chem.get("molecule", "H2")
+            by_mol.setdefault(mol, []).append({
+                "seed": seed,
+                "energy": chem["energy"],
+                "fci": chem.get("fci"),
+                "wall_time": chem.get("wall_time"),
+                "iters": chem.get("iterations"),
             })
     return by_mol
 
@@ -118,7 +135,7 @@ def main():
                    help="ISO timestamp prefix; ignore runs older than this (e.g. 2026-06-23)")
     p.add_argument("--ranks", type=int, default=2,
                    help="filter by mpi_ranks; default 2 (canonical config). "
-                        "Use 0 to include all.")
+                        "Use 0 to include all (e.g. for ibm backend).")
     args = p.parse_args()
 
     ranks_filter = args.ranks if args.ranks > 0 else None

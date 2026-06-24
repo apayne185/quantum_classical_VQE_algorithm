@@ -24,6 +24,8 @@ except ImportError as e:
 
 USE_GPU = os.environ.get("USE_GPU", "yes").strip().lower() == "yes"
 BACKEND = os.environ.get("BACKEND", "ibm_cloud")
+SEED = int(os.environ.get("SEED", "42"))   # SPSA random seed (override for multi-seed runs)
+MAX_ITERS = int(os.environ.get("MAX_ITERS", "10"))  # cap QPU budget per run
 
 
 
@@ -58,12 +60,14 @@ def run_chemistry_ibm(stack: HPCHybridStack):
     if stack.rank == 0: print("\n--- RUNNING IBM QPU CHEMISTRY TASK (H2 Ground State) ----")
 
     problem = ChemistryProblem.from_name("H2")
+    if stack.rank == 0:
+        print(f"[H2-IBM] Using SEED={SEED}, MAX_ITERS={MAX_ITERS}")
     t0 = time.perf_counter()
     theta, history = stack.vqe_optimize(problem,
-                                        max_iterations=10,
+                                        max_iterations=MAX_ITERS,
                                         tolerance=1.6e-3,
-                                        checkpoint_dir="checkpoints/H2_ibm",
-                                        seed=42)
+                                        checkpoint_dir=f"checkpoints/H2_ibm_seed{SEED}",
+                                        seed=SEED)
 
     t_total = time.perf_counter() - t0
 
@@ -82,6 +86,8 @@ def run_chemistry_ibm(stack: HPCHybridStack):
 
         result = {
             "molecule": "H2",
+            "seed": SEED,
+            "max_iters": MAX_ITERS,
             "energy": final_e,
             "fci": fci,
             "error": error,
@@ -183,6 +189,8 @@ if __name__ == "__main__":
             save_results({
                 "mpi_ranks": stack.size,
                 "gpu": stack.use_gpu,
+                "seed": SEED,
+                "max_iters": MAX_ITERS,
                 "chemistry": chem_result,
             }, backend=BACKEND)
 
