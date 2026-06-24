@@ -1,0 +1,5 @@
+
+EnvironmentNameNotFound: Could not find conda environment: hybrid-vqe
+You can list all discoverable environments with `conda info --envs`.
+
+

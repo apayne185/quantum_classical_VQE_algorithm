@@ -1,11 +1,14 @@
-/*Uses pybind11 to expose C++ structures to Python - uses MPI foe API metadata*/
+/*Uses pybind11 to expose C++ structures to Python - uses MPI for API metadata*/
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>             // for std::vector conversion
+#include <pybind11/stl.h>
 #include "stack_types.h"
 #include <mpi.h>
-#include <cuda_runtime.h>            // for CUDA API calls
 #include <stdexcept>
 #include <string>
+
+#ifdef HAVE_CUDA
+#include <cuda_runtime.h>
+#endif
 
 namespace py = pybind11;
 
@@ -48,15 +51,32 @@ void execute_barrier() {
 }
 
 
+bool cuda_build() {
+#ifdef HAVE_CUDA
+    return true;
+#else
+    return false;
+#endif
+}
+
 void set_cuda_device(int rank) {
+#ifdef HAVE_CUDA
     int deviceCount;
     cudaError_t err = cudaGetDeviceCount(&deviceCount);
-    if (err != cudaSuccess || deviceCount == 0) {    
-        throw std::runtime_error("No CUDA devices found on this node  ");
+    if (err != cudaSuccess || deviceCount == 0) {
+        throw std::runtime_error(
+            "No CUDA devices found on this node. "
+            "Check that your NVIDIA driver is installed and nvidia-smi works.");
     }
     int device = rank % deviceCount;
     cudaSetDevice(device);
-    
+#else
+    (void)rank;
+    throw std::runtime_error(
+        "[VQE] This build was compiled without CUDA support. "
+        "GPU acceleration is unavailable. Rebuild with CUDA toolkit installed, "
+        "or run with use_gpu=False.");
+#endif
 }
 
 
@@ -84,12 +104,13 @@ StackResult execute(HybridWorkload& wl) {
 PYBIND11_MODULE(hpc_core, m) {
     m.def("init_mpi", &init_mpi, "Initialize MPI environment w MPI_THREAD_MULTIPLE");
     m.def("finalize_mpi", &finalize_mpi, "Finalize MPI environment");
-    m.def("get_rank", &get_rank, "Return MPU rank of calling process");
+    m.def("get_rank", &get_rank, "Return MPI rank of calling process");
     m.def("get_size", &get_size, "Return number of MPI processes");
-    m.def("set_cuda_device", &set_cuda_device, "Assigns CUDA Device to MPI rank (round robin)");
-    m.def("execute_barrier", &execute_barrier, "MPI Barrier for synchronize all rank"); 
+    m.def("set_cuda_device", &set_cuda_device, "Assigns CUDA device to MPI rank (round robin). Raises if built without CUDA.");
+    m.def("execute_barrier", &execute_barrier, "MPI barrier — synchronizes all ranks");
+    m.def("cuda_build", &cuda_build, "Returns True if this module was compiled with CUDA support");
     m.def("execute", &execute, py::arg("workload"), "Dispatch HybridWorkload through stack");
-    m.def("route_workload", [](HybridWorkload& wl) { return route_workload(wl); }, py::arg("workload"), "Low level dispatcher"); 
+    m.def("route_workload", [](HybridWorkload& wl) { return route_workload(wl); }, py::arg("workload"), "Low level dispatcher");
 
 
     py::class_<PauliTerm>(m, "PauliTerm") 

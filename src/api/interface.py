@@ -1,9 +1,20 @@
 import hpc_core     # compiled C++ pybind11 bridge (build/hpc_core.so)
 from src.api.problems import QuantumProblem
+from src.api.hardware import HardwareProfile
 
 import glob as _glob
 import os
 import sys
+
+# Warn at import time if this is a CPU-only build
+if not hpc_core.cuda_build():
+    print(
+        "[VQE] WARNING: hpc_core was built without CUDA. "
+        "GPU acceleration is not available in this installation.\n"
+        "         All computation will run on CPU. "
+        "To enable GPU support, rebuild with the CUDA toolkit installed.",
+        file=sys.stderr
+    )
 import time as _time
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp, Statevector
@@ -24,12 +35,25 @@ except ImportError as e:
 
 class HPCHybridStack:
     def __init__(self, use_gpu: bool | None = None, backend:str = 'simulator'):
+        # Hardware auto-detection (GPU vendor/class, libs, MPI). Researchers
+        # override via VQE_PRECISION / VQE_BACKEND / USE_GPU env vars.
+        self.hw = HardwareProfile.detect()
+
         if use_gpu is None:
-            env_val = os.environ.get("USE_GPU", "yes").strip().lower()
-            use_gpu = (env_val == "yes")
+            use_gpu = self.hw.want_gpu()
+
+        # If user requested GPU but this is a CPU-only build, warn and override
+        if use_gpu and not hpc_core.cuda_build():
+            print(
+                "[VQE] WARNING: use_gpu=True requested but this build has no CUDA support. "
+                "Falling back to CPU. Rebuild with CUDA toolkit to enable GPU.",
+                file=sys.stderr
+            )
+            use_gpu = False
 
         self.use_gpu = use_gpu
         self.backend = backend
+        self.precision = "auto"           # resolved per-problem in vqe_optimize
         self._ibm_session= None
         self._ibm_estimator = None
         self._ibm_transpiled = None
@@ -67,21 +91,27 @@ class HPCHybridStack:
                     print("[Stack] Falling back to CPU Statevector")
 
         if self.rank == 0:
+            print(self.hw.describe())
+            for n in self.hw.notes:
+                print(f"[hw] note: {n}")
             print(f"[Stack]  Initialized {self.size} MPI rank(s), GPU={'enabled' if self.use_gpu else 'disabled'}, "
                   f"SV_backend={'GPU (cuStateVec)' if self._gpu_sv else 'CPU (Qiskit)'}, backend='{self.backend}'")
 
 
     def _build_statevector(self, bound_circuit):
-        # Build statevector from bound circuit, uses GPU (cuStateVec) if available, else CPU 
+        # Build statevector from bound circuit, uses GPU (cuStateVec) if available, else CPU.
         if self._gpu_sv:
-            from qiskit import transpile
             from qiskit.quantum_info import Statevector as _SV
-            # AerSimulator GPU path -  must save_statevector() explicitly
+            sim = self._aer_gpu
+            aer_precision = "double" if self.precision == "fp64" else "single"
+            try:
+                sim.set_options(precision=aer_precision)
+            except Exception:
+                pass
             circ = bound_circuit.copy()
             circ.save_statevector()
-            t_circ = transpile(circ, self._aer_gpu)
-            result = self._aer_gpu.run(t_circ).result()
-            sv_data = result.get_statevector(t_circ)
+            result = sim.run(circ).result()
+            sv_data = result.get_statevector(circ)
             return _SV(sv_data)
         else:
             return Statevector(bound_circuit)
@@ -100,6 +130,13 @@ class HPCHybridStack:
             raise ValueError(
                 "problem.num_params= 0 after prepare(), check that ansatz was built correctly. "
             )
+
+        # Resolve precision policy for this problem size (once per optimize call).
+        self.precision = self.hw.recommend_precision(num_qubits)
+        if self.rank == 0:
+            max_fit = self.hw.max_qubits_fit(self.precision)
+            extra = f" (GPU fits up to ~{max_fit} qubits at this precision)" if max_fit else ""
+            print(f"[Stack] Precision: {self.precision} for {num_qubits}-qubit problem{extra}")
 
         os.makedirs(checkpoint_dir, exist_ok=True)
         theta = np.zeros(num_params, dtype=np.float64)
@@ -347,8 +384,20 @@ class HPCHybridStack:
         from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
         token = os.environ.get("IBM_QUANTUM_TOKEN", "")
-        backend_name = os.environ.get("IBM_QUANTUM_BACKEND", "ibm_marrakesh")
+        backend_name = os.environ.get("IBM_QUANTUM_BACKEND", "")
         region = os.environ.get("IBM_QUANTUM_REGION", "us-east")
+
+        if not token:
+            raise RuntimeError(
+                "[IBM] IBM_QUANTUM_TOKEN is not set. "
+                "Add it to your .env file (see .env.example)."
+            )
+        if not backend_name:
+            raise RuntimeError(
+                "[IBM] IBM_QUANTUM_BACKEND is not set. "
+                "Set it to the backend you have access to (e.g. ibm_brisbane, ibm_kyoto). "
+                "Check available backends at https://quantum.cloud.ibm.com"
+            )
 
         print(f"[IBM] Connecting to {backend_name} ({region}) ...")
         QiskitRuntimeService.save_account(token=token, overwrite=True, set_as_default=True)  # required by v0.45+

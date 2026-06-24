@@ -1,1 +1,0 @@
-P=8 mol=H2O terms=1086 terms/rank=136 T_total=2.3890 T/iter=0.2389 final_E=-56.348335

@@ -16,7 +16,9 @@ else
 endif     
 
 
-.PHONY: build trial run run-ibm scaling baseline clean shell
+.PHONY: build trial run run-ibm scaling baseline clean shell \
+        native-install native-trial native-run \
+        slurm-trial slurm-run slurm-scaling slurm-weak-scaling slurm-ibm
 
 build:
 	@echo "[Make] Building Docker image '$(IMAGE_NAME)' ..."
@@ -178,3 +180,55 @@ clean:
 	rm -rf results/scaling/
 	rm -f *.log *.npy
 	find checkpoints/ -name "*.npy" -delete 2>/dev/null || true
+
+
+# ============================================================
+# NATIVE (conda) PATH - for HPC clusters where Docker is unavailable.
+# Uses environment.yml + a native CMake build of the C++/CUDA module.
+# For local reproducible runs, prefer the Docker targets above.
+# ============================================================
+
+# Install miniforge env + build hpc_core natively.
+# Set SCRATCH=/scratch/$USER to install the env on fast local SSD (HPC recommended).
+native-install:
+	@echo "[Make] Native install (conda + CMake)..."
+	bash scripts/install_native.sh
+
+# Run the 7-layer diagnostic natively (no Docker, no Slurm).
+native-trial:
+	@echo "[Make] Native diagnostic trial ($(NP) ranks) ..."
+	PYTHONPATH=./build:. mpirun -np $(NP) python tests/test_layers_run.py
+
+# Run full simulator benchmark natively.
+native-run:
+	@echo "[Make] Native benchmark ($(NP) ranks) ..."
+	PYTHONPATH=./build:. mpirun -np $(NP) python benchmarks/local_test_run.py
+
+# Submit IBM QPU run to Slurm. Requires .env with IBM credentials.
+# First-time setup: cp .env.example .env  then fill in your token.
+slurm-ibm:
+	@[ -f .env ] || (echo "ERROR: .env not found. Run: cp .env.example .env  then add your IBM credentials"; exit 1)
+	@mkdir -p results/slurm
+	sbatch scripts/slurm_ibm.sh
+
+# Submit the 7-layer diagnostic to Slurm.
+slurm-trial:
+	@mkdir -p results/slurm
+	sbatch scripts/slurm_trial.sh
+
+# Submit the full simulator benchmark to Slurm (1 GPU).
+slurm-run:
+	@mkdir -p results/slurm
+	sbatch scripts/slurm_gpu.sh
+
+# Submit 4 jobs for the strong-scaling sweep (P=1,2,4,8).
+# local_test_run.py runs the full benchmark + weak-scaling routine per job.
+slurm-scaling:
+	@mkdir -p results/slurm
+	JOB_PREFIX=vqe-scale bash scripts/slurm_scaling.sh
+
+# Weak-scaling sweep. Uses the same script path; named separately for
+# clarity in the log filenames so results don't get mixed up.
+slurm-weak-scaling:
+	@mkdir -p results/slurm
+	JOB_PREFIX=vqe-weak bash scripts/slurm_scaling.sh

@@ -1,0 +1,177 @@
+[    0.00s] Log started
+
+==============================================[Stack]  Initi
+LAYER 1: MPI Bridge
+============================================================
+
+============================================================
+LAYER 2: Problem Preparation
+============================================================
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+
+============================================================
+LAYER 3: C++ Dispatcher (single dispatch)
+============================================================
+
+============================================================
+LAYER 4: VQE Loop (H2, 10 iterations)
+============================================================
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+
+============================================================
+LAYER 6: Checkpoint Resilience
+============================================================
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+
+============================================================
+STRESS TEST: QPU Latency Spiking
+============================================================
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+  [Latency Spike] Rank 1 injecting 0.50s delay
+  [Latency Spike] Rank 1 injecting 1.35s delay
+  [Latency Spike] Rank 1 injecting 0.96s delay
+  [Latency Spike] Rank 1 injecting 1.47s delay
+  [Latency Spike] Rank 1 injecting 1.18s delay
+  [Latency Spike] Rank 1 injecting 0.96s delay
+  [Latency Spike] Rank 1 injecting 0.63s delay
+  [Latency Spike] Rank 1 injecting 0.61s delay
+  [Latency Spike] Rank 1 injecting 1.45s delay
+  [Latency Spike] Rank 1 injecting 1.55s delay
+
+============================================================
+STRESS TEST: Drop-Out Recovery
+============================================================
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+
+============================================================
+TRIAL RUN SUMMARY
+============================================================
+[   20.31s] Log closed
+Iter 0001 | Energy: -0.036959 | Delta: inf | M: 3.2498 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0002 | Energy: -0.060664 | Delta: 2.37e-02 | M: 2414.2380 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0003 | Energy: -0.125337 | Delta: 6.47e-02 | M: 111.5401 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0004 | Energy: -0.130185 | Delta: 4.85e-03 | M: 3630.0906 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0005 | Energy: -0.135336 | Delta: 5.15e-03 | M: 2823.1756 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/_resilience_test/checkpoint_iter_0005.npy. 
+Checkpoint file: checkpoints/_resilience_test/checkpoint_iter_0005.npy
+Saved theta shape: (24,)
+Saved theta[:3]: [-0.27342546 -0.26401812 -0.15241915]
+
+  Restarting from checkpoint... 
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[RESILIENCE] Loading θ from checkpoints/_resilience_test/checkpoint_iter_0005.npy...
+[RESILIENCE] Resuming SPSA schedle from iteration 5  
+Iter 0006 | Energy: -0.136299 | Delta: inf | M: 3062.5888 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0007 | Energy: -0.160624 | Delta: 2.43e-02 | M: 2319.9547 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0008 | Energy: -0.184557 | Delta: 2.39e-02 | M: 3628.7212 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0009 | Energy: -0.212996 | Delta: 2.84e-02 | M: 3715.4519 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0010 | Energy: -0.235384 | Delta: 2.24e-02 | M: 3769.0634 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/_resilience_test/checkpoint_iter_0010.npy. 
+  Pre-checkpoint energy (iter 5): -0.135336 Ha
+  Post-restart energy  (iter 6): -0.136299 Ha
+  Energy discontinuity: 0.000963 Ha
+Post-restart iterations: 5
+[LAYER 6] OK
+
+============================================================
+STRESS TEST: QPU Latency Spiking
+============================================================
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+Iter 0001 | Energy: -0.026644 | Delta: inf | M: 0.1504 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0002 | Energy: -0.027623 | Delta: 9.79e-04 | M: 0.0548 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0003 | Energy: -0.025427 | Delta: 2.20e-03 | M: 0.0786 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0004 | Energy: -0.026901 | Delta: 1.47e-03 | M: 0.0505 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0005 | Energy: -0.033796 | Delta: 6.90e-03 | M: 0.0626 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/_stress_latency/checkpoint_iter_0005.npy. 
+Iter 0006 | Energy: -0.032748 | Delta: 1.05e-03 | M: 0.0769 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0007 | Energy: -0.026101 | Delta: 6.65e-03 | M: 0.1180 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0008 | Energy: -0.034767 | Delta: 8.67e-03 | M: 0.1208 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0009 | Energy: -0.038985 | Delta: 4.22e-03 | M: 0.0508 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0010 | Energy: -0.042750 | Delta: 3.76e-03 | M: 0.0478 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/_stress_latency/checkpoint_iter_0010.npy. 
+  Completed 10 iterations in 11.96s under latency spiking
+  Energy range: 0.017323 Ha
+  MPI synchronization maintained across variable-latency ranks
+[STRESS TEST: Latency Spiking] OK
+
+============================================================
+STRESS TEST: Drop-Out Recovery
+============================================================
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+Iter 0001 | Energy: -0.036757 | Delta: inf | M: 3.3649 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0002 | Energy: -0.034451 | Delta: 2.31e-03 | M: 3634.4154 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0003 | Energy: -0.045015 | Delta: 1.06e-02 | M: 3747.9510 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0004 | Energy: -0.029154 | Delta: 1.59e-02 | M: 3625.1805 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0005 | Energy: -0.051905 | Delta: 2.28e-02 | M: 3742.5601 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/_stress_dropout/checkpoint_iter_0005.npy. 
+Iter 0006 | Energy: -0.057849 | Delta: 5.94e-03 | M: 3697.8714 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0007 | Energy: -0.064292 | Delta: 6.44e-03 | M: 3810.1761 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0008 | Energy: -0.060893 | Delta: 3.40e-03 | M: 3663.3012 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0009 | Energy: -0.066076 | Delta: 5.18e-03 | M: 3647.4900 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0010 | Energy: -0.086044 | Delta: 2.00e-02 | M: 3747.8598 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/_stress_dropout/checkpoint_iter_0010.npy. 
+  Phase 1: 10 iterations, E(5)=-0.051905, E(10)=-0.086044
+  [Crash Simulated] Deleted checkpoints/_stress_dropout/checkpoint_iter_0010.npy — system must recover from iter 5
+[Chemistry:custom] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[RESILIENCE] Loading θ from checkpoints/_stress_dropout/checkpoint_iter_0005.npy...
+[RESILIENCE] Resuming SPSA schedle from iteration 5  
+Iter 0006 | Energy: -0.062528 | Delta: inf | M: 63.8053 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0007 | Energy: -0.057976 | Delta: 4.55e-03 | M: 164.8038 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0008 | Energy: -0.065825 | Delta: 7.85e-03 | M: 478.1441 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0009 | Energy: -0.070011 | Delta: 4.19e-03 | M: 2179.1580 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0010 | Energy: -0.123163 | Delta: 5.32e-02 | M: 4251.4961 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/_stress_dropout/checkpoint_iter_0010.npy. 
+Iter 0011 | Energy: -0.146806 | Delta: 2.36e-02 | M: 215.9317 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0012 | Energy: -0.177184 | Delta: 3.04e-02 | M: 124.1218 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0013 | Energy: -0.279957 | Delta: 1.03e-01 | M: 3875.1029 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0014 | Energy: -0.287208 | Delta: 7.25e-03 | M: 194.3141 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+Iter 0015 | Energy: -0.287555 | Delta: 3.47e-04 | M: 212.1580 | Path: GPU-cuStateVec MPI-distributed (2 ranks)
+[RESILIENCE] Iteration 15: Global theta state checkpointed at path checkpoints/_stress_dropout/checkpoint_iter_0015.npy. 
+  Phase 2: 10 post-recovery iterations, final E=-0.287555
+  Recovery successful: optimization resumed from checkpoint without data loss
+[STRESS TEST: Drop-Out Recovery] OK
+
+============================================================
+TRIAL RUN SUMMARY
+============================================================
+MPI ranks used: 2
+GPU enabled: True
+Backend: simulator
+Tests passed: 7 / 7
+[PASS] MPI Bridge
+[PASS] Problem Preparation
+[PASS] C++ Dispatcher
+[PASS] VQE Loop
+[PASS] Checkpoint Resilience
+[PASS] Latency Spiking
+[PASS] Drop-Out Recovery
+
+  All layers verified, stack is ready.
+[   20.31s] Log closed

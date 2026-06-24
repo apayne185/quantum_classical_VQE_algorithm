@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" font-family="Helvetica, Arial, sans-serif">
+<rect width="760" height="360" fill="white"/>
+<text x="380.0" y="28" text-anchor="middle" font-size="15" font-weight="600">Wall-clock speedup, distributed (P=2) vs. serial baseline</text>
+<line x1="130" y1="300" x2="700" y2="300" stroke="black" stroke-width="1"/>
+<line x1="213.478090260897" y1="300" x2="213.478090260897" y2="305" stroke="black"/>
+<text x="213.478090260897" y="320" text-anchor="middle" font-size="11">0.25×</text>
+<line x1="213.478090260897" y1="60" x2="213.478090260897" y2="300" stroke="#cccccc" stroke-dasharray="2,3"/>
+<line x1="296.956180521794" y1="300" x2="296.956180521794" y2="305" stroke="black"/>
+<text x="296.956180521794" y="320" text-anchor="middle" font-size="11">0.50×</text>
+<line x1="296.956180521794" y1="60" x2="296.956180521794" y2="300" stroke="#cccccc" stroke-dasharray="2,3"/>
+<line x1="380.4342707826911" y1="300" x2="380.4342707826911" y2="305" stroke="black"/>
+<text x="380.4342707826911" y="320" text-anchor="middle" font-size="11">0.75×</text>
+<line x1="380.4342707826911" y1="60" x2="380.4342707826911" y2="300" stroke="#cccccc" stroke-dasharray="2,3"/>
+<line x1="463.912361043588" y1="300" x2="463.912361043588" y2="305" stroke="black"/>
+<text x="463.912361043588" y="320" text-anchor="middle" font-size="11">1.00×</text>
+<line x1="547.3904513044852" y1="300" x2="547.3904513044852" y2="305" stroke="black"/>
+<text x="547.3904513044852" y="320" text-anchor="middle" font-size="11">1.25×</text>
+<line x1="547.3904513044852" y1="60" x2="547.3904513044852" y2="300" stroke="#cccccc" stroke-dasharray="2,3"/>
+<line x1="630.8685415653822" y1="300" x2="630.8685415653822" y2="305" stroke="black"/>
+<text x="630.8685415653822" y="320" text-anchor="middle" font-size="11">1.50×</text>
+<line x1="630.8685415653822" y1="60" x2="630.8685415653822" y2="300" stroke="#cccccc" stroke-dasharray="2,3"/>
+<line x1="463.912361043588" y1="60" x2="463.912361043588" y2="300" stroke="black" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="468.912361043588" y="338" font-size="11" fill="black">break-even (1.0×)</text>
+<rect x="130" y="70.5" width="95.02953165440022" height="39.0" fill="#d62728" stroke="black" stroke-width="0.5"/>
+<text x="120" y="95.0" text-anchor="end" font-size="13" font-weight="500">H₂</text>
+<text x="233.02953165440022" y="95.0" font-size="11.5">0.28×  (0.6s → 2.3s)</text>
+<rect x="130" y="130.5" width="208.8924113405634" height="39.0" fill="#d62728" stroke="black" stroke-width="0.5"/>
+<text x="120" y="155.0" text-anchor="end" font-size="13" font-weight="500">LiH</text>
+<text x="346.8924113405634" y="155.0" font-size="11.5">0.63×  (41.6s → 66.5s)</text>
+<rect x="130" y="190.5" width="372.366318752892" height="39.0" fill="#2ca02c" stroke="black" stroke-width="0.5"/>
+<text x="120" y="215.0" text-anchor="end" font-size="13" font-weight="500">BeH₂</text>
+<text x="510.366318752892" y="215.0" font-size="11.5">1.12×  (173.8s → 155.9s)</text>
+<rect x="130" y="250.5" width="393.1034482758621" height="39.0" fill="#2ca02c" stroke="black" stroke-width="0.5"/>
+<text x="120" y="275.0" text-anchor="end" font-size="13" font-weight="500">H₂O</text>
+<text x="531.1034482758621" y="275.0" font-size="11.5">1.18×  (227.2s → 193.0s)</text>
+<text x="415.0" y="345" text-anchor="middle" font-size="12">Speedup ( T_serial / T_distributed )</text>
+</svg>

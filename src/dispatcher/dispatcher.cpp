@@ -2,8 +2,11 @@
 #include <iostream>
 #include <vector>
 #include <mpi.h>
-#include <cuda_runtime.h>  
 #include <cmath>
+
+#ifdef HAVE_CUDA
+#include <cuda_runtime.h>
+#endif
 #include <numeric>
 #include <future>   
 #include <thread>   
@@ -189,8 +192,10 @@ StackResult route_workload(HybridWorkload& wl) {
     double e_plus_local = 0.0;
     double e_minus_local = 0.0; 
 
-    int deviceCount= 0;
+    int deviceCount = 0;
+#ifdef HAVE_CUDA
     cudaGetDeviceCount(&deviceCount);
+#endif
     const bool use_cuda = wl.requires_gpu && (deviceCount > 0);
 
     if (use_cuda) {
@@ -238,14 +243,12 @@ StackResult route_workload(HybridWorkload& wl) {
     }
 
 
-    // PACK RESULT - simulator (energy comes form pauli eval), ibm_cloud (energy comes from measured expectation value, repalces estimate)
-    if (wl.backend_target == "ibm_cloud") {
-        res.energy= qpu_val;
-        res.e_minus = qpu_val;      
-    } else {
-        res.energy = e_plus_global;
-        res.e_minus = e_minus_global;
-    }   
+    // PACK RESULT - e_plus / e_minus are always the C++ Pauli-expectation values so the
+    // SPSA gradient (e_plus - e_minus) is always well-defined.  The IBM path in
+    // _evaluate_ibm_estimator (interface.py) handles QPU-measured gradients directly and
+    // never reaches this dispatcher, so no special case is needed here.
+    res.energy  = e_plus_global;
+    res.e_minus = e_minus_global;
 
     res.success_msg = "OK";       //success !
     res.execution_time = MPI_Wtime() - start_time;
