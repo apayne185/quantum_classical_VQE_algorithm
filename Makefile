@@ -18,7 +18,8 @@ endif
 
 .PHONY: build trial run run-ibm scaling baseline clean shell \
         native-install native-trial native-run \
-        slurm-trial slurm-run slurm-scaling slurm-weak-scaling slurm-ibm
+        slurm-trial slurm-run slurm-scaling slurm-weak-scaling slurm-ibm \
+        slurm-multi-seed aggregate-seeds
 
 build:
 	@echo "[Make] Building Docker image '$(IMAGE_NAME)' ..."
@@ -232,3 +233,13 @@ slurm-scaling:
 slurm-weak-scaling:
 	@mkdir -p results/slurm
 	JOB_PREFIX=vqe-weak bash scripts/slurm_scaling.sh
+
+# Multi-seed sweep for publication statistics. Submits one job per seed.
+# Default seeds: 42 43 44. Override with SEEDS="42 43 44 45".
+slurm-multi-seed:
+	@mkdir -p results/slurm
+	bash scripts/submit_multi_seed.sh
+
+# Aggregate seeded results into median +/- range statistics.
+aggregate-seeds:
+	python3 benchmarks/aggregate_seeds.py
