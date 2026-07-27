@@ -1,24 +1,96 @@
-# Hybrid Quantum-Classical VQE Stack for HPC
+# Hybrid Quantum-Classical VQE Middleware
 
-**Bachelor's of Computer Science and Artificial Intelligence (BCSAI) Thesis — IE University**
-**Anna Payne | Supervised by Prof. Oscar Diez**
+**Quantum-as-a-Service (QAAS) stack for VQE workloads with automatic hardware detection, MPI parallelism, and pluggable CPU / GPU / QPU backends.**
 
-A hybrid quantum-classical middleware stack that implements the Variational Quantum Eigensolver (VQE) with MPI parallelism, CUDA GPU acceleration, and IBM Quantum cloud integration. Designed for molecular ground-state energy computation with distributed Pauli-term evaluation across HPC resources, this stack addresses the middleware gap between distributed classical computation and cloud-based quantum backends.
+Runs a molecular ground-state VQE from the same Python API on:
+- **CPU-only** — any Linux/Mac laptop (Docker)
+- **NVIDIA GPUs** — consumer (GTX 1650) → workstation (RTX 6000 Ada) → datacenter (A100, H100), via cuStateVec
+- **IBM Quantum QPUs** — Heron/Eagle processors via `qiskit-ibm-runtime` EstimatorV2
+- **MPI cluster** — Slurm-managed HPC or single-host multi-rank
+
+Designed as reusable middleware: `HardwareProfile.detect()` auto-selects the best backend, precision policy adapts to problem size, and every run is reproducible from a clean install via Docker (`make build && make trial`) or bare-metal conda (`bash scripts/install_native.sh`).
+
+<sub>Originally developed as a BCSAI thesis at IE University (Anna Payne, supervised by Prof. Oscar Diez). Continuing development targets journal publication as reusable QAAS middleware.</sub>
 
 ---
 
-## Quick Start
+## Quickstart — pick your deployment path
+
+### Path A — Docker (recommended for reviewers, local development, cloud GPUs)
 
 ```bash
 git clone <repo-url> && cd quantum_classical_VQE_algorithm
-cp .env.example .env                 # Add IBM Quantum credentials (optional, for QPU runs only)
-make build                           # Build Docker image (CUDA 12.6 + OpenMPI + Python 3.11)
-make trial                           # 7 layer diagnostic test (simulator, 2 MPI ranks)
-make example NP=2                    # Run template (H2 ground state, 2 MPI ranks)
-make run NP=2                        # Full chemistry benchmark using molecule H2, LiH, BeH2, H2O
+make build                           # ~10 min first time; CUDA 12.6 + OpenMPI + Python 3.11 image
+make trial NP=2                      # 7-layer diagnostic; passes 7/7 on any laptop (CPU fallback)
+make run NP=2                        # Full 4-molecule benchmark (simulator)
 ```
 
-See [`template.py`](template.py) for a step-by-step walkthrough. See [`MOLECULES.md`](MOLECULES.md) for all available built-in molecules.
+Same image runs GPU-accelerated on any NVIDIA host with the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed (add `--gpus all` — already in the Makefile targets).
+
+### Path B — Native conda on a bare-metal HPC (no Docker)
+
+```bash
+bash scripts/install_native.sh       # miniforge env + CMake build + smoke test
+# Then submit via Slurm:
+make slurm-trial                     # 7-layer test on a compute node
+make slurm-run                       # Full benchmark on 1 GPU
+make slurm-multi-seed                # 3-seed statistical run for publication error bars
+```
+
+Tested on the IE University capstone cluster (Debian 13, Slurm, CUDA 12.4, RTX 6000 Ada). Adapt `scripts/slurm_*.sh` partition names/times for other sites.
+
+### Path C — Interactive walkthrough
+
+See [`template.py`](template.py) for a step-by-step Python walkthrough. See [`MOLECULES.md`](MOLECULES.md) for all available built-in molecules.
+
+---
+
+## Configuration API
+
+Everything is controlled through environment variables — no code changes needed to switch hardware, precision, or workload.
+
+| Variable | Values | Effect |
+|----------|--------|--------|
+| `USE_GPU` | `yes` \| `no` | Force GPU on or off. Default: auto-detect via `HardwareProfile` |
+| `BACKEND` | `simulator` \| `ibm_cloud` | Simulator (default) or cloud QPU |
+| `VQE_PRECISION` | `auto` \| `fp32` \| `fp64` | Statevector precision. Default: auto (fp64 for chemistry) |
+| `VQE_BACKEND` | `auto` \| `custatevec` \| `aer_gpu` \| `aer_cpu` | Force a specific simulator backend |
+| `MOLECULES` | space-separated names | Subset of `H2 LiH BeH2 H2O NH3` (default: all four benchmark set) |
+| `SEED` | integer | SPSA random seed (default 42) — override for multi-seed statistical runs |
+| `MAX_ITERS` | integer | Cap on VQE iterations per molecule (default: `max(200, 8×n_params)`) |
+| `NP` | integer | MPI rank count (also set via `sbatch --ntasks=N`) |
+| `IBM_QUANTUM_TOKEN` | string | Required for `BACKEND=ibm_cloud`. See IBM Quantum Setup below. |
+| `IBM_QUANTUM_INSTANCE` | CRN string | Required for `BACKEND=ibm_cloud` — from the same IBM Cloud account as the token |
+| `IBM_QUANTUM_BACKEND` | backend name | e.g. `ibm_marrakesh`, `ibm_torino`, `ibm_kyiv` |
+
+Example — run only H₂O with the GPU on 4 ranks, seed 43:
+```bash
+USE_GPU=yes MOLECULES="H2O" SEED=43 make run NP=4
+```
+
+---
+
+## Hardware Auto-Detection (`HardwareProfile`)
+
+At startup, [`src/api/hardware.py`](src/api/hardware.py) probes the environment and picks a sensible default policy. Researchers can override any decision via the environment variables above.
+
+```python
+from src.api.hardware import HardwareProfile
+hw = HardwareProfile.detect()
+print(hw.describe())
+# Example output:
+# [hw] NVIDIA RTX 6000 Ada Generation (workstation, 48.0 GB, fp64:fp32≈0.016)
+#      | libs: aer-gpu, cuquantum | MPI=2 | backend=custatevec
+```
+
+What it decides:
+- **CPU vs GPU** — via `nvidia-smi`; falls back to CPU if not present
+- **GPU class** — consumer / workstation / datacenter (via the built-in device database)
+- **Precision** — `fp64` by default; `fp32` only if the researcher explicitly opts in
+- **Backend** — `custatevec` if cuQuantum+aer-gpu present, else `aer_gpu`, else `aer_cpu`
+- **Maximum qubits fit** — from GPU memory (reserves ~25% for gates/Qiskit overhead)
+
+If the `hpc_core` C++/CUDA module was built without CUDA (e.g. Docker on a laptop with no GPU), the stack transparently downgrades to CPU with a clear warning. See [`src/classical/cpu/kernel_stub.cpp`](src/classical/cpu/kernel_stub.cpp).
 
 ---
 
@@ -92,9 +164,18 @@ GPU acceleration in this stack is a **plug in option**, where the same Python co
 3. **CPU fallback** —- When no GPU is available, the stack automatically falls back to Qiskit's CPU-based `Statevector` class.
 
 
-### NVIDIA GeForce GTX 1650 Mobile 
+### Validated GPU Hardware
 
-All GPU experiments were conducted on an **NVIDIA GeForce GTX 1650 Mobile** (Turing architecture, 4 GB GDDR6, 128 GB/s memory bandwidth, CUDA 12.6). This is a consumer grade GPU that represents a **lower bound** on acceleration performance. Data center GPUs such as the A100 (2,039 GB/s HBM2e) would provide the stack with a substantially greater speedup, as statevector simulation is proven to be  memory-bandwidth-bound (Bayraktar et al., 2023).
+The stack has been validated on multiple GPU classes to characterize the hardware ladder. The `HardwareProfile` layer auto-detects the class and applies the appropriate policy.
+
+| GPU | Class | Memory | Bandwidth | Where |
+|-----|-------|-------:|----------:|-------|
+| GTX 1650 Mobile | Consumer (Turing) | 4 GB GDDR6 | 128 GB/s | Original thesis baseline (Lambda) |
+| RTX 6000 Ada | Workstation (Ada Lovelace) | 48 GB GDDR6 ECC | 960 GB/s | IE capstone cluster ✓ |
+| A100 40GB SXM4 | Datacenter (Ampere) | 40 GB HBM2e | 1,555 GB/s | Lambda Cloud (planned) |
+| H100 80GB SXM5 | Datacenter (Hopper) | 80 GB HBM3 | 3,350 GB/s | Lambda Cloud (planned) |
+
+The bandwidth range (128 → 3,350 GB/s, a 26× span) exercises statevector simulation's memory-bandwidth-bound behavior (Bayraktar et al., 2023) across generations of NVIDIA hardware. Consumer-class GPUs establish a lower bound; datacenter GPUs demonstrate the ceiling.
 
 ### Lambda GPU Cloud Setup
 
@@ -257,18 +338,39 @@ After 10 iterations, iteration 10 checkpoint was deleted. The stack detected the
 
 ## Makefile Targets
 
+### Docker path (portable — laptop or cloud)
+
 | Target | Description |
 |--------|-------------|
 | `make build` | Build Docker image |
-| `make trial` | 7-layer diagnostic + stress tests (simulator, 2 ranks) |
+| `make trial NP=2` | 7-layer diagnostic + stress tests (simulator, 2 ranks) |
 | `make run NP=4` | Full chemistry benchmark with MPI (simulator) |
 | `make run-ibm NP=2` | Run on IBM Quantum QPU (requires `.env` credentials) |
 | `make scaling` | Strong scaling sweep (P=1,2,4,8) |
 | `make weak-scaling` | Weak scaling sweep (problem size grows with P) |
 | `make baseline` | Serial Qiskit VQE reference (no MPI, no GPU) |
-| `make test` | Run all tests (molecule resolver + layer diagnostics) |
+| `make test` | Molecule resolver tests + layer diagnostics |
 | `make shell` | Interactive shell inside container |
 | `make clean` | Remove image and build artifacts |
+| `make example NP=2` | Run `template.py` walkthrough |
+| `make molecules` | List built-in molecules from the registry |
+
+### Native / HPC path (bare-metal + Slurm)
+
+| Target | Description |
+|--------|-------------|
+| `make native-install` | Miniforge env + CMake build via `scripts/install_native.sh` |
+| `make native-trial NP=2` | 7-layer test using the native build (no Docker) |
+| `make native-run NP=2` | Full benchmark using the native build |
+| `make slurm-trial` | Submit 7-layer trial via `sbatch` (1 GPU) |
+| `make slurm-run` | Submit full benchmark via `sbatch` (1 GPU) |
+| `make slurm-scaling` | 4 jobs for P=1,2,4,8 strong scaling |
+| `make slurm-weak-scaling` | Same sweep, weak-scaling naming |
+| `make slurm-ibm` | Submit IBM QPU run via `sbatch` |
+| `make slurm-multi-seed` | Multi-seed sweep for statistical error bars |
+| `make slurm-ibm-seeds` | Multi-seed IBM QPU runs |
+| `make aggregate-seeds` | Aggregate multi-seed results → median + range table |
+| `make aggregate-scaling` | Build strong-scaling table from JSONs |
 
 
 ## IBM Quantum Setup
@@ -314,6 +416,58 @@ python benchmarks/run_analysis.py --plot     # convergence plots (requires matpl
 
 ---
 
+## Reproducibility
+
+Every result in this repository can be regenerated from the committed raw JSON files. The workflow is designed so a reviewer with only a laptop (no cluster, no GPU) can verify all published tables and figures.
+
+### Verify the code from a clean install (~15 min)
+
+```bash
+git clone <repo-url> && cd quantum_classical_VQE_algorithm
+docker --version                              # any recent Docker Desktop
+make build                                    # ~10 min, builds Qiskit Aer from source
+make trial NP=2                               # ~5 min, expect: Tests passed: 7 / 7
+```
+
+The trial exercises MPI + statevector + checkpointing + stress tests. Passing 7/7 confirms the stack is functional on any Docker host.
+
+### Regenerate paper tables from raw JSONs (no compute needed)
+
+The result JSONs cited in the paper are all committed to `results/simulator/`, `results/ibm/`, `results_hpc/` (RTX 6000 Ada runs), and are timestamped with git-commit-hash provenance. To rebuild the tables:
+
+```bash
+python3 benchmarks/aggregate_seeds.py                            # multi-seed median + range
+python3 benchmarks/aggregate_scaling.py                          # strong-scaling table
+python3 benchmarks/run_analysis.py --plot                        # convergence + accuracy plots
+python3 docs/render_scaling_breakthrough.py                      # CPU-vs-GPU efficiency figure
+```
+
+### Reproduce the RTX 6000 Ada benchmarks (needs a similar HPC / cloud GPU)
+
+```bash
+bash scripts/install_native.sh          # or run inside Docker with --gpus all
+make slurm-multi-seed                    # n=3 statistical run (or SEEDS="42 43 44 45 46" for n=5)
+make slurm-scaling                       # P=1,2,4,8 strong scaling on GPU
+make aggregate-seeds                     # produces publication table
+```
+
+Tested end-to-end on:
+- **IE University capstone cluster** (Slurm, CUDA 12.4, RTX 6000 Ada 48 GB) — see `scripts/install_native.sh`
+- **Laptop CPU fallback** via Docker (Linux Mint, no NVIDIA GPU) — passes 7/7 on `make trial`
+- **Lambda Cloud** (planned validation on A100 40GB / H100 80GB / A10 24GB)
+
+### Statistical methodology
+
+Simulator results are reported as median ± [min, max] over n independent SPSA random seeds at fixed hyperparameters. Multi-seed sampling is critical because SPSA convergence at moderate qubit counts (LiH, 12 qubits, 96 params) is bimodal — the best-of-N seed can reach near-FCI accuracy while others land far from ground state. See `benchmarks/aggregate_seeds.py` for the aggregation logic.
+
+### Tagged releases
+
+Reference points for reproducibility:
+- **`v1.0-gpu-validated`** — full GPU + MPI + cuStateVec trial passes on RTX 6000 Ada from a clean `install_native.sh`
+- **`v1.1-multi-seed`** — n=5 seeded simulator statistics + GPU strong scaling on RTX 6000 Ada
+
+---
+
 ## Future Work
 
 The following extensions are planned to address current limitations and broaden applicability:
@@ -334,9 +488,11 @@ The following extensions are planned to address current limitations and broaden 
 
 ## Known Limitations
 
-- **$O(2^n)$ per-rank statevector cost**: Each MPI rank independently constructs the full statevector; only Pauli-term evaluations are distributed. Primary scaling bottleneck reduced by GPU acceleration, not eliminated.
-- **Single seed**: All results use seed=42 for reproducibility. Reported times captured one OS-scheduling outcome (not averaged across multiple runs).
-- Additional limitations (HWE particle number violation, single host contention, consumer GPU bandwidth)
+- **$O(2^n)$ per-rank statevector cost** — Each MPI rank independently constructs the full statevector; only Pauli-term evaluations are distributed. Primary scaling bottleneck; reduced by GPU acceleration but not eliminated. Future statevector-tiling via multi-GPU cuStateVec is architecturally supported.
+- **HWE particle-number violation** — SPSA can drive the HWE ansatz into unphysical sectors below FCI at higher qubit counts. Mitigated via near-zero initialization + best-physical-energy tracking; fully resolved by particle-conserving ansatzes (UCCSD — see Future Work).
+- **Single-host MPI in the current benchmarks** — Reported scaling data uses ranks on one node with shared CPU cache/memory. Multi-node cluster deployment with InfiniBand would reduce shared-memory contention observed at P≥4 on CPU. GPU-accelerated MPI at higher rank counts is stable on the RTX 6000 Ada single-host configuration.
+- **IBM Open Plan QPU budget** — 10 min/month per account, limiting statistical robustness on the QPU path. Multi-seed methodology (`benchmarks/aggregate_seeds.py`) applies to QPU runs but is budget-constrained; publication statistics rely primarily on simulator seeds.
+- **`hpc_core.so` requires CUDA-compatible host compiler** — CUDA 12.4 requires GCC ≤ 13. Pinned in `environment.yml`; `install_native.sh` auto-configures the correct compiler on supported clusters.
 
 ---
 
