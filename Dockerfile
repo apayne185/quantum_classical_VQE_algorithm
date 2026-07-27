@@ -47,6 +47,8 @@ COPY . /workspace
 RUN mkdir -p build && cd build && \
     cmake .. \
       -DPython_EXECUTABLE=/usr/bin/python3.11 \
+      -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
+      -DCMAKE_CUDA_ARCHITECTURES="70;75;80;86;89;90" \
       -DCMAKE_BUILD_TYPE=Release \
     && make -j$(nproc)
 
