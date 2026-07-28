@@ -26,7 +26,8 @@ except ImportError as e:
 
 USE_GPU = os.environ.get("USE_GPU", "yes").strip().lower() == "yes"
 BACKEND = os.environ.get("BACKEND", "simulator")
-SEED = int(os.environ.get("SEED", "42"))  # SPSA random seed (override for multi-seed runs)
+SEED = int(os.environ.get("SEED", "42"))
+MAX_ITERS_ENV = os.environ.get("MAX_ITERS", "").strip()   # optional cap for hardware-ceiling tests  # SPSA random seed (override for multi-seed runs)
 _env_molecules = os.environ.get("MOLECULES", "").strip()
 MOLECULES = _env_molecules.split() if _env_molecules else ["H2", "LiH", "BeH2", "H2O"]
 
@@ -62,7 +63,7 @@ def run_chemistry_local(stack: HPCHybridStack, molecule_input: str, force_tier: 
         return None, None
     
     t0 = time.perf_counter()
-    max_iters = max(200, problem.num_params * 8)  # scale with parameter count
+    max_iters = int(MAX_ITERS_ENV) if MAX_ITERS_ENV else max(200, problem.num_params * 8)  # scale with parameter count
     ckpt_dir = os.path.join("checkpoints", problem.name)
     theta, history = stack.vqe_optimize(problem,
                                         max_iterations=max_iters,

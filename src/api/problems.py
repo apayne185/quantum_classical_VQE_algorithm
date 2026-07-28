@@ -171,6 +171,18 @@ MOLECULE_REGISTRY = {
         "reps": 2,
         "description": "Water (H2O), 8 electrons, 14 qubits",
     },
+    "N2": {
+        "geometry": "N 0 0 0; N 0 0 1.09",
+        "fci_energy": -108.9544,
+        "reps": 2,
+        "description": "Nitrogen (N2), 14 electrons, 20 qubits (GPU crossover test)",
+    },
+    "CO2": {
+        "geometry": "C 0 0 0; O 0 0 1.16; O 0 0 -1.16",
+        "fci_energy": -187.6,
+        "reps": 2,
+        "description": "Carbon dioxide (CO2), 22 electrons, 24 qubits (A100 ceiling)",
+    },
     "NH3":{
         "geometry": (
             "N 0 0 0.116; "
