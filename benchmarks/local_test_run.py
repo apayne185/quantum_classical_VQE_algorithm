@@ -31,7 +31,7 @@ MAX_ITERS_ENV = os.environ.get("MAX_ITERS", "").strip()   # optional cap for har
 _env_molecules = os.environ.get("MOLECULES", "").strip()
 MOLECULES = _env_molecules.split() if _env_molecules else ["H2", "LiH", "BeH2", "H2O"]
 
-resolver = MoleculeResolver(max_qubits=20, allow_network=True, cache_dir=".pubchem_cache",)
+resolver = MoleculeResolver(max_qubits=30, allow_network=True, cache_dir=".pubchem_cache",)
 
 
 
@@ -60,7 +60,7 @@ def run_chemistry_local(stack: HPCHybridStack, molecule_input: str, force_tier: 
 
     problem = make_problem(molecule_input, force_tier=force_tier)
     if problem is None:
-        return None, None
+        return None, None, None
     
     t0 = time.perf_counter()
     max_iters = int(MAX_ITERS_ENV) if MAX_ITERS_ENV else max(200, problem.num_params * 8)  # scale with parameter count
@@ -247,7 +247,7 @@ if __name__ == "__main__":
 
     print(f"[Config] GPU={'requested' if USE_GPU else 'CPU mode'}")
     print(f"[Config] Molecules: {MOLECULES}")
-    print(f"[Config] Resolver: max_qubits=20, cache=.pubchem_cache/")
+    print(f"[Config] Resolver: max_qubits=30, cache=.pubchem_cache/")
 
 
     with HPCHybridStack(use_gpu=USE_GPU, backend=BACKEND) as stack:
