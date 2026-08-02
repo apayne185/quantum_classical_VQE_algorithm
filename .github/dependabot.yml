@@ -9,6 +9,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # major/minor CUDA bumps break the pinned nvidia-cu12 pip wheel set
+      # this project builds against — patch bumps only.
+      - dependency-name: "nvidia/cuda"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
