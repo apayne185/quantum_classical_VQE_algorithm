@@ -19,7 +19,7 @@ endif
 .PHONY: build trial run run-ibm scaling baseline clean shell \
         native-install native-trial native-run \
         slurm-trial slurm-run slurm-scaling slurm-weak-scaling slurm-ibm \
-        slurm-multi-seed aggregate-seeds aggregate-scaling
+        slurm-multi-seed slurm-ibm-seeds aggregate-seeds aggregate-scaling
 
 build:
 	@echo "[Make] Building Docker image '$(IMAGE_NAME)' ..."
@@ -239,6 +239,13 @@ slurm-weak-scaling:
 slurm-multi-seed:
 	@mkdir -p results/slurm
 	bash scripts/submit_multi_seed.sh
+
+# Multi-seed IBM QPU runs (3 seeds, 10 iters each = ~90s billed QPU budget).
+# Override with SEEDS="42" MAX_ITERS=5 for a smoke test.
+slurm-ibm-seeds:
+	@[ -f .env ] || (echo "ERROR: .env not found"; exit 1)
+	@mkdir -p results/slurm
+	bash scripts/submit_ibm_seeds.sh
 
 # Aggregate seeded results into median +/- range statistics (at P=2 by default).
 aggregate-seeds:
