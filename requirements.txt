@@ -1,7 +1,7 @@
 # Core quantum
 qiskit>=1.0,<2.0
 qiskit-nature>=0.7
-qiskit-ibm-runtime>=0.20
+qiskit-ibm-runtime>=0.48.0
 pyscf>=2.4
 
 # HPC / parallel
