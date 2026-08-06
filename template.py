@@ -55,11 +55,16 @@ from datetime import datetime
 from src.api.interface import HPCHybridStack
 from src.api.problems import ChemistryProblem
 from src.api.log import init_log, close_log
+from src.api.hardware import HardwareProfile
 
 # Auto-save all terminal output to a log file
 _ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-os.makedirs("results/simulator", exist_ok=True)
-init_log(f"results/simulator/template_{_ts}.log")
+# Detected once here purely to route the log/JSON output by hardware;
+# HPCHybridStack below re-detects for its own use (cheap, avoids threading
+# hw through init_log which runs before the stack exists).
+_hw_slug = HardwareProfile.detect().results_slug()
+os.makedirs(f"results/{_hw_slug}/simulator", exist_ok=True)
+init_log(f"results/{_hw_slug}/simulator/template_{_ts}.log")
 
 
 # =================================================
@@ -202,34 +207,38 @@ with HPCHybridStack(backend=BACKEND) as stack:
 
 
         # Save results to JSON
-        os.makedirs("results/simulator", exist_ok=True)
+        sim_dir = f"results/{stack.hw.results_slug()}/simulator"
+        os.makedirs(sim_dir, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         result_data = {
             "molecule": problem.name,
             "energy": report_energy,
-            "fci": fci,    
+            "fci": fci,
             "error": abs(report_energy- fci) if fci else None,
-            "iterations":len(history),         
+            "iterations":len(history),
             "best_iter": report_iter,
-            "qubits":problem.num_qubits, 
-            "pauli_terms": len(problem.pauli_terms),    
-            "params": problem.num_params, 
-            "ansatz": problem.ansatz_tier, 
+            "qubits":problem.num_qubits,
+            "pauli_terms": len(problem.pauli_terms),
+            "params": problem.num_params,
+            "ansatz": problem.ansatz_tier,
             "backend": BACKEND,
             "mpi_ranks": stack.size,
             "gpu": stack.use_gpu,
+            "gpu_name": stack.hw.gpu_name,
+            "gpu_class": stack.hw.gpu_class,
+            "hostname": stack.hw.hostname,
             "seed":SEED,
             "history":history,
-        }    
+        }
 
 
-        out_path = f"results/simulator/template_{problem.name}_{ts}.json"   
+        out_path = f"{sim_dir}/template_{problem.name}_{ts}.json"
 
         with open(out_path, "w") as f:
-            json.dump(result_data, f, indent=2)  
+            json.dump(result_data, f, indent=2)
 
         print(f"\nResults saved to: {out_path}")
         print(f"Checkpoints in: checkpoints/{problem.name}/")
-        print(f"Full log saved to: results/simulator/template_{_ts}.log")
+        print(f"Full log saved to: results/{stack.hw.results_slug()}/simulator/template_{_ts}.log")
 
 close_log()

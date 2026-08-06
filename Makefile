@@ -95,7 +95,7 @@ scaling:
 	    $(GPU_FLAG) \
 	    -e BACKEND=simulator \
 		-e USE_GPU=$(GPU_AVAILABLE) \
-	    -v "$$(pwd)/results/scaling:/workspace/results/scaling" \
+	    -v "$$(pwd)/results:/workspace/results" \
 	    $(IMAGE_NAME) \
 	    mpirun --allow-run-as-root -np $$p python3 benchmarks/local_test_run.py \
 	    > results/scaling/scaling_p$$p.log 2>&1; \
@@ -113,7 +113,7 @@ weak-scaling:
 	    $(GPU_FLAG) \
 	    -e BACKEND=simulator \
 		-e USE_GPU=$(GPU_AVAILABLE) \
-	    -v "$$(pwd)/results/scaling:/workspace/results/scaling" \
+	    -v "$$(pwd)/results:/workspace/results" \
 	    -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
 	    $(IMAGE_NAME) \
 	    mpirun --allow-run-as-root -np $$p python3 -c \

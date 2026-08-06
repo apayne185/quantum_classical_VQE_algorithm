@@ -18,14 +18,14 @@ from glob import glob
 
 
 def load_seeded_results(backend: str, since: str | None,
-                        ranks: int | None) -> list[dict]:
+                        ranks: int | None, hw: str | None = None) -> list[dict]:
     """Load seeded JSON result files; optionally filter by mpi_ranks.
 
     Deduplicates by (seed, mpi_ranks), keeping the most recent — guards against
     accidental contamination when scaling sweeps reuse SEED=42 default and
     produce JSONs at multiple P values.
     """
-    pattern = os.path.join("results", backend, f"{backend}_*.json")
+    pattern = os.path.join("results", hw or "*", backend, f"{backend}_*.json")
     files = sorted(glob(pattern))
     candidates = []
     for path in files:
@@ -42,6 +42,7 @@ def load_seeded_results(backend: str, since: str | None,
         if ranks is not None and d.get("mpi_ranks") != ranks:
             continue
         d["_path"] = path
+        d["_hw_slug"] = path.split(os.sep)[1]
         candidates.append(d)
 
     # Dedup by (seed, mpi_ranks) - keep most recent timestamp.
@@ -136,22 +137,32 @@ def main():
     p.add_argument("--ranks", type=int, default=2,
                    help="filter by mpi_ranks; default 2 (canonical config). "
                         "Use 0 to include all (e.g. for ibm backend).")
+    p.add_argument("--hw", default=None,
+                   help="restrict to one results/<hw-slug>/ folder (e.g. a100-sxm4-40gb). "
+                        "Required if runs from more than one hardware slug are found "
+                        "(wall-clock medians across GPUs are meaningless).")
     args = p.parse_args()
 
     ranks_filter = args.ranks if args.ranks > 0 else None
-    runs = load_seeded_results(args.backend, args.since, ranks_filter)
+    runs = load_seeded_results(args.backend, args.since, ranks_filter, args.hw)
     if not runs:
         print(f"No seeded {args.backend} runs found "
-              f"(looking for JSON files in results/{args.backend}/ with 'seed' field).")
+              f"(looking for JSON files in results/*/{args.backend}/ with 'seed' field).")
         if args.since:
             print(f"Filter: timestamp >= {args.since}")
         if ranks_filter:
             print(f"Filter: mpi_ranks == {ranks_filter}")
         sys.exit(1)
 
+    hw_slugs = {r["_hw_slug"] for r in runs}
+    if len(hw_slugs) > 1:
+        print(f"ERROR: runs span multiple hardware folders {sorted(hw_slugs)} -- "
+              f"wall-clock medians mixing GPUs are meaningless. Re-run with --hw <slug>.")
+        sys.exit(1)
+
     rank_label = f"P={ranks_filter}" if ranks_filter else "any P"
-    print(f"Found {len(runs)} unique {args.backend} run(s) at {rank_label} "
-          f"(deduped by seed+rank):")
+    print(f"Found {len(runs)} unique {args.backend} run(s) at {rank_label}, "
+          f"hw={hw_slugs.pop() if hw_slugs else 'n/a'} (deduped by seed+rank):")
     for r in runs:
         print(f"  seed={r['seed']:<4} {r.get('timestamp', '?')[:19]}  {r['_path']}")
 

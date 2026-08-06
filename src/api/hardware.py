@@ -14,6 +14,8 @@ Researchers override auto-detection via env vars:
 from __future__ import annotations
 
 import os
+import re
+import socket
 import subprocess
 from dataclasses import dataclass, field
 
@@ -41,6 +43,7 @@ class HardwareProfile:
     has_cuda: bool = False
     gpu_name: str = ""
     gpu_class: str = "unknown"       # datacenter | workstation | consumer | unknown
+    hostname: str = ""
     gpu_memory_gb: float = 0.0
     fp64_ratio: float = 1 / 32        # estimated FP64:FP32 throughput
     compute_capability: tuple[int, int] | None = None
@@ -62,6 +65,7 @@ class HardwareProfile:
         p.override_precision = os.environ.get("VQE_PRECISION", "auto").strip().lower()
         p.override_backend = os.environ.get("VQE_BACKEND", "auto").strip().lower()
         p.override_use_gpu = os.environ.get("USE_GPU", "").strip().lower()
+        p.hostname = socket.gethostname()
         p._detect_gpu()
         p._detect_libs()
         p._detect_mpi()
@@ -180,6 +184,18 @@ class HardwareProfile:
         while (2 ** (n + 1)) * bytes_per_amp <= usable:
             n += 1
         return n
+
+    def results_slug(self) -> str:
+        """Filesystem-safe hardware identifier used to route results into
+        results/<slug>/... so runs from different GPUs (or CPU-only) never
+        land in the same directory without being distinguishable.
+        """
+        if not self.has_cuda or not self.gpu_name:
+            return "cpu-only"
+        name = re.sub(r"(?i)^nvidia\s+", "", self.gpu_name)
+        name = re.sub(r"(?i)\bmobile\b", "", name)
+        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        return slug or "gpu-unknown"
 
     def describe(self) -> str:
         gpu = (
