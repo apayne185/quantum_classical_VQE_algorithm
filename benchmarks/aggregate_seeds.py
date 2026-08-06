@@ -45,11 +45,22 @@ def load_seeded_results(backend: str, since: str | None,
         d["_hw_slug"] = path.split(os.sep)[1]
         candidates.append(d)
 
-    # Dedup by (seed, mpi_ranks) - keep most recent timestamp.
+    # Dedup by (seed, mpi_ranks) - keep the most complete run (most molecules
+    # covered, most recent as tiebreaker). A pure "most recent" rule silently
+    # drops the real multi-molecule sweep whenever the same (seed, P) pair
+    # gets reused later for an unrelated single-molecule probe (e.g. an
+    # N2-only run at seed=42, P=2 clobbering the actual H2/LiH/BeH2/H2O
+    # seed=42 run) -- same failure mode as aggregate_scaling.py's best_by_rank.
     by_key = {}
     for d in candidates:
         key = (d["seed"], d.get("mpi_ranks"))
-        if key not in by_key or d.get("timestamp", "") > by_key[key].get("timestamp", ""):
+        current = by_key.get(key)
+        if current is None:
+            by_key[key] = d
+            continue
+        n_mols = len(d.get("molecules", {}))
+        current_n_mols = len(current.get("molecules", {}))
+        if (n_mols, d.get("timestamp", "")) > (current_n_mols, current.get("timestamp", "")):
             by_key[key] = d
     return list(by_key.values())
 
