@@ -16,7 +16,6 @@ try:
     from src.api.molecule_resolver import (MoleculeResolver, MoleculeTooBigError, ResolutionError)
     from src.api.results import save_results
     from src.api.log import init_log, log, close_log
-    from src.api.hardware import HardwareProfile
     import hpc_core
     print("hpc_core and interface imported.")
 except ImportError as e:
@@ -32,7 +31,7 @@ MAX_ITERS_ENV = os.environ.get("MAX_ITERS", "").strip()   # optional cap for har
 _env_molecules = os.environ.get("MOLECULES", "").strip()
 MOLECULES = _env_molecules.split() if _env_molecules else ["H2", "LiH", "BeH2", "H2O"]
 
-resolver = MoleculeResolver(max_qubits=30, allow_network=True, cache_dir=".pubchem_cache",)
+resolver = MoleculeResolver(max_qubits=20, allow_network=True, cache_dir=".pubchem_cache",)
 
 
 
@@ -61,7 +60,7 @@ def run_chemistry_local(stack: HPCHybridStack, molecule_input: str, force_tier: 
 
     problem = make_problem(molecule_input, force_tier=force_tier)
     if problem is None:
-        return None, None, None
+        return None, None
     
     t0 = time.perf_counter()
     max_iters = int(MAX_ITERS_ENV) if MAX_ITERS_ENV else max(200, problem.num_params * 8)  # scale with parameter count
@@ -166,9 +165,8 @@ def run_scaling_local(stack: HPCHybridStack):
         result_line = (f"P={stack.size} T_total={t_total:.4f} final_E={history[-1]:+.6f} tier={getattr(problem, 'ansatz_tier', 'N/A')} qubits={problem.num_qubits} iters={len(history)}")
         print(f"[Scaling] {result_line}")
 
-        scaling_dir = f"results/{stack.hw.results_slug()}/scaling"
-        os.makedirs(scaling_dir, exist_ok=True)
-        with open(f"{scaling_dir}/scaling_P{stack.size}.txt", "w") as f:
+        os.makedirs("results/scaling",exist_ok=True)
+        with open(f"results/scaling/scaling_P{stack.size}.txt", "w") as f:
             f.write(result_line + "\n")
 
         result = {
@@ -221,9 +219,8 @@ def run_weak_scaling(stack: HPCHybridStack):
                        f"T/iter={t_per_iter:.4f} final_E={history[-1]:+.6f}")
         print(f"[Weak Scaling] {result_line}")
 
-        scaling_dir = f"results/{stack.hw.results_slug()}/scaling"
-        os.makedirs(scaling_dir, exist_ok=True)
-        with open(f"{scaling_dir}/weak_scaling_P{stack.size}.txt", "w") as f:
+        os.makedirs("results/scaling", exist_ok=True)
+        with open(f"results/scaling/weak_scaling_P{stack.size}.txt", "w") as f:
             f.write(result_line + "\n")
 
         result = {
@@ -244,15 +241,13 @@ if __name__ == "__main__":
         MOLECULES = sys.argv[1:]
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # Detected once here purely to route the log file; HPCHybridStack below
-    # re-detects for its own use (cheap, avoids threading hw through init_log).
-    _hw_slug = HardwareProfile.detect().results_slug()
-    os.makedirs(f"results/{_hw_slug}/simulator", exist_ok=True)
-    init_log(f"results/{_hw_slug}/simulator/run_{ts}.log")
+    os.makedirs("results", exist_ok=True)
+    os.makedirs("results/simulator", exist_ok=True)
+    init_log(f"results/simulator/run_{ts}.log")
 
     print(f"[Config] GPU={'requested' if USE_GPU else 'CPU mode'}")
     print(f"[Config] Molecules: {MOLECULES}")
-    print(f"[Config] Resolver: max_qubits=30, cache=.pubchem_cache/")
+    print(f"[Config] Resolver: max_qubits=20, cache=.pubchem_cache/")
 
 
     with HPCHybridStack(use_gpu=USE_GPU, backend=BACKEND) as stack:
@@ -310,7 +305,7 @@ if __name__ == "__main__":
                 "molecules": results,
                 "scaling": scaling_result,
                 "weak_scaling": weak_scaling_result,
-            }, backend=BACKEND, hw=stack.hw)
+            }, backend=BACKEND)
 
     close_log()
 

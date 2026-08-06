@@ -98,12 +98,19 @@ def serial_vqe(mol_name, coords, fci_ref, reps=1, max_iterations=500,seed=42):
 
 if __name__ == "__main__":
     import json
+    import socket
     from datetime import datetime
     from src.api.log import init_log, close_log
 
+    # Always CPU-only/single-core by design (no HPCHybridStack, no MPI, no GPU),
+    # so this never routes by GPU model -- but different hosts (laptop vs.
+    # cluster vs. cloud CPU) still produce non-comparable wall-clock numbers,
+    # so the hostname is stamped into the output for traceability.
+    hostname = socket.gethostname()
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    os.makedirs("results/baseline", exist_ok=True)
-    init_log(f"results/baseline/serial_baseline_{ts}.log")
+    out_dir = "results/cpu-only/serial-baseline"
+    os.makedirs(out_dir, exist_ok=True)
+    init_log(f"{out_dir}/serial_baseline_{ts}.log")
 
     print("----SERIAL QISKIT AER BASELINE--- ")   
 
@@ -124,9 +131,9 @@ if __name__ == "__main__":
     for name, d in all_results.items():
         print(f"{name:<10} {d['energy']:<16.6f} {d['error']:+.4f} Ha   {d['iterations']:<8} {d['wall_time']:<10.2f}")
 
-    out_path = f"results/baseline/serial_baseline_{ts}.json"
+    out_path = f"{out_dir}/serial_baseline_{ts}.json"
 
     with open(out_path, "w") as f:
-        json.dump(all_results, f, indent=2)
+        json.dump({"hostname": hostname, **all_results}, f, indent=2)
     print(f"\n[Results] Saved to {out_path}")
     close_log()

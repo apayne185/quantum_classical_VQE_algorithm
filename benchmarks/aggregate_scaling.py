@@ -17,8 +17,11 @@ import sys
 from glob import glob
 
 
-def load_runs(backend: str, since: str | None, seed: int | None) -> list[dict]:
-    pattern = os.path.join("results", backend, f"{backend}_*.json")
+def load_runs(backend: str, since: str | None, seed: int | None, hw: str | None) -> list[dict]:
+    # results/<hardware-slug>/<backend>/<backend>_*.json -- the hw wildcard/filter
+    # walks (or targets one of) every hardware folder (a100-sxm4-40gb,
+    # rtx-6000-ada-generation, cpu-only, ...)
+    pattern = os.path.join("results", hw or "*", backend, f"{backend}_*.json")
     out = []
     for path in sorted(glob(pattern)):
         try:
@@ -33,6 +36,7 @@ def load_runs(backend: str, since: str | None, seed: int | None) -> list[dict]:
         if since and d.get("timestamp", "") < since:
             continue
         d["_path"] = path
+        d["_hw_slug"] = path.split(os.sep)[1]
         out.append(d)
     return out
 
@@ -54,16 +58,28 @@ def main():
                    help="filter by SEED (default 42 - matches scaling sweep default)")
     p.add_argument("--since", default=None,
                    help="ISO timestamp prefix; ignore runs older than this")
+    p.add_argument("--hw", default=None,
+                   help="restrict to one results/<hw-slug>/ folder (e.g. a100-sxm4-40gb). "
+                        "Required if runs from more than one hardware slug are found.")
     args = p.parse_args()
 
-    runs = load_runs(args.backend, args.since, args.seed)
+    runs = load_runs(args.backend, args.since, args.seed, args.hw)
+
+    hw_slugs = {r["_hw_slug"] for r in runs}
+    if len(hw_slugs) > 1:
+        print(f"ERROR: runs span multiple hardware folders {sorted(hw_slugs)} -- "
+              f"a scaling table mixing GPUs is meaningless. Re-run with --hw <slug>.")
+        sys.exit(1)
+
     by_rank = best_by_rank(runs)
 
     if not by_rank:
-        print(f"No {args.backend} runs found with seed={args.seed}.")
+        print(f"No {args.backend} runs found with seed={args.seed}"
+              + (f", hw={args.hw}" if args.hw else "") + ".")
         sys.exit(1)
 
-    print(f"\nStrong scaling table  (seed={args.seed}, backend={args.backend})")
+    print(f"\nStrong scaling table  (seed={args.seed}, backend={args.backend}, "
+          f"hw={hw_slugs.pop() if hw_slugs else 'n/a'})")
     for P, r in by_rank.items():
         print(f"  P={P:<3}  {r.get('timestamp', '')[:19]}  GPU={r.get('gpu')}  "
               f"{r['_path']}")

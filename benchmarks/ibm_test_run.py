@@ -14,6 +14,7 @@ try:
     from src.api.problems import ChemistryProblem, FinanceProblem
     from src.api.results import save_results
     from src.api.log import init_log, log, close_log
+    from src.api.hardware import HardwareProfile
     import hpc_core
     print("hpc_core and interface imported.")
 except ImportError as e:
@@ -165,9 +166,11 @@ if __name__ == "__main__":
     check_credentials()
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    os.makedirs("results", exist_ok=True)
-    os.makedirs("results/ibm", exist_ok=True)
-    init_log(f"results/ibm/ibm_run_{ts}.log")
+    # Detected once here purely to route the log file; HPCHybridStack below
+    # re-detects for its own use (cheap, avoids threading hw through init_log).
+    _hw_slug = HardwareProfile.detect().results_slug()
+    os.makedirs(f"results/{_hw_slug}/ibm", exist_ok=True)
+    init_log(f"results/{_hw_slug}/ibm/ibm_run_{ts}.log")
 
     print(f"[Config] GPU= {'requested' if USE_GPU else 'CPU mode'} ")
     print(f"[Config] Backend= {BACKEND} ")
@@ -192,6 +195,6 @@ if __name__ == "__main__":
                 "seed": SEED,
                 "max_iters": MAX_ITERS,
                 "chemistry": chem_result,
-            }, backend=BACKEND)
+            }, backend=BACKEND, hw=stack.hw)
 
     close_log()

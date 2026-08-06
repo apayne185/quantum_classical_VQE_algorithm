@@ -1,0 +1,5 @@
+5ea3843 Dockerfile: pass CUDA_COMPILER + CUDA_ARCHITECTURES to cmake so hpc_core builds with GPU
+5a6d012 reframe README as QAAS middleware: 3 deployment paths, config API, hardware auto-detect, reproducibility
+57c5e76 drop /usr/local/cuda from IBM slurm LD_LIBRARY_PATH (same fix as trial/gpu scripts)
+40f3c52 add SEED support for IBM runs; aggregate-seeds handles ibm shape
+33f364f merge multi-seed: n=5 + LiH n=10 statistics, GPU strong scaling sweep, aggregators
