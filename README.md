@@ -109,7 +109,7 @@ CUDA Kernels (src/classical/cuda/)
 
 **Orchestration Layer** - Rank 0 holds the global SPSA optimizer state and broadcasts variational parameters $\theta^+$ and $\theta^-$ to all MPI ranks with `MPI_Ibcast` (non-blocking) in the C++ dispatcher and `comm.Bcast` / `comm.Allreduce` in the Python path. After the local computation, `MPI_Allreduce(SUM)` aggregates the partial energies from all ranks.
 
-**Acceleration Layer** - Each rank constructs the full $2^n$ statevector (main per-iteration cost) and evaluates its subset of Pauli terms. If a GPU is available, statevector construction and gate operations are offloaded to NVIDIA's cuStateVec library via Qiskit Aer's GPU backend. Custom CUDA kernel handles Pauli-term expectation values using mixed-precision arithmetic: FP32 trigonometry (`cosf`/`sinf`) for throughput with FP64 tree reduction and `atomicAdd` accumulation for numerical accuracy.
+**Acceleration Layer** - Each rank constructs the full $2^n$ statevector (main per-iteration cost) and evaluates its subset of Pauli terms. If a GPU is available, statevector construction and gate operations are offloaded to NVIDIA's cuStateVec library via Qiskit Aer's GPU backend — this is the path actually used for every `simulator`/`ibm_cloud` result in this repo. The custom CUDA kernel (mixed-precision FP32 trig / FP64 tree-reduction Pauli expectation, mean-field approximation) is a separate, currently-unused evaluation path — see the Evaluation Paths table below.
 
 **Quantum Interface Layer** - Abstracts the backend (simulator, GPU, or cloud QPU) from the upper layers. For IBM Quantum, the Python EstimatorV2 path bundles both $E(\theta^+)$ and $E(\theta^-)$ as two Primitive Unified Blocs (PUBs) in a single job, reducing QPU round-trips by 50%. The C++ path uses `std::async` for non-blocking QPU job submission via a REST client.
 
@@ -120,7 +120,7 @@ CUDA Kernels (src/classical/cuda/)
 |------|-----------|-------------|
 | **Statevector (MPI)** | `BACKEND=simulator` | Exact statevector simulation, GPU-accelerated when available, CPU fallback. |
 | **IBM QPU** | `BACKEND=ibm_cloud` | EstimatorV2 with async classical overlap during QPU RTT. |
-| **C++ Dispatcher** | Fallback / Layer 3 test | MPI dispatch via pybind11 bridge, CUDA kernel or CPU mean-field. |
+| **C++ Dispatcher** | Layer 3 test only — not used by `simulator`/`ibm_cloud` | MPI dispatch via pybind11 bridge, CUDA kernel or CPU mean-field *approximation* (exact for diagonal Z/I terms, approximate for entangled X/Y terms — see `dispatcher.cpp`). Not validated for chemical accuracy; do not route production runs through this path without fixing that first. |
 
 
 ### Data Flow
@@ -157,11 +157,12 @@ The SPSA classical optimizer is a gradient-free method that estimates the object
 
 ### How It Works
 
-GPU acceleration in this stack is a **plug in option**, where the same Python code runs on CPU and GPU paths. GPU availability is autdetected at startup and the stack selects the best backend:
+GPU acceleration in this stack is a **plug in option**, where the same Python code runs on CPU and GPU paths. GPU availability is autodetected at startup. For the `simulator`/`ibm_cloud` backends (i.e. every published result), the stack picks between:
 
 1. **GPU statevector (cuStateVec)** - When an NVIDIA GPU is detected, the stack uses Qiskit Aer's GPU-accelerated statevector simulator, backed by NVIDIA's cuStateVec library (cuQuantum SDK). All gate operations (CNOT, rotations) run as GPU matrix multiplications while the full statevector resides in GPU memory.
-2. **CUDA Pauli kernel** - A custom CUDA kernel evaluates Pauli term expectation values with one thread per Pauli term, using mixed-precision FP32/FP64 and shared memory tree reduction.
-3. **CPU fallback** —- When no GPU is available, the stack automatically falls back to Qiskit's CPU-based `Statevector` class.
+2. **CPU fallback** —- When no GPU is available, the stack automatically falls back to Qiskit's CPU-based `Statevector` class.
+
+A third path exists but is **not** part of this auto-selection: a custom CUDA Pauli-term kernel (mixed-precision FP32/FP64, one thread per Pauli term) reachable only through the C++ dispatcher (`hpc_core.execute()`), which the `simulator`/`ibm_cloud` backends never call. It's exercised by the Layer 3 diagnostic test only — see the Evaluation Paths table above for why it isn't chemical-accuracy-validated.
 
 
 ### Validated GPU Hardware
@@ -395,24 +396,30 @@ Built-in: H₂, LiH, BeH₂, H₂O (see [MOLECULES.md](MOLECULES.md) for full de
 
 ## Results Output
 
-All runs automatically save structured output to organized subdirectories:
+All runs automatically save structured output to `results/<hardware-slug>/`, organized by GPU model first (so runs from different hardware are never mixed), then by category:
 
-```   
+```
 results/
-  simulator/      # make run - JSON + full iteration logs
-  ibm/            # make run-ibm - JSON + QPU job logs
-  baseline/       # make baseline - JSON + logs
-  scaling/        # make scaling / make weak-scaling - summary + logs
-  trial/          # make trial - diagnostic test logs
+  <hardware-slug>/       # derived from nvidia-smi, e.g. a100-sxm4-40gb, rtx-6000-ada-generation, cpu-only
+    simulator/            # make run - JSON + full iteration logs
+    ibm/                  # make run-ibm - JSON + QPU job logs
+    scaling/              # make scaling / make weak-scaling - summary + logs
+    baseline/             # make baseline - JSON + logs (serial_baseline.py always uses cpu-only/)
+  plots/                  # aggregate figures, hardware-agnostic
 ```
 
-Each file is timestamped (for exmaple `simulator_20260319_212106.json`) and includes git commit hash, per-molecule energies, convergence histories, and timing data. JSON results are never overwritten.
+See `results/README.md` for the full layout rationale and how `HardwareProfile.results_slug()` (`src/api/hardware.py`) derives the folder name automatically.
+
+Each file is timestamped (for example `simulator_20260319_212106.json`) and includes git commit hash, GPU name/class, hostname, per-molecule energies, convergence histories, and timing data. JSON results are never overwritten.
 
 Analyze results with:
 ```bash
 python benchmarks/run_analysis.py            # summary table
 python benchmarks/run_analysis.py --plot     # convergence plots (requires matplotlib)
+python benchmarks/aggregate_scaling.py --hw <hardware-slug> --seed 42   # strong-scaling table, one hardware at a time
+python benchmarks/aggregate_seeds.py --hw <hardware-slug>               # multi-seed median + range, one hardware at a time
 ```
+`--hw` is required whenever more than one hardware folder exists under `results/` — both aggregators refuse to silently average wall-clock times across different GPUs.
 
 ---
 
@@ -433,13 +440,13 @@ The trial exercises MPI + statevector + checkpointing + stress tests. Passing 7/
 
 ### Regenerate paper tables from raw JSONs (no compute needed)
 
-The result JSONs cited in the paper are all committed to `results/simulator/`, `results/ibm/`, `results_hpc/` (RTX 6000 Ada runs), and are timestamped with git-commit-hash provenance. To rebuild the tables:
+The result JSONs cited in the paper are all committed under `results/<hardware-slug>/` (e.g. `results/rtx-6000-ada-generation/`, `results/a100-sxm4-40gb/`, `results/cpu-only/` — see `results/README.md`), and are timestamped with git-commit-hash provenance. To rebuild the tables:
 
 ```bash
-python3 benchmarks/aggregate_seeds.py                            # multi-seed median + range
-python3 benchmarks/aggregate_scaling.py                          # strong-scaling table
-python3 benchmarks/run_analysis.py --plot                        # convergence + accuracy plots
-python3 docs/render_scaling_breakthrough.py                      # CPU-vs-GPU efficiency figure
+python3 benchmarks/aggregate_seeds.py --hw <hardware-slug>          # multi-seed median + range
+python3 benchmarks/aggregate_scaling.py --hw <hardware-slug>        # strong-scaling table
+python3 benchmarks/run_analysis.py --plot                           # convergence + accuracy plots
+python3 docs/render_scaling_breakthrough.py                         # CPU-vs-GPU efficiency figure
 ```
 
 ### Reproduce the RTX 6000 Ada benchmarks (needs a similar HPC / cloud GPU)
@@ -454,7 +461,7 @@ make aggregate-seeds                     # produces publication table
 Tested end-to-end on:
 - **IE University capstone cluster** (Slurm, CUDA 12.4, RTX 6000 Ada 48 GB) — see `scripts/install_native.sh`
 - **Laptop CPU fallback** via Docker (Linux Mint, no NVIDIA GPU) — passes 7/7 on `make trial`
-- **Lambda Cloud** (planned validation on A100 40GB / H100 80GB / A10 24GB)
+- **Lambda Cloud A100-SXM4-40GB** — full strong/weak scaling sweep (P=1,2,4,8), seeds 42-46, `results/a100-sxm4-40gb/`
 
 ### Statistical methodology
 
