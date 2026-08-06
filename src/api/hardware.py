@@ -152,13 +152,31 @@ class HardwareProfile:
         """Pick fp32 or fp64 based on hardware class and problem size.
 
         Rules:
-          - user override wins (fp32 | fp64)
-          - no GPU → fp64 (CPU doesn't benefit from reduced precision)
-          - fp32 only when: consumer/workstation GPU AND < 20 qubits AND user explicitly asked for it
-          - everything else → fp64 (required for chemical accuracy)
+          - user override always wins (VQE_PRECISION=fp32 | fp64)
+          - no GPU → fp64 (CPU Statevector has no reduced-precision path)
+          - consumer/workstation GPU AND < 20 qubits → fp32 (these cards have
+            fp64:fp32 throughput as low as 1/64 -- see fp64_ratio in
+            _GPU_DATABASE -- fp32 is a large, mostly-free throughput win at
+            small qubit counts)
+          - everything else (datacenter GPU, or ≥20 qubits) → fp64. Datacenter
+            cards (A100/H100/V100) have fp64_ratio=1/2, so there's little
+            throughput to gain; large qubit counts want the extra numerical
+            margin regardless of hardware class.
+
+        NOTE: this was previously unconditional ("return fp64" always,
+        despite this docstring) -- no run in this repo's history has ever
+        exercised the fp32 path. Before trusting fp32 results, validate the
+        accuracy delta empirically against a known fp64 run (same molecule,
+        same seed) -- fp32's ~1e-7 relative precision, accumulated across a
+        2^n-term statevector reduction, is not obviously negligible against
+        the 1.6 mHa chemical-accuracy threshold and hasn't been measured.
         """
         if self.override_precision in {"fp32", "fp64"}:
             return self.override_precision
+        if not self.has_cuda:
+            return "fp64"
+        if self.gpu_class in {"consumer", "workstation"} and num_qubits < 20:
+            return "fp32"
         return "fp64"
 
     def recommend_backend(self) -> str:
