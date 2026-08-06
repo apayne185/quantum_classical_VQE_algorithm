@@ -1,5 +1,9 @@
 IMAGE_NAME = vqe-mpi-gpu
 NP ?= 2       						#override with -  make run NP=4
+SEED ?= 42                          #override with - make run SEED=43
+MOLECULES ?=                        #override with - make run MOLECULES="H2 LiH"  (default: H2 LiH BeH2 H2O)
+MAX_ITERS ?=                        #override with - make run MAX_ITERS=50
+VQE_PRECISION ?= auto                #override with - make run VQE_PRECISION=fp32
 
 ifneq (,$(wildcard .env))
   include .env
@@ -46,6 +50,7 @@ example:
 	  $(GPU_FLAG) \
 	  -e BACKEND=simulator \
 	  -e USE_GPU=$(GPU_AVAILABLE) \
+	  -e VQE_PRECISION=$(VQE_PRECISION) \
 	  -v "$$(pwd)/results:/workspace/results" \
 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
 	  $(IMAGE_NAME) \
@@ -58,6 +63,10 @@ run:
 	  $(GPU_FLAG) \
 	  -e BACKEND=simulator \
 	  -e USE_GPU=$(GPU_AVAILABLE) \
+	  -e SEED=$(SEED) \
+	  -e MOLECULES="$(MOLECULES)" \
+	  -e MAX_ITERS=$(MAX_ITERS) \
+	  -e VQE_PRECISION=$(VQE_PRECISION) \
 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
 	  -v "$$(pwd)/results:/workspace/results" \
 	  $(IMAGE_NAME) \
