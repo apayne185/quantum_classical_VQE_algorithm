@@ -134,9 +134,24 @@ class HPCHybridStack:
         # Resolve precision policy for this problem size (once per optimize call).
         self.precision = self.hw.recommend_precision(num_qubits)
         if self.rank == 0:
-            max_fit = self.hw.max_qubits_fit(self.precision)
+            # self.size (not self.hw.mpi_size) -- HardwareProfile.detect() runs before
+            # MPI is initialized, so self.hw.mpi_size is stale/always 1. self.size is
+            # the real post-init rank count, needed since multiple ranks can share one
+            # physical GPU (round-robin device assignment) and each redundantly builds
+            # its own full statevector -- see max_qubits_fit()'s docstring.
+            max_fit = self.hw.max_qubits_fit(self.precision, mpi_size=self.size)
             extra = f" (GPU fits up to ~{max_fit} qubits at this precision)" if max_fit else ""
             print(f"[Stack] Precision: {self.precision} for {num_qubits}-qubit problem{extra}")
+            if self._gpu_sv and max_fit and num_qubits > max_fit:
+                ranks_per_gpu = -(-self.size // max(self.hw.gpu_count, 1))
+                print(
+                    f"[Stack] WARNING: {num_qubits}-qubit problem exceeds the estimated "
+                    f"~{max_fit}-qubit GPU capacity ({self.size} rank(s) across "
+                    f"{self.hw.gpu_count} GPU(s), ~{ranks_per_gpu} rank(s) sharing each "
+                    f"card). This will likely be extremely slow (memory pressure/paging, "
+                    f"not a crash) rather than fail fast. Consider fewer ranks, "
+                    f"VQE_PRECISION=fp32, or a larger-memory GPU before waiting on this."
+                )
 
         os.makedirs(checkpoint_dir, exist_ok=True)
         theta = np.zeros(num_params, dtype=np.float64)
