@@ -20,7 +20,7 @@ else
 endif     
 
 
-.PHONY: build trial run run-ibm scaling baseline clean shell \
+.PHONY: build trial run run-ibm scaling baseline clean shell test pytest \
         native-install native-trial native-run \
         slurm-trial slurm-run slurm-scaling slurm-weak-scaling slurm-ibm \
         slurm-multi-seed slurm-ibm-seeds aggregate-seeds aggregate-scaling
@@ -152,8 +152,7 @@ baseline:
 # RUN ALL TESTS- resolver + layer diagnostic
 test:
 	@echo "[Make] Running test suite ..."
-# 	python3 tests/test_resolver.py
-	python3 tests/test_molecules_run.py
+	docker run --rm $(IMAGE_NAME) python3 -m pytest
 	docker run --rm \
 	  $(GPU_FLAG) \
 	  -e BACKEND=simulator \
@@ -162,6 +161,11 @@ test:
 	  $(IMAGE_NAME) \
 	  mpirun --allow-run-as-root -np 2 python3 tests/test_layers_run.py
 	@echo "[Make] All tests complete."
+
+# pytest suite only (hardware profile + molecule resolver), no MPI layer test.
+# Runs inside Docker -- the host Python has no qiskit/pyscf install.
+pytest:
+	docker run --rm $(IMAGE_NAME) python3 -m pytest
 
 
 
