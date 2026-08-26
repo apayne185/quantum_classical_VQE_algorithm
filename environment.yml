@@ -11,6 +11,7 @@ dependencies:
   - matplotlib
   - mpi4py
   - mpich
+  - pytest
   # Pin UCX <1.20 - 1.20.0 ships with libuct referencing an unexported
   # ucs_netif_is_ipoib symbol, breaking the mpi4py import chain.
   - ucx<1.20

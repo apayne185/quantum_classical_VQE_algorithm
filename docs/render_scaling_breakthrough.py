@@ -15,10 +15,10 @@ cpu_h2o = {1: 210.42, 2: 170.66, 4: 305.87, 8: 1038.50}
 
 # GPU side: HPC re-run on RTX 6000 Ada.
 GPU_FILES = {
-    1: "results_hpc/simulator/simulator_20260416_234018.json",
-    2: "results_hpc/simulator/simulator_20260416_234809.json",
-    4: "results_hpc/simulator/simulator_20260416_235706.json",
-    8: "results_hpc/simulator/simulator_20260417_000732.json",
+    1: "results/rtx-6000-ada-generation/simulator/simulator_20260416_234018.json",
+    2: "results/rtx-6000-ada-generation/simulator/simulator_20260416_234809.json",
+    4: "results/rtx-6000-ada-generation/simulator/simulator_20260416_235706.json",
+    8: "results/rtx-6000-ada-generation/simulator/simulator_20260417_000732.json",
 }
 gpu_h2o = {}
 for P, path in GPU_FILES.items():

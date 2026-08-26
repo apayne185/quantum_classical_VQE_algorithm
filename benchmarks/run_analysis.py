@@ -9,8 +9,9 @@ import glob
 RESULTS_DIR = "results"
 PLOTS_DIR = os.path.join(RESULTS_DIR, "plots")
 
-def load_results():
-    files = sorted(glob.glob(os.path.join(RESULTS_DIR, "**", "*.json"), recursive=True))
+def load_results(hw: str | None = None):
+    pattern = os.path.join(RESULTS_DIR, hw or "*", "**", "*.json")
+    files = sorted(glob.glob(pattern, recursive=True))
     files = [f for f in files if not f.startswith(PLOTS_DIR)]
     runs = []
     for f in files:
@@ -25,6 +26,7 @@ def load_results():
             continue
         data["_file"] = os.path.basename(f)
         data["_path"] = f
+        data["_hw_slug"] = f.split(os.sep)[1] if os.sep in f else "?"
         runs.append(data)
 
     return runs
@@ -89,12 +91,18 @@ def _ensure_dirs():
 
 
 def _pick_latest_sim(runs, ranks=2):
-    # Return most recent simulator run with the given rank count 
+    # Return the most complete simulator run at the given rank count (most
+    # molecules covered, most recent as tiebreaker). Plain "most recent"
+    # would pick a later single-molecule probe (e.g. an N2-only run reusing
+    # mpi_ranks=2) over the real multi-molecule sweep -- same failure mode
+    # fixed in aggregate_scaling.py/aggregate_seeds.py's best_by_rank().
     candidates = [r for r in runs
                   if r.get("backend") == "simulator"
                   and r.get("mpi_ranks") == ranks
                   and "molecules" in r]
-    return candidates[-1] if candidates else None
+    if not candidates:
+        return None
+    return max(candidates, key=lambda r: (len(r.get("molecules", {})), r.get("timestamp", "")))
 
 
 def _pick_latest_baseline(runs):
@@ -611,7 +619,21 @@ def plot_all(runs):
 
 
 if __name__ == "__main__":
-    runs = load_results()
+    hw = None
+    if "--hw" in sys.argv:
+        _idx = sys.argv.index("--hw")
+        if _idx + 1 < len(sys.argv):
+            hw = sys.argv[_idx + 1]
+
+    runs = load_results(hw)
+
+    hw_slugs = {r["_hw_slug"] for r in runs}
+    if len(hw_slugs) > 1:
+        print(f"ERROR: results span multiple hardware folders {sorted(hw_slugs)} -- "
+              f"a combined summary/plot mixing GPUs is misleading. Re-run with --hw <slug>.",
+              file=sys.stderr)
+        sys.exit(1)
+
     print_summary(runs)
 
     if "--plot" in sys.argv:

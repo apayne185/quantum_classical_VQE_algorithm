@@ -25,9 +25,13 @@ jobs:
       - name: Run 7-layer diagnostic (make trial)
         run: make trial
 
-      - name: Run molecule resolver tests
+      - name: Run pytest suite (hardware profile + molecule resolver)
         run: |
-          docker run --rm vqe-mpi-gpu python3 tests/test_molecules_run.py
+          # -m "not network": deselect PubChem-lookup tests so CI doesn't flake
+          # on an external service; test_layers_run.py is excluded by pytest.ini
+          # (it's MPI-orchestrated, run separately via `make trial` above).
+          # rdkit isn't installed in this image, so SMILES tests self-skip.
+          docker run --rm vqe-mpi-gpu python3 -m pytest -m "not network"
 
       - name: Run serial baseline (H2 only, fast)
         run: |

@@ -23,19 +23,19 @@ results/
   This name is exactly what `results_slug()` derives from `nvidia-smi`, so a
   future rerun on the same cluster hardware auto-appends here.
 
-- **`a100-lambda-jul2026-archive/`** — NVIDIA A100, Lambda Cloud instance,
-  July 2026. Seeds 42-46, adds NH3 + N2 to the benchmark set (CO2 attempted,
-  cancelled after running >1hr — no result). **Only P=2 exists** — no
-  strong/weak scaling sweep has been run on this hardware yet.
+- **`a100-sxm4-40gb/`** — NVIDIA A100-SXM4-40GB, Lambda Cloud. First session
+  July 2026: seeds 42-46, adds NH3 + N2 to the benchmark set (CO2 attempted,
+  cancelled after running >1hr — no result), only P=2. Confirmed 2026-08-06
+  that a fresh Lambda instance reports the identical `nvidia-smi` name
+  (`NVIDIA A100-SXM4-40GB` -> `results_slug()` -> `a100-sxm4-40gb`), so this
+  folder was renamed from its original hand-picked name
+  (`a100-lambda-jul2026-archive`) to match exactly -- new P=1/4/8 strong
+  scaling + weak scaling runs auto-append here with no manual merge needed.
   `session-archives/` holds a termination snapshot (exact code + git log)
   from the first Lambda session, kept for provenance.
-  **This folder name was chosen by hand, not by `results_slug()`** — the
-  exact A100 variant (SXM4/PCIe, 40GB/80GB) wasn't captured at the time, so
-  the auto-slug for a *new* A100 run will likely create a differently-named
-  folder (e.g. `a100-sxm4-40gb/`). After the next A100 sweep, check which
-  folder shows up and either treat it as the new live A100 folder (if the
-  exact same instance type) or rename this archive to line up — don't just
-  assume they match.
+  If a *future* Lambda rental reports a different A100 variant (SXM4 vs
+  PCIe, 40GB vs 80GB), it'll create a new sibling folder instead of landing
+  here -- don't assume every A100 rental matches this one.
 
 - **`cpu-only/`** — anything with no GPU: the `serial-baseline/` single-core
   reference (run on Anna's laptop, i7-1065G7 — see `hostname` field in each

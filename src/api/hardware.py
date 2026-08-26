@@ -45,6 +45,7 @@ class HardwareProfile:
     gpu_class: str = "unknown"       # datacenter | workstation | consumer | unknown
     hostname: str = ""
     gpu_memory_gb: float = 0.0
+    gpu_count: int = 0                # number of physical GPUs on this node
     fp64_ratio: float = 1 / 32        # estimated FP64:FP32 throughput
     compute_capability: tuple[int, int] | None = None
     has_cuquantum: bool = False
@@ -89,7 +90,9 @@ class HardwareProfile:
             self.notes.append("nvidia-smi found no GPU")
             return
 
-        first = out.stdout.strip().splitlines()[0].split(",")
+        lines = out.stdout.strip().splitlines()
+        self.gpu_count = len(lines)
+        first = lines[0].split(",")
         self.has_cuda = True
         self.gpu_name = first[0].strip()
         try:
@@ -152,13 +155,31 @@ class HardwareProfile:
         """Pick fp32 or fp64 based on hardware class and problem size.
 
         Rules:
-          - user override wins (fp32 | fp64)
-          - no GPU → fp64 (CPU doesn't benefit from reduced precision)
-          - fp32 only when: consumer/workstation GPU AND < 20 qubits AND user explicitly asked for it
-          - everything else → fp64 (required for chemical accuracy)
+          - user override always wins (VQE_PRECISION=fp32 | fp64)
+          - no GPU → fp64 (CPU Statevector has no reduced-precision path)
+          - consumer/workstation GPU AND < 20 qubits → fp32 (these cards have
+            fp64:fp32 throughput as low as 1/64 -- see fp64_ratio in
+            _GPU_DATABASE -- fp32 is a large, mostly-free throughput win at
+            small qubit counts)
+          - everything else (datacenter GPU, or ≥20 qubits) → fp64. Datacenter
+            cards (A100/H100/V100) have fp64_ratio=1/2, so there's little
+            throughput to gain; large qubit counts want the extra numerical
+            margin regardless of hardware class.
+
+        NOTE: this was previously unconditional ("return fp64" always,
+        despite this docstring) -- no run in this repo's history has ever
+        exercised the fp32 path. Before trusting fp32 results, validate the
+        accuracy delta empirically against a known fp64 run (same molecule,
+        same seed) -- fp32's ~1e-7 relative precision, accumulated across a
+        2^n-term statevector reduction, is not obviously negligible against
+        the 1.6 mHa chemical-accuracy threshold and hasn't been measured.
         """
         if self.override_precision in {"fp32", "fp64"}:
             return self.override_precision
+        if not self.has_cuda:
+            return "fp64"
+        if self.gpu_class in {"consumer", "workstation"} and num_qubits < 20:
+            return "fp32"
         return "fp64"
 
     def recommend_backend(self) -> str:
@@ -171,15 +192,30 @@ class HardwareProfile:
             return "aer_gpu"
         return "aer_cpu"
 
-    def max_qubits_fit(self, precision: str = "fp64") -> int:
-        """Upper bound on qubit count that fits in GPU memory."""
+    def max_qubits_fit(self, precision: str = "fp64", mpi_size: int = 1) -> int:
+        """Upper bound on qubit count that fits in GPU memory.
+
+        mpi_size matters: CUDA device assignment is round-robin per rank
+        (rank % gpu_count, see bridge.cpp:set_cuda_device), so multiple ranks
+        can land on the *same* physical GPU and each build their own full
+        redundant statevector concurrently (this stack does not distribute
+        statevector construction itself, only the Pauli-term summation --
+        see CLAUDE.md gap H). A single-simulation budget silently ignores
+        that and can look like it "fits" when it doesn't once a second rank
+        is sharing the card. Pass the real HPCHybridStack.size here, not
+        self.mpi_size (populated at HardwareProfile.detect() time, which
+        happens *before* MPI is initialized in HPCHybridStack.__init__, so
+        it's unreliable -- almost always stale at 1).
+        """
         # fp64 statevector: 16 bytes/amplitude (complex128)
         # fp32 statevector:  8 bytes/amplitude (complex64)
         bytes_per_amp = 16 if precision == "fp64" else 8
         if self.gpu_memory_gb <= 0:
             return 0
-        # Reserve ~25% for gates / Qiskit overhead
-        usable = self.gpu_memory_gb * 0.75 * (1024 ** 3)
+        ranks_per_gpu = -(-max(mpi_size, 1) // max(self.gpu_count, 1))  # ceil division
+        # Reserve ~25% for gates / Qiskit overhead, then split what's left
+        # across however many ranks are sharing this physical GPU.
+        usable = self.gpu_memory_gb * 0.75 * (1024 ** 3) / ranks_per_gpu
         n = 0
         while (2 ** (n + 1)) * bytes_per_amp <= usable:
             n += 1

@@ -42,11 +42,25 @@ def load_runs(backend: str, since: str | None, seed: int | None, hw: str | None)
 
 
 def best_by_rank(runs: list[dict]) -> dict[int, dict]:
-    """Keep most recent run at each rank count."""
+    """Keep the most complete run at each rank count (most molecules covered,
+    most recent as tiebreaker).
+
+    A "most recent wins" rule alone silently prefers a later single-molecule
+    run (e.g. an NH3-only or N2-only probe) over an earlier full 4-molecule
+    sweep at the same P, producing a scaling table missing most of its rows.
+    Molecule count is a reasonable proxy for "this was the intended sweep
+    run" without hardcoding a specific benchmark set.
+    """
     by_rank: dict[int, dict] = {}
     for r in runs:
         P = r["mpi_ranks"]
-        if P not in by_rank or r.get("timestamp", "") > by_rank[P].get("timestamp", ""):
+        n_mols = len(r.get("molecules", {}))
+        current = by_rank.get(P)
+        if current is None:
+            by_rank[P] = r
+            continue
+        current_n_mols = len(current.get("molecules", {}))
+        if (n_mols, r.get("timestamp", "")) > (current_n_mols, current.get("timestamp", "")):
             by_rank[P] = r
     return dict(sorted(by_rank.items()))
 

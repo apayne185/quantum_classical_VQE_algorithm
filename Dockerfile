@@ -35,7 +35,10 @@ RUN pip3 install --no-cache-dir \
     qiskit \
     qiskit-nature \
     qiskit-ibm-runtime \
-    pyscf
+    pyscf \
+    pytest \
+    matplotlib \
+    rdkit
 
 # GPU acceleration: cupy for CUDA, qiskit-aer built from source with GPU support
 RUN pip3 install --no-cache-dir cupy-cuda12x

@@ -1,7 +1,17 @@
-import sys
+"""Pytest tests for MoleculeResolver: registry, raw geometry, SMILES (RDKit),
+common-name (PubChem network lookup), and batch resolution.
+
+Run:
+    pytest tests/test_molecules_run.py                  # everything, incl. network tests
+    pytest tests/test_molecules_run.py -m "not network"  # skip PubChem lookups
+"""
 import os
+import sys
+
 sys.path.insert(0, os.path.abspath("./build"))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import pytest
 from src.api.molecule_resolver import (MoleculeResolver, MoleculeTooBigError, ResolutionError)
 
 try:
@@ -10,58 +20,101 @@ try:
     HAS_RDKIT = True
 except ImportError:
     HAS_RDKIT = False
-    print("[WARN] rdkit not installed — SMILES-based tests will be skipped")
 
 
-resolver = MoleculeResolver(max_qubits=20,allow_network=True, cache_dir=".pubchem_cache")
-
-test_cases = [
-    ("Registry lookup","LiH",{}),
-    ("Registry lookup", "BeH2", {}),
-    ("Common name","water", {}),                # PubChem
-    ("Common name","ethanol",{}),               # PubChem
-    ("SMILES","CCO",{}),                       # ethanol RDKit
-    ("SMILES","C", {}),                         #methane
-    ("Raw geometry","C 0 0 0; H 0 0 1.09", {}),
-    ("Too big (rejected)", "adenine",{}),            # >20 
-    ("Force no-freeze","BeH2",{"freeze_core": False}),    
-]
-
-print("MOLECULE RESOLVER tests")
-
-for label, inp, kwargs in test_cases:
-    if label == "SMILES" and not HAS_RDKIT:
-        print(f"\n[{label}] Input: '{inp}' — SKIPPED (rdkit not installed)")
-        continue
-    print(f"\n[{label}] Input: '{inp}'")
-    try:
-        result = resolver.resolve(inp, **kwargs)
-        print(f"Source: {result.source}")
-        print(f"Geometry (first): {result.geometry[:60]}...")
-        print(f"Total electrons:{result.total_electrons}")
-        print(f"Active electrons: {result.active_electrons}")
-        print(f"Estimated qubits: {result.estimated_qubits}")
-        print(f"Freeze core:{result.freeze_core}")    
-
-        if result.warnings:
-            for w in result.warnings:
-                print(f"Warning:{w}")     
+@pytest.fixture(scope="module")
+def resolver():
+    return MoleculeResolver(max_qubits=20, allow_network=True, cache_dir=".pubchem_cache")
 
 
-    except MoleculeTooBigError as e:
-        print(f"[GATED] {e}")
-    except ResolutionError as e:
-        print(f"[FAILED] {e}")
-    except Exception as e:
-        print(f"[ERROR] {type(e).__name__}:{e}")    
+@pytest.fixture(scope="module")
+def big_resolver():
+    """Ethanol needs 36 qubits after active-space reduction -- exceeds the
+    max_qubits=20 used everywhere else (deliberately, so test_too_big_rejected
+    has something to reject). Needs its own resolver instance."""
+    return MoleculeResolver(max_qubits=40, allow_network=True, cache_dir=".pubchem_cache")
 
 
-print("Batch resolution example ")
-batch= resolver.resolve_batch(["H2","LiH","aspirin","BeH2"])   
+# ---------- deterministic: local registry, no network ----------
 
-for name, res in batch.items():
-    if res:
-        print(f"{name:12s}: {res.estimated_qubits:3d} qubits, source={res.source}")
-    else:
-        print(f"{name:12s}: failed or too big ")   
+def test_registry_lookup_lih(resolver):
+    result = resolver.resolve("LiH")
+    assert result.source == "registry"
+    assert result.name == "LiH"
+    assert result.estimated_qubits > 0
+    assert result.geometry
 
+
+def test_registry_lookup_beh2(resolver):
+    result = resolver.resolve("BeH2")
+    assert result.source == "registry"
+    assert result.estimated_qubits > 0
+
+
+def test_force_no_freeze(resolver):
+    """freeze_core=False must be honored and must not reduce the active space."""
+    result = resolver.resolve("BeH2", freeze_core=False)
+    assert result.freeze_core is False
+    assert result.active_electrons == result.total_electrons
+
+
+def test_too_big_rejected(resolver):
+    """CO2 (24 qubits per the registry) exceeds this resolver's max_qubits=20,
+    and resolves via the local registry -- no network needed, so this can't
+    flake on an external PubChem lookup the way the original "adenine" case did.
+    """
+    with pytest.raises(MoleculeTooBigError):
+        resolver.resolve("CO2")
+
+
+# ---------- deterministic: raw geometry string, no network ----------
+
+def test_raw_geometry(resolver):
+    result = resolver.resolve("C 0 0 0; H 0 0 1.09")
+    assert result.source == "raw"
+    assert result.estimated_qubits > 0
+
+
+# ---------- network: PubChem common-name lookup ----------
+
+@pytest.mark.network
+def test_common_name_water(resolver):
+    result = resolver.resolve("water")
+    assert result.source == "pubchem"
+    assert result.estimated_qubits > 0
+    assert result.geometry
+
+
+@pytest.mark.network
+def test_common_name_ethanol(big_resolver):
+    result = big_resolver.resolve("ethanol")
+    assert result.source == "pubchem"
+    assert result.estimated_qubits > 0
+
+
+# ---------- SMILES: requires RDKit (optional dependency) ----------
+
+@pytest.mark.skipif(not HAS_RDKIT, reason="rdkit not installed")
+def test_smiles_ethanol(big_resolver):
+    result = big_resolver.resolve("CCO")
+    assert result.source == "smiles"
+    assert result.estimated_qubits > 0
+
+
+@pytest.mark.skipif(not HAS_RDKIT, reason="rdkit not installed")
+def test_smiles_methane(resolver):
+    result = resolver.resolve("C")
+    assert result.source == "smiles"
+    assert result.estimated_qubits > 0
+
+
+# ---------- batch resolution (registry-only molecules, deterministic) ----------
+
+def test_batch_resolution(resolver):
+    batch = resolver.resolve_batch(["H2", "LiH", "BeH2"])
+    assert batch["H2"] is not None
+    assert batch["LiH"] is not None
+    assert batch["BeH2"] is not None
+    for name, result in batch.items():
+        assert result.source == "registry"
+        assert result.estimated_qubits > 0

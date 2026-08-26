@@ -45,11 +45,22 @@ def load_seeded_results(backend: str, since: str | None,
         d["_hw_slug"] = path.split(os.sep)[1]
         candidates.append(d)
 
-    # Dedup by (seed, mpi_ranks) - keep most recent timestamp.
+    # Dedup by (seed, mpi_ranks) - keep the most complete run (most molecules
+    # covered, most recent as tiebreaker). A pure "most recent" rule silently
+    # drops the real multi-molecule sweep whenever the same (seed, P) pair
+    # gets reused later for an unrelated single-molecule probe (e.g. an
+    # N2-only run at seed=42, P=2 clobbering the actual H2/LiH/BeH2/H2O
+    # seed=42 run) -- same failure mode as aggregate_scaling.py's best_by_rank.
     by_key = {}
     for d in candidates:
         key = (d["seed"], d.get("mpi_ranks"))
-        if key not in by_key or d.get("timestamp", "") > by_key[key].get("timestamp", ""):
+        current = by_key.get(key)
+        if current is None:
+            by_key[key] = d
+            continue
+        n_mols = len(d.get("molecules", {}))
+        current_n_mols = len(current.get("molecules", {}))
+        if (n_mols, d.get("timestamp", "")) > (current_n_mols, current.get("timestamp", "")):
             by_key[key] = d
     return list(by_key.values())
 
@@ -100,6 +111,8 @@ def report(by_mol: dict[str, list[dict]]) -> None:
           f"{'Median T (s)':<14}")
     print("-" * 110)
 
+    best_rows = []  # collected for the best-of-N summary printed after the median table
+
     for mol, runs in sorted(by_mol.items()):
         seeds = sorted({r["seed"] for r in runs})
         energies = [r["energy"] for r in runs]
@@ -113,6 +126,11 @@ def report(by_mol: dict[str, list[dict]]) -> None:
             errs = [abs(e - fci) for e in energies]
             med_err = statistics.median(errs)
             err_str = f"{med_err:.4f}"
+            best_idx = min(range(len(runs)), key=lambda i: errs[i])
+            best_rows.append({
+                "mol": mol, "seed": runs[best_idx]["seed"], "energy": energies[best_idx],
+                "fci": fci, "err": errs[best_idx], "n": len(runs),
+            })
         else:
             err_str = "N/A"
 
@@ -121,6 +139,18 @@ def report(by_mol: dict[str, list[dict]]) -> None:
         print(f"{mol:<8} {len(runs):<3} {str(seeds):<20} "
               f"{med_e:<16.6f} {e_range:<22} "
               f"{err_str:<18} {med_t:<14.2f}")
+
+    if best_rows:
+        print(f"\nBest-of-N (min |error| vs FCI among the seeds above; report this per-molecule "
+              f"as \"best of n=<seed count> independent SPSA trajectories\" (see n column above), "
+              f"not as typical performance):")
+        print(f"{'Molecule':<8} {'Best seed':<10} {'Energy (Ha)':<16} "
+              f"{'FCI (Ha)':<14} {'|err| (Ha)':<12} {'Chem. acc.?':<12}")
+        print("-" * 76)
+        for r in best_rows:
+            chem_acc = "YES" if r["err"] < 1.6e-3 else ("near" if r["err"] < 0.01 else "no")
+            print(f"{r['mol']:<8} {r['seed']:<10} {r['energy']:<16.6f} "
+                  f"{r['fci']:<14.4f} {r['err']:<12.4f} {chem_acc:<12}")
 
     print("\nNotes:")
     print(" - Median is taken across SPSA random seeds at fixed hyperparameters.")

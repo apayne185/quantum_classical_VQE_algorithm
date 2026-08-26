@@ -100,18 +100,23 @@ class HPCHybridStack:
 
     def _build_statevector(self, bound_circuit):
         # Build statevector from bound circuit, uses GPU (cuStateVec) if available, else CPU.
+        #
+        # bound_circuit is mutated in place (save_statevector() appended directly,
+        # no defensive .copy()) rather than copied -- safe because every call site
+        # (_evaluate_distributed_statevector, _evaluate_ibm_estimator) passes a
+        # circuit freshly produced by ansatz.assign_parameters() that is never
+        # used again afterward. Do NOT pass problem.ansatz_circuit (the shared,
+        # reused template) or any circuit the caller still needs post-call --
+        # this would also corrupt the IBM hardware submission path, which reuses
+        # the same shared ansatz template via a separate transpile() call.
+        # aer_precision is set once per vqe_optimize() call (see there), not on
+        # every evaluation -- it doesn't change mid-run.
         if self._gpu_sv:
             from qiskit.quantum_info import Statevector as _SV
             sim = self._aer_gpu
-            aer_precision = "double" if self.precision == "fp64" else "single"
-            try:
-                sim.set_options(precision=aer_precision)
-            except Exception:
-                pass
-            circ = bound_circuit.copy()
-            circ.save_statevector()
-            result = sim.run(circ).result()
-            sv_data = result.get_statevector(circ)
+            bound_circuit.save_statevector()
+            result = sim.run(bound_circuit).result()
+            sv_data = result.get_statevector(bound_circuit)
             return _SV(sv_data)
         else:
             return Statevector(bound_circuit)
@@ -133,10 +138,34 @@ class HPCHybridStack:
 
         # Resolve precision policy for this problem size (once per optimize call).
         self.precision = self.hw.recommend_precision(num_qubits)
+        if self._gpu_sv:
+            # Set once here, not on every _build_statevector() call -- precision
+            # doesn't change mid-run, and this was previously re-set on every
+            # single evaluation (hundreds of times per run, twice per iteration).
+            aer_precision = "double" if self.precision == "fp64" else "single"
+            try:
+                self._aer_gpu.set_options(precision=aer_precision)
+            except Exception:
+                pass
         if self.rank == 0:
-            max_fit = self.hw.max_qubits_fit(self.precision)
+            # self.size (not self.hw.mpi_size) -- HardwareProfile.detect() runs before
+            # MPI is initialized, so self.hw.mpi_size is stale/always 1. self.size is
+            # the real post-init rank count, needed since multiple ranks can share one
+            # physical GPU (round-robin device assignment) and each redundantly builds
+            # its own full statevector -- see max_qubits_fit()'s docstring.
+            max_fit = self.hw.max_qubits_fit(self.precision, mpi_size=self.size)
             extra = f" (GPU fits up to ~{max_fit} qubits at this precision)" if max_fit else ""
             print(f"[Stack] Precision: {self.precision} for {num_qubits}-qubit problem{extra}")
+            if self._gpu_sv and max_fit and num_qubits > max_fit:
+                ranks_per_gpu = -(-self.size // max(self.hw.gpu_count, 1))
+                print(
+                    f"[Stack] WARNING: {num_qubits}-qubit problem exceeds the estimated "
+                    f"~{max_fit}-qubit GPU capacity ({self.size} rank(s) across "
+                    f"{self.hw.gpu_count} GPU(s), ~{ranks_per_gpu} rank(s) sharing each "
+                    f"card). This will likely be extremely slow (memory pressure/paging, "
+                    f"not a crash) rather than fail fast. Consider fewer ranks, "
+                    f"VQE_PRECISION=fp32, or a larger-memory GPU before waiting on this."
+                )
 
         os.makedirs(checkpoint_dir, exist_ok=True)
         theta = np.zeros(num_params, dtype=np.float64)

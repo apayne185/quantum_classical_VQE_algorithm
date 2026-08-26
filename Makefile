@@ -1,5 +1,9 @@
 IMAGE_NAME = vqe-mpi-gpu
 NP ?= 2       						#override with -  make run NP=4
+SEED ?= 42                          #override with - make run SEED=43
+MOLECULES ?=                        #override with - make run MOLECULES="H2 LiH"  (default: H2 LiH BeH2 H2O)
+MAX_ITERS ?=                        #override with - make run MAX_ITERS=50
+VQE_PRECISION ?= auto                #override with - make run VQE_PRECISION=fp32
 
 ifneq (,$(wildcard .env))
   include .env
@@ -16,7 +20,7 @@ else
 endif     
 
 
-.PHONY: build trial run run-ibm scaling baseline clean shell \
+.PHONY: build trial run run-ibm scaling baseline clean shell test pytest \
         native-install native-trial native-run \
         slurm-trial slurm-run slurm-scaling slurm-weak-scaling slurm-ibm \
         slurm-multi-seed slurm-ibm-seeds aggregate-seeds aggregate-scaling
@@ -46,6 +50,7 @@ example:
 	  $(GPU_FLAG) \
 	  -e BACKEND=simulator \
 	  -e USE_GPU=$(GPU_AVAILABLE) \
+	  -e VQE_PRECISION=$(VQE_PRECISION) \
 	  -v "$$(pwd)/results:/workspace/results" \
 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
 	  $(IMAGE_NAME) \
@@ -58,6 +63,10 @@ run:
 	  $(GPU_FLAG) \
 	  -e BACKEND=simulator \
 	  -e USE_GPU=$(GPU_AVAILABLE) \
+	  -e SEED=$(SEED) \
+	  -e MOLECULES="$(MOLECULES)" \
+	  -e MAX_ITERS=$(MAX_ITERS) \
+	  -e VQE_PRECISION=$(VQE_PRECISION) \
 	  -v "$$(pwd)/checkpoints:/workspace/checkpoints" \
 	  -v "$$(pwd)/results:/workspace/results" \
 	  $(IMAGE_NAME) \
@@ -143,8 +152,7 @@ baseline:
 # RUN ALL TESTS- resolver + layer diagnostic
 test:
 	@echo "[Make] Running test suite ..."
-# 	python3 tests/test_resolver.py
-	python3 tests/test_molecules_run.py
+	docker run --rm $(IMAGE_NAME) python3 -m pytest
 	docker run --rm \
 	  $(GPU_FLAG) \
 	  -e BACKEND=simulator \
@@ -153,6 +161,11 @@ test:
 	  $(IMAGE_NAME) \
 	  mpirun --allow-run-as-root -np 2 python3 tests/test_layers_run.py
 	@echo "[Make] All tests complete."
+
+# pytest suite only (hardware profile + molecule resolver), no MPI layer test.
+# Runs inside Docker -- the host Python has no qiskit/pyscf install.
+pytest:
+	docker run --rm $(IMAGE_NAME) python3 -m pytest
 
 
 
