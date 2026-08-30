@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Bootstrap an AWS EC2 g5.xlarge for HPCHybridStack multi-cloud validation.
+# Design + rationale: docs/AWS_DEPLOYMENT.md.
+#
+# Usage:
+#   AWS_KEY=~/.ssh/aws-vqe.pem AWS_KEY_NAME=aws-vqe AWS_SG=sg-xxxxxxxx \
+#       scripts/aws_deploy.sh
+#
+# Env vars (all required unless a default is shown):
+#   AWS_KEY        Local path to the .pem key (chmod 400).
+#   AWS_KEY_NAME   The EC2 key pair name (no path, no extension).
+#   AWS_SG         Security group id allowing SSH from your IP.
+#   AWS_REGION     Default: us-east-1.
+#   AWS_AMI        Default: latest DL AMI Ubuntu 22.04 in the region.
+#   INSTANCE_TYPE  Default: g5.xlarge.
+#
+# Cleanup is manual (see docs/AWS_DEPLOYMENT.md — deliberate).
+
+set -eo pipefail   # NOT -u; conda activate scripts hit unset vars
+
+: "${AWS_KEY:?set AWS_KEY to the .pem path}"
+: "${AWS_KEY_NAME:?set AWS_KEY_NAME to the EC2 key pair name}"
+: "${AWS_SG:?set AWS_SG to a security group id allowing SSH from your IP}"
+AWS_REGION="${AWS_REGION:-us-east-1}"
+INSTANCE_TYPE="${INSTANCE_TYPE:-g5.xlarge}"
+
+if [[ -z "${AWS_AMI:-}" ]]; then
+    echo "[deploy] resolving latest DL AMI in ${AWS_REGION}..."
+    AWS_AMI=$(aws ec2 describe-images \
+        --region "$AWS_REGION" \
+        --owners amazon \
+        --filters "Name=name,Values=Deep Learning AMI GPU PyTorch*Ubuntu 22.04*" \
+                  "Name=state,Values=available" \
+        --query 'sort_by(Images, &CreationDate)[-1].ImageId' \
+        --output text)
+    echo "[deploy] AMI: $AWS_AMI"
+fi
+
+echo "[deploy] launching ${INSTANCE_TYPE} in ${AWS_REGION}..."
+INSTANCE_ID=$(aws ec2 run-instances \
+    --region "$AWS_REGION" \
+    --image-id "$AWS_AMI" \
+    --instance-type "$INSTANCE_TYPE" \
+    --key-name "$AWS_KEY_NAME" \
+    --security-group-ids "$AWS_SG" \
+    --block-device-mappings 'DeviceName=/dev/sda1,Ebs={VolumeSize=100,VolumeType=gp3}' \
+    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=hpchybrid-validation}]' \
+    --query 'Instances[0].InstanceId' \
+    --output text)
+echo "[deploy] instance $INSTANCE_ID launching..."
+
+aws ec2 wait instance-running --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
+PUBLIC_IP=$(aws ec2 describe-instances \
+    --region "$AWS_REGION" \
+    --instance-ids "$INSTANCE_ID" \
+    --query 'Reservations[0].Instances[0].PublicIpAddress' \
+    --output text)
+echo "[deploy] running at ${PUBLIC_IP}"
+
+echo "[deploy] waiting for SSH..."
+until ssh -i "$AWS_KEY" -o StrictHostKeyChecking=no \
+          -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 \
+          ubuntu@"$PUBLIC_IP" true 2>/dev/null; do
+    sleep 5
+done
+echo "[deploy] SSH up."
+
+REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+echo "[deploy] uploading repo from $REPO_ROOT..."
+rsync -az \
+    --exclude=.git \
+    --exclude=results \
+    --exclude=__pycache__ \
+    --exclude=.pubchem_cache \
+    --exclude=build \
+    --exclude='*.pyc' \
+    -e "ssh -i $AWS_KEY -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+    "$REPO_ROOT/" ubuntu@"$PUBLIC_IP":~/quantum_classical_VQE_algorithm/
+
+echo "[deploy] running install_native.sh on the instance..."
+ssh -i "$AWS_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+    ubuntu@"$PUBLIC_IP" \
+    "cd ~/quantum_classical_VQE_algorithm && bash install_native.sh"
+
+echo "[deploy] running smoke test (make pytest)..."
+ssh -i "$AWS_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+    ubuntu@"$PUBLIC_IP" \
+    "cd ~/quantum_classical_VQE_algorithm && conda run -n hybrid-vqe make pytest" \
+    || echo "[deploy] WARNING: pytest did not exit 0 — investigate before running the workload."
+
+cat <<EOF
+
+[deploy] ready. instance: $INSTANCE_ID at $PUBLIC_IP
+
+Follow-up:
+  ssh -i $AWS_KEY ubuntu@$PUBLIC_IP
+  cd ~/quantum_classical_VQE_algorithm
+  conda activate hybrid-vqe
+  make run NP=2 MOLECULES="H2 LiH BeH2 H2O"
+
+Before terminating (do this every time):
+  rsync -av -e "ssh -i $AWS_KEY" \\
+      ubuntu@$PUBLIC_IP:~/quantum_classical_VQE_algorithm/results/ \\
+      results/
+
+Terminate when done:
+  aws ec2 terminate-instances --region $AWS_REGION --instance-ids $INSTANCE_ID
+EOF
