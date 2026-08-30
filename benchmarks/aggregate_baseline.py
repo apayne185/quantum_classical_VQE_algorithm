@@ -140,7 +140,7 @@ def main():
                 r["iters_completed"],
                 _fmt(r.get("energy_ha"), ".4f"),
                 _fmt(err_mha, ".2f"),
-                _fmt(speedup, ".2fx") if speedup else ("--" if backend != "hpchybrid" else "1.00x"),
+                (f"{speedup:.2f}x" if speedup else ("--" if backend != "hpchybrid" else "1.00x")),
             ])
 
     print(_table(rows, header, args.markdown))
