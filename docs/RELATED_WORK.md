@@ -56,6 +56,7 @@ positioning point below.
 | **Error mitigation** | T-REx (via IBM Runtime) | Configurable | Yes | Delegates | No | No |
 | **Reproducibility (containerized)** | Yes (Docker + install_native.sh + Slurm) | Partial | Yes | Partial | Yes | Yes |
 | **Statistical methodology built-in** | Yes (n=5 seeds, best-of-N, chemical-accuracy check) | No | No | No | No | No |
+| **Checkpoint / mid-run recovery** | Yes (rolling 5-checkpoint θ save, verified restart in `test_layers_run.py` layers 5–7) | No | No | Partial (via workflow state) | No | No |
 | **Published benchmarks across hardware classes** | Yes (RTX 6000 + A100 + IBM QPU, all committed) | Reference numbers only | Vendor-provided | N/A | Reference | Reference |
 
 ---
