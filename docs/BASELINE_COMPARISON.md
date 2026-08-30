@@ -33,8 +33,14 @@ To make the comparison apples-to-apples:
   the same physical GPU). Same-instance runs back-to-back to avoid cross-run
   drift.
 - **Molecules**: H2 (4q), LiH (12q), BeH2 (14q), H2O (14q). Full canonical
-  set. CO2 (30q) skipped for the initial run — too close to the memory
-  ceiling for the replicated path, unfair to Aer-GPU.
+  set. **CO2 (30q) deliberately excluded** from the baseline comparison for
+  two reasons: (1) too close to A100 memory ceiling for the replicated
+  hpchybrid path, unfair comparison to distributed-SV Aer-MPI; (2) at 16k
+  Pauli terms × 240 params it would dominate the wall-clock budget for
+  the whole comparison. Run CO2 separately via
+  `VQE_PRECISION=fp32 MOLECULES=CO2 MAX_ITERS=10 NP=1 make run` — see the
+  LARGE-COST WARNING added to `src/api/interface.py` (2026-08-30) and the
+  CO2 section in `docs/AWS_DEPLOYMENT.md`.
 - **Ansatz**: same HWE tier, same layer count. Pennylane version has to be
   hand-built to match; Qiskit versions share `AnsatzBuilder`.
 - **Optimizer**: SPSA, `MAX_ITERS=100`, same seed=42. Fixed iteration count

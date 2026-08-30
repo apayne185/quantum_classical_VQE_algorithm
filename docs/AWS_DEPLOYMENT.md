@@ -77,6 +77,34 @@ Estimated cost: ~$2 for a 90-minute session.
 3. **Before terminating**:
    `rsync -av ec2-user@<ip>:~/quantum_classical_VQE_algorithm/results/g5-a10g/ results/g5-a10g/`
 
+### CO2 ceiling test — DO NOT use default max_iters
+
+CO2 is a **30-qubit** problem with 16,170 Pauli terms. `ChemistryProblem.prepare()`
+does no active-space reduction (the registry description used to say
+"24 qubits" — that was wrong; it runs the full STO-3G space). The default
+`MAX_ITERS = max(200, 8 × num_params) = 1,920` commits to a multi-day run
+that cannot be interrupted safely mid-iter.
+
+Since 2026-08-30 the stack prints a `LARGE-COST WARNING` before starting
+if the problem exceeds ~1e11 amplitude touches per iteration or ~1e10 total
+Pauli evaluations. CO2 unambiguously triggers this. Ignore it at your
+wallet's peril.
+
+**Safe recipe** (matches the IBM QPU 10-iter budget — proves the pipeline
+runs end-to-end without pretending you'll reach convergence):
+
+```bash
+VQE_PRECISION=fp32 MOLECULES=CO2 MAX_ITERS=10 NP=1 make run
+```
+
+- `MAX_ITERS=10` — decides in ~30–90 min whether it's viable at all
+- `NP=1` — full GPU to one rank (the CO2/A100 rank-sharing OOM failure
+  mode fixed 2026-08-06 does not apply at NP=1 anyway)
+- `fp32` — halves the statevector from ~17 GB (fp64) to ~8.6 GB, comfortable
+  on the 40 GB A100
+- Real CO2 science needs distributed statevector — see
+  `docs/FUTURE_WORK.md` §2, not more iterations
+
 ## Known gotchas
 
 - **AWS Deep Learning AMI ships its own CUDA at `/usr/local/cuda`** — same

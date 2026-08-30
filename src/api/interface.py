@@ -23,6 +23,18 @@ import mpi4py
 mpi4py.rc.initialize = False
 from mpi4py import MPI
 
+# nvtx ranges make nsys profiles readable (SPSA-iter, sv-build labels show
+# up on the timeline). Fall back to a no-op decorator/contextmanager on
+# machines without nvtx installed -- production hot path pays zero cost.
+try:
+    import nvtx as _nvtx
+    _nvtx_range = _nvtx.annotate
+except ImportError:
+    from contextlib import contextmanager as _cm
+    @_cm
+    def _nvtx_range(message=None, color=None, domain=None):
+        yield
+
 _GPU_SV_AVAILABLE = False
 _AerSimulator = None
 try:
@@ -111,15 +123,16 @@ class HPCHybridStack:
         # the same shared ansatz template via a separate transpile() call.
         # aer_precision is set once per vqe_optimize() call (see there), not on
         # every evaluation -- it doesn't change mid-run.
-        if self._gpu_sv:
-            from qiskit.quantum_info import Statevector as _SV
-            sim = self._aer_gpu
-            bound_circuit.save_statevector()
-            result = sim.run(bound_circuit).result()
-            sv_data = result.get_statevector(bound_circuit)
-            return _SV(sv_data)
-        else:
-            return Statevector(bound_circuit)
+        with _nvtx_range(message="sv-build", color="green", domain="vqe"):
+            if self._gpu_sv:
+                from qiskit.quantum_info import Statevector as _SV
+                sim = self._aer_gpu
+                bound_circuit.save_statevector()
+                result = sim.run(bound_circuit).result()
+                sv_data = result.get_statevector(bound_circuit)
+                return _SV(sv_data)
+            else:
+                return Statevector(bound_circuit)
 
 
     def vqe_optimize(self, problem: QuantumProblem, max_iterations:int=100, tolerance:float=1.6e-3, restart_from:str | None = None, checkpoint_dir: str = "checkpoints", start_iter: int = 0, seed: int | None = None) -> tuple[np.ndarray, list[float]]:
@@ -167,6 +180,28 @@ class HPCHybridStack:
                     f"VQE_PRECISION=fp32, or a larger-memory GPU before waiting on this."
                 )
 
+            # Compute-cost pre-flight: SPSA needs 2 statevector builds per iter, and each
+            # rank evaluates its Pauli-term slice against that statevector. Blocks the
+            # exact CO2 failure mode -- 16k Pauli terms * 240 params * default max_iters
+            # would silently commit to a multi-hour run at $$$/hr. See gap H in
+            # docs/KNOWN_GAPS.md: only Pauli evaluation is distributed, statevector
+            # construction is redundant per rank.
+            n_pauli = len(problem.pauli_terms)
+            evals_per_iter = 2  # SPSA theta_plus + theta_minus
+            total_pauli_evals = max_iterations * evals_per_iter * n_pauli
+            # very rough cost proxy: each Pauli eval touches all 2^n amplitudes; per-iter
+            # work scales with (2^n) * n_pauli. Warn at ~10^11 amplitude touches per iter.
+            per_iter_work = (2 ** num_qubits) * n_pauli
+            if per_iter_work > 1e11 or total_pauli_evals > 1e10:
+                print(
+                    f"[Stack] LARGE-COST WARNING: {num_qubits}q x {n_pauli} Pauli terms "
+                    f"x {max_iterations} iters = ~{total_pauli_evals:.1e} Pauli evaluations "
+                    f"(~{per_iter_work:.1e} amplitude touches per iteration). This will "
+                    f"likely take many hours per iteration on GPU and cannot be interrupted "
+                    f"safely mid-iter. Consider MAX_ITERS<=10 for ceiling tests, reps=1 to "
+                    f"halve params, or wait for distributed statevector (docs/FUTURE_WORK.md #2)."
+                )
+
         os.makedirs(checkpoint_dir, exist_ok=True)
         theta = np.zeros(num_params, dtype=np.float64)
 
@@ -204,6 +239,11 @@ class HPCHybridStack:
         for loop_k in range(1, max_iterations +1):
             k = loop_k + start_iter
             stop_signal[0] = 0
+
+            # Iter boundary shows up on the nsys timeline as one region --
+            # nested sv-build ranges appear inside it.
+            _iter_range = _nvtx_range(message=f"spsa-iter-{k}", color="blue", domain="vqe")
+            _iter_range.__enter__()
 
             combined_params = np.zeros(num_params*2, dtype=np.float64)
             ck = np.float64(0.0)
@@ -277,6 +317,8 @@ class HPCHybridStack:
 
             comm.Bcast(theta, root=0)
             comm.Bcast(stop_signal, root=0)
+
+            _iter_range.__exit__(None, None, None)
 
             if stop_signal[0] == 1:
                 break

@@ -180,8 +180,8 @@ MOLECULE_REGISTRY = {
     "CO2": {
         "geometry": "C 0 0 0; O 0 0 1.16; O 0 0 -1.16",
         "fci_energy": -187.6,
-        "reps": 2,
-        "description": "Carbon dioxide (CO2), 22 electrons, 24 qubits (A100 ceiling)",
+        "reps": 1,
+        "description": "Carbon dioxide (CO2), 22 electrons, 30 qubits (ceiling test, not a convergence run: 16k Pauli terms x default max_iters is multi-day; use MAX_ITERS<=10)",
     },
     "NH3":{
         "geometry": (
