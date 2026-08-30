@@ -167,6 +167,28 @@ class HPCHybridStack:
                     f"VQE_PRECISION=fp32, or a larger-memory GPU before waiting on this."
                 )
 
+            # Compute-cost pre-flight: SPSA needs 2 statevector builds per iter, and each
+            # rank evaluates its Pauli-term slice against that statevector. Blocks the
+            # exact CO2 failure mode -- 16k Pauli terms * 240 params * default max_iters
+            # would silently commit to a multi-hour run at $$$/hr. See gap H in
+            # docs/KNOWN_GAPS.md: only Pauli evaluation is distributed, statevector
+            # construction is redundant per rank.
+            n_pauli = len(problem.pauli_terms)
+            evals_per_iter = 2  # SPSA theta_plus + theta_minus
+            total_pauli_evals = max_iterations * evals_per_iter * n_pauli
+            # very rough cost proxy: each Pauli eval touches all 2^n amplitudes; per-iter
+            # work scales with (2^n) * n_pauli. Warn at ~10^11 amplitude touches per iter.
+            per_iter_work = (2 ** num_qubits) * n_pauli
+            if per_iter_work > 1e11 or total_pauli_evals > 1e10:
+                print(
+                    f"[Stack] LARGE-COST WARNING: {num_qubits}q x {n_pauli} Pauli terms "
+                    f"x {max_iterations} iters = ~{total_pauli_evals:.1e} Pauli evaluations "
+                    f"(~{per_iter_work:.1e} amplitude touches per iteration). This will "
+                    f"likely take many hours per iteration on GPU and cannot be interrupted "
+                    f"safely mid-iter. Consider MAX_ITERS<=10 for ceiling tests, reps=1 to "
+                    f"halve params, or wait for distributed statevector (docs/FUTURE_WORK.md #2)."
+                )
+
         os.makedirs(checkpoint_dir, exist_ok=True)
         theta = np.zeros(num_params, dtype=np.float64)
 
