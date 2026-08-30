@@ -19,4 +19,6 @@ pytest>=7.0
 # rdkit
 
 # Optional: results analysis plots
-# matplotlib>=3.7
+# matplotlib
+pennylane
+pennylane-lightning>=3.7
