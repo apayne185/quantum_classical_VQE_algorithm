@@ -23,6 +23,18 @@ import mpi4py
 mpi4py.rc.initialize = False
 from mpi4py import MPI
 
+# nvtx ranges make nsys profiles readable (SPSA-iter, sv-build labels show
+# up on the timeline). Fall back to a no-op decorator/contextmanager on
+# machines without nvtx installed -- production hot path pays zero cost.
+try:
+    import nvtx as _nvtx
+    _nvtx_range = _nvtx.annotate
+except ImportError:
+    from contextlib import contextmanager as _cm
+    @_cm
+    def _nvtx_range(message=None, color=None, domain=None):
+        yield
+
 _GPU_SV_AVAILABLE = False
 _AerSimulator = None
 try:
@@ -111,15 +123,16 @@ class HPCHybridStack:
         # the same shared ansatz template via a separate transpile() call.
         # aer_precision is set once per vqe_optimize() call (see there), not on
         # every evaluation -- it doesn't change mid-run.
-        if self._gpu_sv:
-            from qiskit.quantum_info import Statevector as _SV
-            sim = self._aer_gpu
-            bound_circuit.save_statevector()
-            result = sim.run(bound_circuit).result()
-            sv_data = result.get_statevector(bound_circuit)
-            return _SV(sv_data)
-        else:
-            return Statevector(bound_circuit)
+        with _nvtx_range(message="sv-build", color="green", domain="vqe"):
+            if self._gpu_sv:
+                from qiskit.quantum_info import Statevector as _SV
+                sim = self._aer_gpu
+                bound_circuit.save_statevector()
+                result = sim.run(bound_circuit).result()
+                sv_data = result.get_statevector(bound_circuit)
+                return _SV(sv_data)
+            else:
+                return Statevector(bound_circuit)
 
 
     def vqe_optimize(self, problem: QuantumProblem, max_iterations:int=100, tolerance:float=1.6e-3, restart_from:str | None = None, checkpoint_dir: str = "checkpoints", start_iter: int = 0, seed: int | None = None) -> tuple[np.ndarray, list[float]]:
@@ -227,6 +240,11 @@ class HPCHybridStack:
             k = loop_k + start_iter
             stop_signal[0] = 0
 
+            # Iter boundary shows up on the nsys timeline as one region --
+            # nested sv-build ranges appear inside it.
+            _iter_range = _nvtx_range(message=f"spsa-iter-{k}", color="blue", domain="vqe")
+            _iter_range.__enter__()
+
             combined_params = np.zeros(num_params*2, dtype=np.float64)
             ck = np.float64(0.0)
 
@@ -299,6 +317,8 @@ class HPCHybridStack:
 
             comm.Bcast(theta, root=0)
             comm.Bcast(stop_signal, root=0)
+
+            _iter_range.__exit__(None, None, None)
 
             if stop_signal[0] == 1:
                 break
