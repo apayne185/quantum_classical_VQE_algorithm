@@ -37,7 +37,7 @@ make slurm-run                       # Full benchmark on 1 GPU
 make slurm-multi-seed                # 3-seed statistical run for publication error bars
 ```
 
-Tested on the IE University capstone cluster (Debian 13, Slurm, CUDA 12.4, RTX 6000 Ada). Adapt `scripts/slurm_*.sh` partition names/times for other sites.
+Tested on the IE University capstone cluster (Debian 13, Slurm, CUDA 12.4, RTX 6000 Ada). Adapt `scripts/slurm_*.sh` partition names/times when using any other sites.
 
 ### Path C — Interactive walkthrough
 
