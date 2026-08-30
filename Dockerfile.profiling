@@ -1,0 +1,30 @@
+# Nsight Systems variant of the production Dockerfile.
+# Extends the production image with the nsys CLI so kernel + MPI + NVTX
+# timelines can be captured without changing the library stack.
+#
+# Build:
+#   docker build -f Dockerfile.profiling -t vqe-mpi-gpu:profiling .
+#
+# Run (needs --cap-add for CUPTI counter access under nsys):
+#   docker run --rm --gpus all --cap-add=SYS_ADMIN \
+#       -v $(pwd)/results:/app/results \
+#       vqe-mpi-gpu:profiling scripts/nsys_profile.sh
+#
+# Design: docs/PROFILING.md.
+
+FROM vqe-mpi-gpu:latest
+
+# Nsight Systems CLI. NVIDIA's apt repo is already trusted in the base image
+# (nvidia/cuda:12.6.3-devel-ubuntu22.04). Pin a specific version so a rebuild
+# months later reproduces the same profiler output format.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        nsight-systems-2025.1.1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# NVTX Python bindings for annotating hot regions inline (VQE iteration
+# boundary, statevector build, expectation summation). Optional — the profile
+# still shows CUDA kernels without these, but ranges are much easier to read.
+RUN pip3 install --no-cache-dir nvtx
+
+# Sanity: nsys must resolve on PATH at runtime.
+RUN nsys --version
