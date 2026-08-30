@@ -10,7 +10,7 @@ numpy>=2.5.2
 scipy>=1.18.0
 
 # Testing
-pytest>=7.0
+pytest>=9.1.1
 
 # Optional: GPU acceleration (requires CUDA 12.2)
 # cupy-cuda12x>=12.0
