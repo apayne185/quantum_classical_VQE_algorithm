@@ -40,3 +40,6 @@ MEMORY.md
 thesis_new_sections.tex
 thesis_data_tables.tex
 Miniforge3-Linux-x86_64.sh
+
+# Private extraction from CLAUDE.md — session notes, branch/publication scratch
+.claude-docs/
