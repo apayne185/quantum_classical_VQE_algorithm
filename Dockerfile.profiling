@@ -18,7 +18,7 @@ FROM vqe-mpi-gpu:latest
 # (nvidia/cuda:12.6.3-devel-ubuntu22.04). Pin a specific version so a rebuild
 # months later reproduces the same profiler output format.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        nsight-systems-2025.1.1 \
+        nsight-systems-2025.5.2 \
     && rm -rf /var/lib/apt/lists/*
 
 # NVTX Python bindings for annotating hot regions inline (VQE iteration

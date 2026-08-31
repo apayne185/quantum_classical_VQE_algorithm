@@ -147,10 +147,16 @@ def _run_lightning(molecule, max_iters, seed, out_dir):
 
     # Prefer LightningGPU when the wheel is present, else the CPU fallback.
     device_label = "cpu-lightning.qubit"
+    # Print the actual failure reason if lightning.gpu falls through --
+    # bare `except Exception: pass` silently masked a driver mismatch on
+    # the 2026-08-30 cloud session so the CPU fallback was hit unnoticed.
     try:
         dev = qml.device("lightning.gpu", wires=n_qubits)
         device_label = "gpu-lightning.gpu"
-    except Exception:
+    except Exception as _e:
+        print(f"[lightning] lightning.gpu unavailable "
+              f"({type(_e).__name__}: {_e}) -- falling back to lightning.qubit (CPU)",
+              flush=True)
         dev = qml.device("lightning.qubit", wires=n_qubits)
 
     # Assemble Pennylane Hamiltonian from our (pauli_string, coeff) list.
@@ -251,7 +257,10 @@ def _run_aer_mpi(molecule, max_iters, seed, out_dir):
         c = QuantumCircuit(1); c.h(0); c.save_statevector()
         sim.run(c).result()
         device_label = "gpu-aer-blocking"
-    except Exception:
+    except Exception as _e:
+        print(f"[aer-mpi] Aer GPU unavailable "
+              f"({type(_e).__name__}: {_e}) -- falling back to CPU AerSimulator",
+              flush=True)
         sim = AerSimulator(**aer_opts)
         device_label = "cpu-aer-blocking"
 

@@ -236,9 +236,23 @@ class HPCHybridStack:
         stop_signal = np.array([0], dtype=np.int32)
 
 
+        _run_t0 = _time.perf_counter()          # wall-clock start of the whole run
+        _iter_wall_history: list[float] = []    # rolling per-iter durations for ETA
+
         for loop_k in range(1, max_iterations +1):
             k = loop_k + start_iter
             stop_signal[0] = 0
+            _iter_t0 = _time.perf_counter()
+
+            # START-of-iter heartbeat -- for problems where a single iter
+            # takes minutes (large molecules, 30q+), the end-of-iter print
+            # is not enough to distinguish "loop running" from "hung".
+            # Only heartbeat on rank 0 to keep the log clean under MPI.
+            if self.rank == 0 and (num_qubits >= 20 or num_params >= 200):
+                from datetime import datetime as _dt
+                print(f"[iter {k:04d}] start {_dt.now().strftime('%H:%M:%S')} "
+                      f"({num_qubits}q, {len(problem.pauli_terms)} Pauli terms, "
+                      f"{num_params} params)", flush=True)
 
             # Iter boundary shows up on the nsys timeline as one region --
             # nested sv-build ranges appear inside it.
@@ -298,7 +312,22 @@ class HPCHybridStack:
                 history.append(current_energy)
                 prev_energy = current_energy
 
-                print(f"Iter {k:04d} | Energy: {current_energy:.6f} | Delta: {delta_e:.2e} | M: {masking_metric:.4f} | Path: {used_path}")
+                _iter_wall = _time.perf_counter() - _iter_t0
+                _iter_wall_history.append(_iter_wall)
+                # Rolling median (last 5) is more stable than avg for ETA display.
+                _recent = _iter_wall_history[-5:]
+                _median = sorted(_recent)[len(_recent) // 2]
+                _remaining = max_iterations - loop_k
+                _eta_sec = int(_median * _remaining)
+                _eta_str = f"{_eta_sec // 3600:d}h{(_eta_sec % 3600) // 60:02d}m" if _eta_sec >= 3600 else f"{_eta_sec // 60:d}m{_eta_sec % 60:02d}s"
+
+                print(
+                    f"Iter {k:04d}/{max_iterations} "
+                    f"| E: {current_energy:.6f} | Δ: {delta_e:.2e} | M: {masking_metric:.4f} "
+                    f"| iter={_iter_wall:6.2f}s | ETA: {_eta_str} "
+                    f"| Path: {used_path}",
+                    flush=True,
+                )
 
                 if loop_k >= min_iters_before_convergence and len(history) >= 10:
                     recent = history[-10:]
