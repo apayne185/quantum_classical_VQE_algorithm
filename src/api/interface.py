@@ -244,6 +244,16 @@ class HPCHybridStack:
             stop_signal[0] = 0
             _iter_t0 = _time.perf_counter()
 
+            # START-of-iter heartbeat -- for problems where a single iter
+            # takes minutes (large molecules, 30q+), the end-of-iter print
+            # is not enough to distinguish "loop running" from "hung".
+            # Only heartbeat on rank 0 to keep the log clean under MPI.
+            if self.rank == 0 and (num_qubits >= 20 or num_params >= 200):
+                from datetime import datetime as _dt
+                print(f"[iter {k:04d}] start {_dt.now().strftime('%H:%M:%S')} "
+                      f"({num_qubits}q, {len(problem.pauli_terms)} Pauli terms, "
+                      f"{num_params} params)", flush=True)
+
             # Iter boundary shows up on the nsys timeline as one region --
             # nested sv-build ranges appear inside it.
             _iter_range = _nvtx_range(message=f"spsa-iter-{k}", color="blue", domain="vqe")

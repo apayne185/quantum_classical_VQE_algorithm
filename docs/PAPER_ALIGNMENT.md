@@ -173,13 +173,23 @@ the next session).
   competitive positioning — the gap opens at higher qubit counts, which
   is exactly where `docs/FUTURE_WORK.md` §2 says the rearchitecture
   matters.
-- **CO2 root cause found and fixed** (commit a6e46aa): the 100-min hang
-  was NOT statevector — it was `EfficientSU2(entanglement="full").decompose()`
-  on 30 qubits generating 435 CNOTs/layer × 2 layers, dominating Python-side
-  wall-clock while the GPU sat idle. Fix caps `hwe_adaptive` entanglement
-  to `"linear"` above 20 qubits (preserves all ≤14q behavior exactly).
-  Also added phase-by-phase `prepare()` timestamps and per-iter ETA in the
-  SPSA loop so future long runs are diagnosable in real time.
+- **CO2 diagnosis is layered — not a single root cause** (commits a6e46aa +
+  next). The two logs
+  (`results/a100-sxm4-40gb/simulator/run_20260{730,830}_*.log`) both
+  successfully completed `prepare()` and printed the ansatz summary line —
+  meaning the ansatz build itself was NOT the primary hang. What hung was
+  the first SPSA iteration, which at 30q with 16,170 Pauli terms is a
+  bandwidth-bound expectation on a 2^30 statevector: **1.7e13 amplitude
+  touches per expectation × 2 per iter**. Even at A100 memory bandwidth
+  (~1.5 TB/s) this is ~90 seconds per expectation minimum, plus Aer
+  transpile of a 30q 870-gate circuit which is minutes of Python-side
+  work. Realistic first-iter time on CO2 is 5–20 minutes at fp32 NP=1,
+  not "hours" as earlier claimed. The three-part fix (entanglement=linear
+  above 20q, phase timestamps in prepare(), per-iter ETA + start-of-iter
+  heartbeat) makes CO2 *diagnosable* and reduces circuit-processing
+  overhead by ~15× — but does not change the bandwidth-bound expectation
+  cost, which remains the dominant factor and requires distributed SV
+  (`docs/FUTURE_WORK.md` §2) to substantially reduce.
 - **Lightning-CPU** device selection: `pip install pennylane-lightning-gpu`
   succeeded on-instance but `qml.device("lightning.gpu", ...)` still
   fell through to `lightning.qubit`. Cause unclear — worth a 15-min
