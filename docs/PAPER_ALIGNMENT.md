@@ -147,25 +147,59 @@ the next session).
 
 ## What needs cloud GPU vs what is already provable now
 
-**Provable NOW locally (no GPU, no spend):**
-- All committed A100 + RTX 6000 + IBM data — regenerate all tables via
+**Committed data as of 2026-08-31 (post-cloud-session):**
+
+- All prior A100 + RTX 6000 + IBM data — regenerate all tables via
   `aggregate_seeds.py`, `aggregate_scaling.py`, `run_analysis.py`.
 - All related-work + positioning content in `docs/`.
 - Reproducibility claim via `make trial NP=2` (Docker CPU fallback) —
   passes 7/7 on any laptop.
 - Statistical methodology (best-of-N + median±range) on existing JSONs.
+- **NEW**: `results/baseline_comparison/` — 12-run 3-backend x 4-molecule
+  sweep (hpchybrid GPU, aer-mpi GPU distributed-SV, lightning CPU).
+  `paper_table.md` + `paper_table.txt` render the paper's Table 1.
+- **NEW**: `results/profiling/H2O_np2_iters10_*.nsys-rep` — Nsight timeline
+  with NVTX ranges (spsa-iter, sv-build). ~59 KB report.
+- **NEW**: `results/a100-sxm4-40gb/simulator/simulator_20260830_213028.json` —
+  H2O 896-iter re-run, exact bit-for-bit match to committed 2026-07-27 data.
+  Proves the NVTX + pre-flight additions did not perturb numerics; every
+  committed A100 JSON remains authoritative.
 
-**Needs the next cloud-GPU session (~$10, ~2 hours):**
-1. Retry CO2 with the **new safety recipe**:
-   `VQE_PRECISION=fp32 MOLECULES=CO2 MAX_ITERS=10 NP=1 make run` —
-   validates the pre-flight warning added `interface.py` and the
-   `reps=1` registry fix.
-2. Baseline comparison: 3 backends × 4 molecules × 1 seed. Populates
-   `results/baseline_comparison/` for `aggregate_baseline.py`.
-3. Nsight profile: one H2O 10-iter run under `scripts/nsys_profile.sh`.
-4. AWS multi-cloud spot check: `scripts/aws_deploy.sh` + one seed=42
-   sweep on g5.xlarge.
-5. Optional: 5 additional LiH seeds to complete the n=10 bimodal
+**Session findings that shape the paper:**
+
+- At ≤14 qubits, **hpchybrid ≈ aer-mpi** (H2O: 18.69s vs 18.54s at 100 iters,
+  same seed). The distributed-SV penalty of the replicated design is
+  negligible at the sizes the paper actually publishes. This is honest
+  competitive positioning — the gap opens at higher qubit counts, which
+  is exactly where `docs/FUTURE_WORK.md` §2 says the rearchitecture
+  matters.
+- **CO2 root cause found and fixed** (commit a6e46aa): the 100-min hang
+  was NOT statevector — it was `EfficientSU2(entanglement="full").decompose()`
+  on 30 qubits generating 435 CNOTs/layer × 2 layers, dominating Python-side
+  wall-clock while the GPU sat idle. Fix caps `hwe_adaptive` entanglement
+  to `"linear"` above 20 qubits (preserves all ≤14q behavior exactly).
+  Also added phase-by-phase `prepare()` timestamps and per-iter ETA in the
+  SPSA loop so future long runs are diagnosable in real time.
+- **Lightning-CPU** device selection: `pip install pennylane-lightning-gpu`
+  succeeded on-instance but `qml.device("lightning.gpu", ...)` still
+  fell through to `lightning.qubit`. Cause unclear — worth a 15-min
+  follow-up to check driver/wheel compatibility. All lightning wall-clock
+  data is CPU-only; paper table caption must reflect this.
+
+**Still needs a cloud-GPU session (~$5, ~90 min):**
+
+1. **Retry CO2 with the new fixes** (commit a6e46aa) —
+   `VQE_PRECISION=fp32 MOLECULES=CO2 MAX_ITERS=10 NP=1 make run`.
+   With `linear` entanglement + phase timestamps, first iter should
+   complete in minutes not hours. If yes, you get a 30q result to include.
+   If still slow, the phase timestamps tell you exactly where.
+2. **Lightning-GPU device selection fix** — install pennylane-lightning-gpu
+   with matching CUDA wheel, verify `qml.device("lightning.gpu")` binds
+   to GPU, rerun the 4-molecule lightning subset (~10 min, ~$0.25).
+3. **AWS multi-cloud spot check** — `scripts/aws_deploy.sh` + one seed=42
+   sweep on g5.xlarge. Not blocking; nice-to-have for the vendor-portability
+   claim.
+4. **Optional**: 5 additional LiH seeds to complete the n=10 bimodal
    demonstration (thesis had n=10 for LiH; A100 currently only has n=5).
 
 ---
