@@ -1,0 +1,15 @@
+{
+  "baseline_backend": "lightning",
+  "device": "cpu-lightning.qubit",
+  "molecule": "H2O",
+  "num_qubits": 14,
+  "num_pauli": 1086,
+  "num_params": 84,
+  "max_iters": 100,
+  "iters_completed": 100,
+  "seed": 42,
+  "wall_seconds": 9.795473135000066,
+  "wall_per_iter": 0.09795473135000066,
+  "energy_ha": -75.83644278155552,
+  "fci_ha": -75.01243743249303
+}
