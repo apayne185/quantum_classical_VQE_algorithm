@@ -83,10 +83,16 @@ def build_ansatz(num_qubits: int, tier: str, reps: int, mol_problem=None, mapper
 
     elif tier == "hwe_adaptive":
         adaptive_reps = min(reps + 1, 3)
+        # full entanglement generates n*(n-1)/2 CNOTs per layer -- 435 at n=30.
+        # Combined with .decompose() and QASM3 serialization this dominates
+        # wall-clock at large n (>100 min Python-side on CO2 30q). Fall back
+        # to linear entanglement above the threshold: same expressibility class
+        # (HWE is not universal either way), 15x fewer gates.
+        entanglement = "full" if num_qubits <= 20 else "linear"
         ansatz = EfficientSU2(
             num_qubits,
             reps=adaptive_reps,
-            entanglement="full",
+            entanglement=entanglement,
         ).decompose()
 
     elif tier == "uccsd" and mol_problem is not None and mapper is not None:
@@ -255,9 +261,20 @@ class ChemistryProblem(QuantumProblem):
         if self._prepared:
             return
 
+        # Per-phase timestamps -- CO2 sat silent for >100 min in ansatz build
+        # with no way to tell if the process was frozen or making progress.
+        # These give a heartbeat so users can tell live progress from a hang.
+        import time as _t
+        _t0 = _t.perf_counter()
+        def _phase(msg):
+            print(f"[Chemistry:{self.name}] [+{_t.perf_counter() - _t0:6.1f}s] {msg}",
+                  flush=True)
+
+        _phase("driver.run() -- PySCF electronic structure")
         driver = PySCFDriver(atom=self.coords, basis="sto-3g", unit=DistanceUnit.ANGSTROM)
         mol_problem = driver.run()
 
+        _phase("second_q_op() + JW mapping")
         hamiltonian = mol_problem.hamiltonian.second_q_op()
         mapper = JordanWignerMapper()
         qubit_op = mapper.map(hamiltonian)
@@ -266,9 +283,12 @@ class ChemistryProblem(QuantumProblem):
         self.pauli_terms = [(op, float(coeff.real)) for op, coeff in raw]
 
         self.num_qubits = qubit_op.num_qubits
+        _phase(f"Hamiltonian: {len(self.pauli_terms)} Pauli terms, {self.num_qubits} qubits")
+
         self.diagnostics = estimate_correlation_strength(self.pauli_terms)
 
 
+        _phase("FCI ground-truth via PySCF")
         # Compute FCI ground truth  (will override registry value if available)
         try:
             from pyscf import gto, fci as pyscf_fci
@@ -288,6 +308,7 @@ class ChemistryProblem(QuantumProblem):
             self.ansatz_tier = self.diagnostics["recommended_tier"]
             tier_source = "auto"
 
+        _phase(f"build_ansatz(tier={self.ansatz_tier}, reps={self.reps}) -- this is the slow one at high n")
         ansatz, n_params = build_ansatz(
             self.num_qubits, self.ansatz_tier, self.reps,
             mol_problem=mol_problem, mapper=mapper)
@@ -295,10 +316,12 @@ class ChemistryProblem(QuantumProblem):
         self.ansatz_circuit = ansatz
 
 
+        _phase(f"QASM3 serialization ({n_params} params, {ansatz.size()} gates)")
         try:        # QASM export can fail for nondecomposed UCCSD
             self.circuit_qasm = qasm3.dumps(ansatz)
         except Exception:
             self.circuit_qasm = qasm3.dumps(ansatz.decompose())
+        _phase("prepare() complete")
         fci_str = (f"FCI reference: {self.fci_energy:.4f} Ha" if self.fci_energy is not None else "")
         tier_label = ANSATZ_TIERS.get(self.ansatz_tier, {}).get("label", self.ansatz_tier)
 
