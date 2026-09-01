@@ -1,0 +1,15 @@
+{
+  "baseline_backend": "lightning",
+  "device": "cpu-lightning.qubit",
+  "molecule": "N2",
+  "num_qubits": 20,
+  "num_pauli": 2951,
+  "num_params": 120,
+  "max_iters": 50,
+  "iters_completed": 50,
+  "seed": 42,
+  "wall_seconds": 620.8864815009997,
+  "wall_per_iter": 12.417729630019995,
+  "energy_ha": -110.56886316179208,
+  "fci_ha": -107.64818429172499
+}

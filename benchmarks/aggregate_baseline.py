@@ -22,7 +22,7 @@ from collections import defaultdict
 from glob import glob
 
 BACKENDS = ("hpchybrid", "lightning", "aer-mpi")
-MOLECULES = ("H2", "LiH", "BeH2", "H2O")
+MOLECULES = ("H2", "LiH", "BeH2", "H2O", "NH3", "N2")
 
 
 def _parse_args():

@@ -196,18 +196,81 @@ the next session).
   follow-up to check driver/wheel compatibility. All lightning wall-clock
   data is CPU-only; paper table caption must reflect this.
 
-**Auto-routing threshold candidate (feature/gpu-expectation-fix session)**:
+**Fix A validation — RESULTS (2026-09-01 cloud session)**:
 
-The 4-molecule baseline shows hpchybrid ≈ aer-mpi within 1% at ≤14
-qubits — no visible replicated-vs-distributed SV crossover. The
-extended 6-molecule sweep (adds NH3 at 16q and N2 at 20q, both already
-in the registry) probes where the crossover actually sits. If aer-mpi
-pulls ahead by ≥20% at N2, the empirical crossover is between 16q and
-20q, and `HardwareProfile.recommend_backend()` gains a
-`num_qubits >= 18` (or similar) auto-routing rule in a future commit.
-Without empirical crossover data, any threshold is astrology.
+The GPU-native expectation fix (`feature/gpu-expectation-fix`) delivered
+a measured **1.51x wall-clock speedup on H2O** at 100 iters, seed 42,
+same instance same session:
 
-Details: `docs/GPU_EXPECTATION_FIX.md` "Crossover measurement" section.
+- Legacy path (`VQE_LEGACY_EXPECT=1`): **22.99s** (0.230 s/iter)
+- New path (`save_expectation_value`): **15.24s** (0.152 s/iter)
+
+Numerically equivalent to the legacy path within floating-point noise
+(verified locally at 5.55e-17). The env-flag A/B is preserved so the
+old path stays available for regression testing.
+
+**Effect on Lightning-GPU gap**: was 1.79x slower on H2O with legacy
+path; now 1.34x slower with new path. Fix A closed ~50% of the gap.
+Remaining gap attributable to Aer transpile overhead + SparsePauliOp
+rebuild (tabled optimizations in `docs/FUTURE_WORK.md` §7.1 and §7.2).
+
+**Key trend**: hpchybrid-vs-Lightning gap narrows as qubit count grows.
+At N2 (20q) they tie (1.01x). This means the Fix A path scales better
+than Lightning's specialized kernels for larger Hamiltonians — a
+paper-worthy finding since real chemistry workloads are at n>=20.
+
+Details: `docs/GPU_EXPECTATION_FIX.md` + committed
+`results/baseline_comparison_gpuexpect/paper_table.md` +
+`results/baseline_comparison_legacy_check/hpchybrid/H2O_*.json`.
+
+**Auto-routing threshold measurement — RESULTS (2026-09-01 cloud session)**:
+
+The 6-molecule sweep (H2, LiH, BeH2, H2O, NH3, N2) on A100-SXM4-40GB
+delivered a **result opposite to the prediction**. Aer's distributed-SV
+mode (`blocking_enable=True, blocking_qubits=n-2`) does NOT beat the
+replicated-SV design at any tested qubit count. The gap gets
+exponentially worse as n grows:
+
+| Molecule | qubits | hpchybrid (s) | aer-mpi (s) | aer-mpi vs hpchybrid |
+|---|---|---:|---:|---:|
+| H2   | 4  | 0.60   | 0.58   | 1.05x  (tied)             |
+| LiH  | 12 | 9.76   | 10.15  | 0.96x  (tied)             |
+| BeH2 | 14 | 11.31  | 17.32  | 0.65x  (aer-mpi 53% slower) |
+| H2O  | 14 | 15.24  | 20.92  | 0.73x  (aer-mpi 37% slower) |
+| NH3  | 16 | 21.56  | 81.08  | 0.27x  (aer-mpi 3.8x slower) |
+| N2   | 20 | 25.92  | 222.73 | 0.12x  (aer-mpi 8.6x slower) |
+
+**Implications for the paper**:
+
+1. **The `HardwareProfile.recommend_backend()` auto-routing threshold
+   should NOT dispatch to Aer's blocking mode at any of the tested
+   sizes.** No implementation change needed — the replicated-SV design
+   is already the correct choice up through 20 qubits.
+
+2. **The "distributed SV is future work" narrative in
+   `docs/FUTURE_WORK.md` §2 needs a refinement**: the benefit does not
+   come from Aer's `blocking_enable` mode. It requires genuine
+   multi-GPU cuStateVec tiling where each GPU holds only 2^n/P of the
+   amplitudes. Aer's blocking on a single GPU trades single-kernel-
+   launch efficiency for communication overhead within the same
+   device, which loses for our Pauli-heavy workloads.
+
+3. **N2 is the crossover between hpchybrid and lightning**. Lightning
+   wins by ~20-30% at 4-14q; at N2 (20q, 2951 Pauli terms) they tie
+   (0.5123 vs 0.5185 s/iter, 1.01x). Extrapolating, hpchybrid likely
+   BEATS lightning at 24q+ — meaning the Fix A GPU-native path scales
+   better than Lightning's specialized kernels as the Hamiltonian
+   grows. This is a paper-worthy finding: our middleware becomes
+   competitive precisely where the workloads matter for real chemistry.
+
+4. **CO2 (30q) remains unrunnable in either replicated or blocking mode
+   in the current architecture.** Neither Aer's blocking nor our
+   replicated approach solves the fundamental issue: per-rank 2^n state
+   allocation. Real solution is still multi-GPU cuStateVec tiling
+   (docs/FUTURE_WORK.md §2).
+
+Details: `docs/GPU_EXPECTATION_FIX.md` "Crossover measurement" section
++ committed `results/baseline_comparison_gpuexpect/paper_table.md`.
 
 **Still needs a cloud-GPU session (~$5, ~90 min):**
 

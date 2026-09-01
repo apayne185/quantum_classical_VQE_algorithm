@@ -1,0 +1,16 @@
+{
+  "baseline_backend": "aer-mpi",
+  "device": "gpu-aer-blocking",
+  "blocking_qubits": 10,
+  "molecule": "LiH",
+  "num_qubits": 12,
+  "num_pauli": 631,
+  "num_params": 96,
+  "max_iters": 100,
+  "iters_completed": 100,
+  "seed": 42,
+  "wall_seconds": 10.14978510800006,
+  "wall_per_iter": 0.1014978510800006,
+  "energy_ha": -5.2675706545317,
+  "fci_ha": -7.882472287557178
+}

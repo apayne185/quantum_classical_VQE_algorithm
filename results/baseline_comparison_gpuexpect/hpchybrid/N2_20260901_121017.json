@@ -1,0 +1,15 @@
+{
+  "baseline_backend": "hpchybrid",
+  "device": "gpu-custatevec",
+  "molecule": "N2",
+  "num_qubits": 20,
+  "num_pauli": 2951,
+  "num_params": 160,
+  "max_iters": 50,
+  "iters_completed": 50,
+  "seed": 42,
+  "wall_seconds": 25.924120933999802,
+  "wall_per_iter": 0.518482418679996,
+  "energy_ha": -110.50372305933217,
+  "fci_ha": -107.64818429172539
+}

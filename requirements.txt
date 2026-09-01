@@ -21,4 +21,5 @@ pytest>=9.1.1
 # Optional: results analysis plots
 # matplotlib
 pennylane
-pennylane-lightning>=3.7
+pennylane-lightning
+pennylane-lightning-gpu>=3.7
