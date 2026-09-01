@@ -132,6 +132,42 @@ wrong with the new path — do NOT merge.
   the fallback stays available; drop the branch and pursue Fix B
   (transpile caching) instead.
 
+## IBM triple-integration validation (optional, ~$0 on open-plan)
+
+The fix also applies to `_evaluate_ibm_estimator` — the classical
+"T_accel" work done in parallel with QPU submission uses the same
+build-SV + numpy-expectation pattern. Ported in the same commit with
+the same env-flag semantics (`VQE_LEGACY_EXPECT=1` reverts both paths).
+
+**Why this matters for the masking metric**: T_accel drops, T_comm
+(QPU RTT, 32–60s) stays the same. The masking ratio M = T_accel /
+T_comm was already 0.5–1.0 on the H2 IBM run per the thesis; with the
+fix it drops further, meaning the classical work no longer fully masks
+the QPU wait. This is a **paper-relevant finding** — either:
+- Frame as "the improvement is only meaningful for larger molecules
+  where T_accel remains substantial," or
+- Extend the classical overlap to fill T_quant with additional useful
+  work (e.g., statevector-based observables beyond the Hamiltonian).
+
+**IBM validation (only after the simulator validation above passes)**:
+```bash
+# On the instance, in tmux -- IBM QPU can take 30-60s per iter:
+docker run --rm --gpus all \
+    -v $(pwd)/results:/workspace/results \
+    -v $(pwd)/.env:/workspace/.env \
+    vqe-mpi-gpu \
+    python3 benchmarks/ibm_test_run.py
+```
+
+Expected: 10-iter H2 run completes (matches prior IBM triple-integration
+runs). Per-iter masking metric M should be visible in the log; compare
+against `results/ibm/ibm_cloud_20260727_220130.json`'s M values to
+quantify how much T_accel dropped.
+
+Free-tier caveat: IBM open plan allows one 10-min slot per month; use
+this validation carefully. If the simulator validation looks good, this
+becomes optional.
+
 ## Follow-up items unblocked by this fix
 
 - Nsight re-profile: with the GPU-native path, the timeline will show
@@ -141,3 +177,5 @@ wrong with the new path — do NOT merge.
   expectation at 30q remains the dominant cost), but the reduced
   Python-side overhead should shave meaningful time off each iteration.
   Worth one more `timeout 1200` attempt after this fix lands.
+- Hot-path optimizations 7.1 and 7.2 in `docs/FUTURE_WORK.md` become
+  the natural next round of wall-clock improvements if Fix A validates.

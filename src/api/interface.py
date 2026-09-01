@@ -609,17 +609,33 @@ class HPCHybridStack:
         bound_minus = ansatz.assign_parameters(
             {p: v for p, v in zip(sorted_ansatz_params, theta_minus)})
 
-        sv_plus = self._build_statevector(bound_plus)
-        sv_minus = self._build_statevector(bound_minus)
-
         local_terms = self.partition(problem.pauli_terms)
-        if len(local_terms) > 0:
-            local_op = SparsePauliOp.from_list(local_terms)
-            e_plus_sv_local = float(sv_plus.expectation_value(local_op).real)
-            e_minus_sv_local = float(sv_minus.expectation_value(local_op).real)
+
+        # Same GPU-native vs legacy dispatch as _evaluate_distributed_statevector.
+        # The IBM path uses this "T_accel" work to mask QPU RTT (the thesis's
+        # masking metric M = T_accel / T_comm) -- keeping it on the GPU reduces
+        # T_accel without touching T_comm, which improves the masking ratio.
+        # If T_accel drops below T_comm the masking claim weakens, but at
+        # 14q + 1086 Pauli terms this is not a risk (T_comm is 32-60s QPU RTT).
+        _use_gpu_expect = (
+            self._gpu_sv
+            and len(local_terms) > 0
+            and os.environ.get("VQE_LEGACY_EXPECT", "").strip() not in {"1", "yes", "true"}
+        )
+
+        if _use_gpu_expect:
+            e_plus_sv_local, e_minus_sv_local = self._expectation_on_gpu(
+                bound_plus, bound_minus, local_terms)
         else:
-            e_plus_sv_local = 0.0
-            e_minus_sv_local = 0.0
+            sv_plus = self._build_statevector(bound_plus)
+            sv_minus = self._build_statevector(bound_minus)
+            if len(local_terms) > 0:
+                local_op = SparsePauliOp.from_list(local_terms)
+                e_plus_sv_local = float(sv_plus.expectation_value(local_op).real)
+                e_minus_sv_local = float(sv_minus.expectation_value(local_op).real)
+            else:
+                e_plus_sv_local = 0.0
+                e_minus_sv_local = 0.0
 
         e_plus_sv = np.array([0.0], dtype=np.float64)
         e_minus_sv = np.array([0.0], dtype=np.float64)

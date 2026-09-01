@@ -400,6 +400,61 @@ the A100 is faster than the RTX 6000 on H₂O."
 
 ---
 
+## 7. Hot-path micro-optimizations (tabled from GPU-expectation review)
+
+Three optimizations identified during the 2026-08-31 hot-path sweep for
+`feature/gpu-expectation-fix` (which landed the primary GPU-native
+expectation win). Each is potentially real but tabled to keep the paper
+cycle's variable-attribution clean.
+
+### 7.1 Cache `SparsePauliOp` per rank (medium win, medium risk)
+
+Currently `SparsePauliOp.from_list(local_terms)` runs on every SPSA
+iteration at line 153 of `_expectation_on_gpu` and line 617 of
+`_evaluate_ibm_estimator`. `local_terms` is invariant across iterations
+(fixed at problem construction), so the `SparsePauliOp` object could be
+built once during `prepare()` and cached on the problem or stack.
+
+At H2O (1086 Pauli terms) the `from_list` call likely costs 5–20 ms per
+iter — a potential 5–10% wall-clock win on top of the GPU-expectation
+fix. Untested; also unclear whether `SparsePauliOp` is safe to reuse
+across multiple `save_expectation_value` circuit appends (Aer may
+mutate the op internally).
+
+**When to do this**: after the GPU-expectation fix is validated on
+cloud GPU. If the fix delivers Lightning-parity wall-clock, this is
+the natural next optimization pass.
+
+### 7.2 Aer `parameter_binds` API (potentially significant, higher risk)
+
+`_evaluate_distributed_statevector` currently calls
+`ansatz.assign_parameters()` twice per iteration to produce fully-bound
+copies of the circuit. Aer 0.14+ supports passing an unbound circuit
+plus a `parameter_binds` list to `sim.run()`, letting Aer do the
+parameter substitution internally — potentially on GPU, and batching
+both plus/minus evaluations into a single kernel-launch stream.
+
+Predicted wall-clock reduction: 10–30% on top of the GPU-expectation
+fix. Real risk: this is a larger API change; Aer version compatibility
+matrix for `parameter_binds + save_expectation_value` is not something
+I can verify from documentation, only from cloud testing.
+
+**When to do this**: only after 7.1 lands and shows measured benefit
+(or lack thereof). Stacking multiple wall-clock changes into one cloud
+run makes attribution impossible.
+
+### 7.3 Preallocated MPI reduce buffers (cosmetic)
+
+Every `comm.Allreduce` currently allocates a fresh 1-element numpy
+array (lines 501–502 and 626–627). Cost is ~5 µs per iter — genuinely
+unmeasurable at H2O's ~100 ms/iter. Only worth doing as a code-quality
+cleanup, not a performance fix.
+
+**When to do this**: never as a standalone change. If any other
+refactor touches this code path, roll this in as part of it.
+
+---
+
 ## Priority ordering for a follow-up paper cycle
 
 If the current QAAS middleware paper is submitted first, the natural
