@@ -30,7 +30,7 @@ BACKEND = os.environ.get("BACKEND", "simulator")
 SEED = int(os.environ.get("SEED", "42"))
 MAX_ITERS_ENV = os.environ.get("MAX_ITERS", "").strip()   # optional cap for hardware-ceiling tests  # SPSA random seed (override for multi-seed runs)
 _env_molecules = os.environ.get("MOLECULES", "").strip()
-MOLECULES = _env_molecules.split() if _env_molecules else ["H2", "LiH", "BeH2", "H2O"]
+MOLECULES = _env_molecules.split() if _env_molecules else ["H2", "LiH", "BeH2", "H2O", "NH3", "N2"]
 
 resolver = MoleculeResolver(max_qubits=30, allow_network=True, cache_dir=".pubchem_cache",)
 

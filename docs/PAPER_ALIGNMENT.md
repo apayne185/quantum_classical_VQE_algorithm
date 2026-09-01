@@ -196,6 +196,19 @@ the next session).
   follow-up to check driver/wheel compatibility. All lightning wall-clock
   data is CPU-only; paper table caption must reflect this.
 
+**Auto-routing threshold candidate (feature/gpu-expectation-fix session)**:
+
+The 4-molecule baseline shows hpchybrid ≈ aer-mpi within 1% at ≤14
+qubits — no visible replicated-vs-distributed SV crossover. The
+extended 6-molecule sweep (adds NH3 at 16q and N2 at 20q, both already
+in the registry) probes where the crossover actually sits. If aer-mpi
+pulls ahead by ≥20% at N2, the empirical crossover is between 16q and
+20q, and `HardwareProfile.recommend_backend()` gains a
+`num_qubits >= 18` (or similar) auto-routing rule in a future commit.
+Without empirical crossover data, any threshold is astrology.
+
+Details: `docs/GPU_EXPECTATION_FIX.md` "Crossover measurement" section.
+
 **Still needs a cloud-GPU session (~$5, ~90 min):**
 
 1. **Retry CO2 with the new fixes** (commit a6e46aa) —

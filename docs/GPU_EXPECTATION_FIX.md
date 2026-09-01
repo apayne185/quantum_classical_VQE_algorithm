@@ -66,18 +66,45 @@ git checkout feature/gpu-expectation-fix
 make build   # ~5-10 min if the Aer-from-source layer needs rebuild
 ```
 
-### Step 2 — Run hpchybrid with the new path (default)
+### Step 2 — Run all 3 backends with the new path across 6 molecules
+
+Extended the canonical 4-molecule set with NH3 (16q, "NISQ upper limit"
+per the registry) and N2 (20q, "GPU crossover test") to measure the
+replicated-SV vs distributed-SV crossover point. See the "Crossover
+measurement" section below.
+
+MAX_ITERS=100 for H2/LiH/BeH2/H2O (matches previous baseline table
+for direct comparison). MAX_ITERS=50 for NH3/N2 (this is a wall-clock
+comparison, not convergence; 50 iters gives median + ETA numbers that
+are directly comparable across backends at half the cost).
 
 ```bash
-for m in H2 LiH BeH2 H2O; do
+run_one () {
+    local backend=$1 mol=$2 iters=$3
     docker run --rm --gpus all \
         -v $(pwd)/results:/workspace/results \
         vqe-mpi-gpu \
         python3 -m benchmarks.baseline_comparison \
-            --backend hpchybrid --molecule $m --max-iters 100 \
+            --backend "$backend" --molecule "$mol" --max-iters "$iters" \
             --out-dir results/baseline_comparison_gpuexpect
+}
+
+# Canonical 4-molecule set: MAX_ITERS=100 for direct baseline comparability
+for b in hpchybrid lightning aer-mpi; do
+    for m in H2 LiH BeH2 H2O; do
+        run_one "$b" "$m" 100
+    done
+done
+
+# Crossover-probe molecules: MAX_ITERS=50 for cost containment
+for b in hpchybrid lightning aer-mpi; do
+    for m in NH3 N2; do
+        run_one "$b" "$m" 50
+    done
 done
 ```
+
+Total expected wall-clock: ~15-25 min. Cost: ~$0.50.
 
 ### Step 3 — Compare wall times
 
@@ -116,6 +143,40 @@ drifted on the instance (Docker rebuild, Aer version, etc.).
 Both runs must produce H2O energy within 1 mHa of each other at
 seed=42, 100 iters. If they diverge by more than that, something is
 wrong with the new path — do NOT merge.
+
+## Crossover measurement — where does distributed SV pull ahead?
+
+The extended 6-molecule sweep (H2, LiH, BeH2, H2O, NH3, N2) probes
+where the hpchybrid replicated-SV vs aer-mpi distributed-SV crossover
+sits. The current 4-molecule data (2026-08-30 baseline) shows hpchybrid
+≈ aer-mpi to within 1% at ≤14 qubits — no visible crossover yet.
+
+Two predictions to falsify:
+
+1. **NH3 (16q, ~10^3 Pauli terms)**: aer-mpi wins by 5-15% margin.
+   The 2^16 = 65k-amplitude SV still fits comfortably in GPU cache;
+   distribution overhead should still slightly outweigh benefit.
+
+2. **N2 (20q, ~10^3-10^4 Pauli terms)**: aer-mpi wins by 20-50%.
+   The 2^20 = 1M-amplitude SV starts to exceed L2 cache; distributed
+   tiling should show real advantage.
+
+If both predictions hold, **the empirical crossover sits between 16q
+and 20q** — call it `num_qubits >= 18` as an auto-routing threshold
+for a future `HardwareProfile.recommend_backend()` extension (see
+docs/FUTURE_WORK.md §2 for the rearchitecture path).
+
+If NH3 shows hpchybrid winning instead (against prediction), the
+crossover is >16q and the threshold moves higher.
+
+If N2 shows hpchybrid winning (against both predictions), the
+distributed-SV story is weaker than assumed and Fix A + hot-path
+optimizations §7.1/§7.2 become the primary optimization path instead
+of distributed statevector.
+
+Documenting the crossover empirically -- with 6 molecules rather than
+4 -- turns a hand-wavy "distributed is the future" future-work claim
+into a data-backed one that names a specific threshold.
 
 ## What to do based on the result
 
