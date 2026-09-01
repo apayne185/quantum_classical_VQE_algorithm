@@ -1,0 +1,15 @@
+{
+  "baseline_backend": "lightning",
+  "device": "gpu-lightning.gpu",
+  "molecule": "H2",
+  "num_qubits": 4,
+  "num_pauli": 15,
+  "num_params": 16,
+  "max_iters": 100,
+  "iters_completed": 100,
+  "seed": 42,
+  "wall_seconds": 0.6708195440000964,
+  "wall_per_iter": 0.006708195440000964,
+  "energy_ha": -0.583819848535224,
+  "fci_ha": -1.1372838344885023
+}
