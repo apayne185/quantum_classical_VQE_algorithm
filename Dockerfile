@@ -48,7 +48,7 @@ RUN AER_THRUST_BACKEND=CUDA pip3 install --no-cache-dir qiskit-aer --no-binary q
 # so it caches cheaply after the heavy Aer-from-source build above.
 # lightning-gpu is optional -- benchmarks/baseline_comparison.py falls back
 # to lightning.qubit (CPU) if the GPU variant is not installed.
-RUN pip3 install --no-cache-dir pennylane pennylane-lightning
+RUN pip3 install --no-cache-dir pennylane pennylane-lightning pennylane-lightning-gpu
 
 WORKDIR /workspace
 COPY . /workspace
