@@ -62,12 +62,17 @@ def serial_vqe(mol_name, problem, seed=42):
         sv = Statevector(bound)
         return float(sv.expectation_value(pauli_op).real)
 
-    # SPSA hyperparams match HPCHybridStack (fair comparison)
+    # SPSA hyperparams match HPCHybridStack (fair comparison).
+    # min_iters formula matched to interface.py:vqe_optimize() exactly
+    # (fixed 2026-09-04) so the serial vs distributed comparison is not
+    # confounded by different convergence-check timing. Old formula was
+    # max(20, n_params // 2), which triggered earlier for large n_params
+    # and produced an unfair "serial converged faster" artifact.
     c = 0.1
     a = 0.628 / np.sqrt(n_params / 8.0)
     A = max_iterations * 0.1
     alpha, gamma = 0.602, 0.101
-    min_iters = max(20, n_params // 2)
+    min_iters = max(10, min(n_params * 2, 50))
 
     history = []
     best_physical_energy = None
