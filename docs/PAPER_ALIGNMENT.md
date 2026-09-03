@@ -272,6 +272,105 @@ exponentially worse as n grows:
 Details: `docs/GPU_EXPECTATION_FIX.md` "Crossover measurement" section
 + committed `results/baseline_comparison_gpuexpect/paper_table.md`.
 
+**Lightning-GPU ansatz-parity re-run (~$0.25, ~15 min on cloud A100)**:
+
+Discovered 2026-09-03 during pre-paper code audit: the Lightning
+baseline's hand-ported ansatz in `benchmarks/baseline_comparison.py`
+`_lightning_ansatz` used the wrong reps value (raw registry reps
+instead of adaptive_reps = min(reps+1, 3)) AND the wrong entanglement
+pattern (linear instead of full). Result: every committed Lightning
+row in `results/baseline_comparison_gpuexpect/` was measured on a
+smaller ansatz than hpchybrid/aer-mpi:
+
+| Molecule | hpchybrid n_params | lightning n_params | Lightning worked on |
+|---|---|---|---|
+| H2   | 24  | 16  | -33% params |
+| LiH  | 96  | 72  | -25% params |
+| BeH2 | 112 | 84  | -25% params |
+| H2O  | 112 | 84  | -25% params |
+| NH3  | 128 | 96  | -25% params |
+| N2   | 160 | 120 | -25% params |
+
+Plus the entanglement pattern difference: n(n-1)/2 CNOTs/layer vs
+n-1 CNOTs/layer, so at n=14 Lightning ran on 91 CNOTs/layer less.
+
+Impact on paper: every Lightning wall-clock number in the current
+paper_table.md is measured on a smaller, easier problem than
+hpchybrid. Adjusted for equal work, Lightning's advantage may vanish
+or reverse. This is a first-order fairness bug affecting Table 1
+directly.
+
+Fixed in benchmarks/baseline_comparison.py (commit pending):
+- _lightning_ansatz now takes explicit `entanglement` parameter and
+  supports both "full" and "linear"
+- _run_lightning computes adaptive_reps + entanglement matching
+  build_ansatz(), asserts n_params matches Qiskit-produced count
+  before proceeding
+
+Rerun needed for ALL 6 lightning JSONs. On a fresh A100 instance
+with the fixed code:
+
+```bash
+for m in H2 LiH BeH2 H2O; do
+    docker run --rm --gpus all \
+        -v $(pwd)/results:/workspace/results \
+        vqe-mpi-gpu \
+        python3 -m benchmarks.baseline_comparison \
+            --backend lightning --molecule $m --max-iters 100 \
+            --out-dir results/baseline_comparison_gpuexpect
+done
+for m in NH3 N2; do
+    docker run --rm --gpus all \
+        -v $(pwd)/results:/workspace/results \
+        vqe-mpi-gpu \
+        python3 -m benchmarks.baseline_comparison \
+            --backend lightning --molecule $m --max-iters 50 \
+            --out-dir results/baseline_comparison_gpuexpect
+done
+```
+
+Then regenerate paper_table.md; Lightning wall times will
+almost certainly be worse than what's currently published, since
+Lightning is now doing the same work as hpchybrid instead of ~75%
+of it. Expected: hpchybrid's competitive story becomes STRONGER,
+not weaker.
+
+**Serial baseline path-parity re-run (~$0.10, ~5 min on ANY host, no GPU needed)**:
+
+The serial baseline (`benchmarks/serial_baseline.py`) previously
+re-implemented its own ansatz-construction logic, which diverged from
+the distributed stack at two molecules:
+- H2: guard `if n_qubits > 4 else reps` gave reps=1 (16 params) here
+  while the main path gave reps=2 (24 params).
+- LiH: this file used registry `reps=1` while the main path routed
+  through MoleculeResolver._recommended_reps() which returns 2
+  (adaptive_reps=3 → 96 params). The paper's "72 vs 96" figure
+  therefore came from the same accidental drift, not a deliberate
+  design choice.
+
+Fixed 2026-09-03: serial_baseline.py now routes through
+MoleculeResolver → ChemistryProblem → prepare(), which is the same
+code path baseline_comparison.py and local_test_run.py already use.
+Both sides of the serial-vs-distributed comparison now use bit-identical
+ansatz objects (same Qiskit circuit, same n_params, same gate count).
+
+Rerun after the fix (any Docker-capable host, single CPU, no MPI, no
+GPU needed):
+
+```bash
+docker run --rm -v $(pwd)/results:/workspace/results \
+    vqe-mpi-gpu python3 benchmarks/serial_baseline.py
+```
+
+Produces `results/cpu-only/serial-baseline/serial_baseline_<ts>.json`
+with all 6 molecules. Compare `wall_time` against the distributed A100
+runs to update the paper's serial-vs-distributed speedup table.
+
+Paper text update needed after rerun: the "72 vs 96 for LiH" sentence
+should be replaced with "all molecules use identical ansatz
+construction between serial and distributed paths (same n_params, same
+gate count) after the 2026-09-03 path-parity fix."
+
 **Still needs a cloud-GPU session (~$5, ~90 min):**
 
 1. **Retry CO2 with the new fixes** (commit a6e46aa) —

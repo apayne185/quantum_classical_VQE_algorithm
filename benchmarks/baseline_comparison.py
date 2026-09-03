@@ -32,7 +32,7 @@ sys.path.insert(0, _root)
 sys.path.insert(0, os.path.join(_root, "build"))
 
 BACKENDS = ("hpchybrid", "lightning", "aer-mpi")
-DEFAULT_MOLECULES = ("H2", "LiH", "BeH2", "H2O")
+DEFAULT_MOLECULES = ("H2", "LiH", "BeH2", "H2O", "NH3", "N2")
 
 
 def _parse_args():
@@ -47,6 +47,12 @@ def _parse_args():
                    help="Run one throwaway H2 iteration to prime caches "
                         "before the timed run.")
     p.add_argument("--out-dir", default="results/baseline_comparison")
+    p.add_argument("--aer-blocking-qubits", type=int, default=None,
+                   help="aer-mpi backend only: override blocking_qubits for "
+                        "the AerSimulator(blocking_enable=True) config. "
+                        "Default: max(n_qubits-2, n_qubits//2). Use this to "
+                        "sweep blocking granularity for a proper "
+                        "distributed-SV parameter study.")
     return p.parse_args()
 
 
@@ -95,15 +101,21 @@ def _run_hpchybrid(molecule, max_iters, seed, out_dir):
 
 # ------------------------------------------------------------------ lightning
 
-def _lightning_ansatz(num_qubits, params, reps):
-    """Port EfficientSU2(entanglement='linear', reps=reps) to Pennylane.
+def _lightning_ansatz(num_qubits, params, reps, entanglement="full"):
+    """Port EfficientSU2 to Pennylane matching the Qiskit path GATE-FOR-GATE.
 
-    EfficientSU2 default rotation blocks are RY + RZ. Linear entanglement
-    is a CNOT ladder (0->1, 1->2, ..., n-2->n-1). Layer count is reps+1
-    rotation layers separated by reps entanglement layers.
+    Ansatz-parity note (fixed 2026-09-03): earlier versions of this
+    function used entanglement="linear" (n-1 CNOTs per layer) with reps
+    taken directly from the registry, while the Qiskit path used
+    entanglement="full" (n(n-1)/2 CNOTs per layer) with reps expanded
+    to adaptive_reps=min(reps+1,3) via build_ansatz(). Result was Lightning
+    running a ~25% smaller ansatz on ~85% fewer entangling gates than
+    hpchybrid at n=14, invalidating the wall-clock comparison. Both dimensions
+    are now caller-controlled and must be set to match the Qiskit path.
 
-    Parameter layout matches Qiskit's ordering: for L=reps+1 rotation
-    layers, block i uses params[2*i*n : 2*(i+1)*n] as (n RYs, then n RZs).
+    Parameter layout matches Qiskit's EfficientSU2 ordering: for L=reps+1
+    rotation blocks, block i uses params[2*i*n : 2*(i+1)*n] as (n RYs,
+    then n RZs).
     """
     import pennylane as qml
     idx = 0
@@ -113,8 +125,15 @@ def _lightning_ansatz(num_qubits, params, reps):
         for q in range(num_qubits):
             qml.RZ(params[idx], wires=q); idx += 1
         if layer < reps:
-            for q in range(num_qubits - 1):
-                qml.CNOT(wires=[q, q + 1])
+            if entanglement == "full":
+                for i in range(num_qubits):
+                    for j in range(i + 1, num_qubits):
+                        qml.CNOT(wires=[i, j])
+            elif entanglement == "linear":
+                for q in range(num_qubits - 1):
+                    qml.CNOT(wires=[q, q + 1])
+            else:
+                raise ValueError(f"unknown entanglement pattern: {entanglement!r}")
 
 
 def _run_lightning(molecule, max_iters, seed, out_dir):
@@ -142,8 +161,20 @@ def _run_lightning(molecule, max_iters, seed, out_dir):
     problem.prepare()
 
     n_qubits = problem.num_qubits
-    reps = problem.reps
-    n_params = 2 * n_qubits * (reps + 1)  # matches EfficientSU2 linear rotation-block count
+
+    # Mirror src/api/problems.py:build_ansatz() hwe_adaptive tier so the
+    # Lightning ansatz is gate-for-gate identical to the Qiskit path.
+    # (Previously used problem.reps + linear entanglement, which under-
+    # sized the Lightning ansatz by ~25% params and ~85% CNOT gates,
+    # invalidating the wall-clock comparison. Now: same adaptive_reps
+    # formula and same entanglement threshold as build_ansatz.)
+    adaptive_reps = min(problem.reps + 1, 3)
+    entanglement = "full" if n_qubits <= 20 else "linear"
+    n_params = problem.num_params  # already set by build_ansatz via prepare()
+    assert n_params == 2 * n_qubits * (adaptive_reps + 1), (
+        f"Lightning ansatz param count {n_params} does not match Qiskit "
+        f"EfficientSU2(reps={adaptive_reps}) prediction "
+        f"{2 * n_qubits * (adaptive_reps + 1)} -- ansatz parity broken")
 
     # Prefer LightningGPU when the wheel is present, else the CPU fallback.
     device_label = "cpu-lightning.qubit"
@@ -174,7 +205,7 @@ def _run_lightning(molecule, max_iters, seed, out_dir):
 
     @qml.qnode(dev, diff_method="parameter-shift")
     def energy(params):
-        _lightning_ansatz(n_qubits, params, reps)
+        _lightning_ansatz(n_qubits, params, adaptive_reps, entanglement=entanglement)
         return qml.expval(H)
 
     # SPSA loop matching src/api/interface.py:vqe_optimize hyperparams so
@@ -219,14 +250,22 @@ def _run_lightning(molecule, max_iters, seed, out_dir):
 
 # ------------------------------------------------------------------ aer-mpi
 
-def _run_aer_mpi(molecule, max_iters, seed, out_dir):
-    """Qiskit Aer with distributed-statevector mode (blocking_enable=True,
-    blocking_qubits=n-2). Uses our stack's problem construction so the
-    Hamiltonian is identical; only the AerSimulator configuration differs.
+def _run_aer_mpi(molecule, max_iters, seed, out_dir, aer_blocking_qubits=None):
+    """Qiskit Aer with distributed-statevector mode (blocking_enable=True).
+    Uses our stack's problem construction so the Hamiltonian is identical;
+    only the AerSimulator configuration differs.
 
     Under MPI this tiles the statevector across ranks (the thing gap H
     in docs/KNOWN_GAPS.md flags as our missing capability). Single-rank
     invocation still exercises the code path but does not tile.
+
+    blocking_qubits controls tile size: total chunks = 2^(n - blocking_qubits).
+    - n-1: 2 chunks (minimal splitting)
+    - n-2: 4 chunks (default; may not be optimal at every n)
+    - n-3: 8 chunks (more parallelism, more comm overhead)
+    - n/2: max splitting, always exercises distribution
+    Pass aer_blocking_qubits explicitly to sweep this parameter -- the
+    default heuristic was set arbitrarily and may not be optimal.
     """
     import numpy as np
     from qiskit_aer import AerSimulator
@@ -240,12 +279,32 @@ def _run_aer_mpi(molecule, max_iters, seed, out_dir):
 
     n_qubits = problem.num_qubits
 
-    # Distributed-SV Aer instance -- separate from anything HPCHybridStack builds,
-    # so the "with vs without distributed SV" comparison is clean.
-    # blocking_qubits controls tile size: total chunks = 2^(n - blocking_qubits).
-    # n-2 gives 4 chunks -- enough to exercise distribution on 2 ranks without
-    # excessive comm overhead at small n.
-    blocking_qubits = max(n_qubits - 2, n_qubits // 2)
+    if aer_blocking_qubits is None:
+        blocking_qubits = max(n_qubits - 2, n_qubits // 2)  # default heuristic
+    else:
+        # Guard: blocking_qubits must be < n_qubits (else no blocking) and
+        # >= 1 (else meaningless). Clamp instead of erroring to keep sweeps
+        # scriptable.
+        blocking_qubits = max(1, min(aer_blocking_qubits, n_qubits - 1))
+        if blocking_qubits != aer_blocking_qubits:
+            print(f"[aer-mpi] --aer-blocking-qubits={aer_blocking_qubits} "
+                  f"clamped to {blocking_qubits} (must be in [1, n_qubits-1])",
+                  flush=True)
+
+    # Safety guardrail: 2^(n_qubits - blocking_qubits) chunks means aggressive
+    # splitting explodes fast. Empirically observed: blocking_qubits <= n-4 on
+    # a 20q problem locked the terminal for 45+ min with no completion signal
+    # (2026-09-03 session hang). Refuse to launch if the chunk count exceeds
+    # a sane cap; user must lower splitting to proceed.
+    n_chunks = 2 ** (n_qubits - blocking_qubits)
+    MAX_CHUNKS = 64  # 6 splits max; anything more has never won in our measurements
+    if n_chunks > MAX_CHUNKS:
+        raise ValueError(
+            f"[aer-mpi] refusing to launch: blocking_qubits={blocking_qubits} on "
+            f"{n_qubits}q problem = {n_chunks} chunks (max {MAX_CHUNKS}). "
+            f"Extreme splitting has hung the terminal in past runs with no signal. "
+            f"Use blocking_qubits >= {n_qubits - 6} (i.e. <= {MAX_CHUNKS} chunks)."
+        )
     device_label = "cpu-aer"
     aer_opts = {"method": "statevector",
                 "blocking_enable": True,
@@ -350,8 +409,13 @@ def main():
 
     print(f"[baseline] backend={args.backend} molecule={args.molecule} "
           f"iters={args.max_iters} seed={args.seed}")
-    result = _DISPATCH[args.backend](args.molecule, args.max_iters,
-                                     args.seed, args.out_dir)
+    if args.backend == "aer-mpi":
+        result = _run_aer_mpi(args.molecule, args.max_iters, args.seed,
+                              args.out_dir,
+                              aer_blocking_qubits=args.aer_blocking_qubits)
+    else:
+        result = _DISPATCH[args.backend](args.molecule, args.max_iters,
+                                         args.seed, args.out_dir)
     _save(result, args.out_dir, args.backend, args.molecule)
     print(f"[baseline] done: wall={result['wall_seconds']:.2f}s "
           f"({result['wall_per_iter']:.4f}s/iter) "

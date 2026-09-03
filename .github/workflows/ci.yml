@@ -36,8 +36,18 @@ jobs:
       - name: Run serial baseline (H2 only, fast)
         run: |
           docker run --rm vqe-mpi-gpu python3 -c "
+          # serial_vqe was refactored 2026-09-03 to accept a prepared
+          # ChemistryProblem (routed through MoleculeResolver for path
+          # parity with the distributed stack) rather than the older
+          # positional (coords, fci, reps) tuple.
           from benchmarks.serial_baseline import serial_vqe
-          e, t, iters, best = serial_vqe('H2', 'H 0 0 0; H 0 0 0.74', -1.13727, reps=1, max_iterations=50)
+          from src.api.molecule_resolver import MoleculeResolver
+          resolver = MoleculeResolver(max_qubits=30, allow_network=False,
+                                      cache_dir='/tmp/pubchem_cache')
+          problem = resolver.resolve('H2', freeze_core=True).to_chemistry_problem()
+          problem.prepare()
+          result = serial_vqe('H2', problem)
+          e = result['energy']
           assert abs(e - (-1.13727)) < 0.5, f'H2 energy {e} too far from FCI'
           print(f'H2 quick check passed: E={e:.4f}, error={abs(e-(-1.13727)):.4f}')
           "
