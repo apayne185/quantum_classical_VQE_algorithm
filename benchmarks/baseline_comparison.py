@@ -47,6 +47,12 @@ def _parse_args():
                    help="Run one throwaway H2 iteration to prime caches "
                         "before the timed run.")
     p.add_argument("--out-dir", default="results/baseline_comparison")
+    p.add_argument("--aer-blocking-qubits", type=int, default=None,
+                   help="aer-mpi backend only: override blocking_qubits for "
+                        "the AerSimulator(blocking_enable=True) config. "
+                        "Default: max(n_qubits-2, n_qubits//2). Use this to "
+                        "sweep blocking granularity for a proper "
+                        "distributed-SV parameter study.")
     return p.parse_args()
 
 
@@ -244,14 +250,22 @@ def _run_lightning(molecule, max_iters, seed, out_dir):
 
 # ------------------------------------------------------------------ aer-mpi
 
-def _run_aer_mpi(molecule, max_iters, seed, out_dir):
-    """Qiskit Aer with distributed-statevector mode (blocking_enable=True,
-    blocking_qubits=n-2). Uses our stack's problem construction so the
-    Hamiltonian is identical; only the AerSimulator configuration differs.
+def _run_aer_mpi(molecule, max_iters, seed, out_dir, aer_blocking_qubits=None):
+    """Qiskit Aer with distributed-statevector mode (blocking_enable=True).
+    Uses our stack's problem construction so the Hamiltonian is identical;
+    only the AerSimulator configuration differs.
 
     Under MPI this tiles the statevector across ranks (the thing gap H
     in docs/KNOWN_GAPS.md flags as our missing capability). Single-rank
     invocation still exercises the code path but does not tile.
+
+    blocking_qubits controls tile size: total chunks = 2^(n - blocking_qubits).
+    - n-1: 2 chunks (minimal splitting)
+    - n-2: 4 chunks (default; may not be optimal at every n)
+    - n-3: 8 chunks (more parallelism, more comm overhead)
+    - n/2: max splitting, always exercises distribution
+    Pass aer_blocking_qubits explicitly to sweep this parameter -- the
+    default heuristic was set arbitrarily and may not be optimal.
     """
     import numpy as np
     from qiskit_aer import AerSimulator
@@ -265,12 +279,17 @@ def _run_aer_mpi(molecule, max_iters, seed, out_dir):
 
     n_qubits = problem.num_qubits
 
-    # Distributed-SV Aer instance -- separate from anything HPCHybridStack builds,
-    # so the "with vs without distributed SV" comparison is clean.
-    # blocking_qubits controls tile size: total chunks = 2^(n - blocking_qubits).
-    # n-2 gives 4 chunks -- enough to exercise distribution on 2 ranks without
-    # excessive comm overhead at small n.
-    blocking_qubits = max(n_qubits - 2, n_qubits // 2)
+    if aer_blocking_qubits is None:
+        blocking_qubits = max(n_qubits - 2, n_qubits // 2)  # default heuristic
+    else:
+        # Guard: blocking_qubits must be < n_qubits (else no blocking) and
+        # >= 1 (else meaningless). Clamp instead of erroring to keep sweeps
+        # scriptable.
+        blocking_qubits = max(1, min(aer_blocking_qubits, n_qubits - 1))
+        if blocking_qubits != aer_blocking_qubits:
+            print(f"[aer-mpi] --aer-blocking-qubits={aer_blocking_qubits} "
+                  f"clamped to {blocking_qubits} (must be in [1, n_qubits-1])",
+                  flush=True)
     device_label = "cpu-aer"
     aer_opts = {"method": "statevector",
                 "blocking_enable": True,
@@ -375,8 +394,13 @@ def main():
 
     print(f"[baseline] backend={args.backend} molecule={args.molecule} "
           f"iters={args.max_iters} seed={args.seed}")
-    result = _DISPATCH[args.backend](args.molecule, args.max_iters,
-                                     args.seed, args.out_dir)
+    if args.backend == "aer-mpi":
+        result = _run_aer_mpi(args.molecule, args.max_iters, args.seed,
+                              args.out_dir,
+                              aer_blocking_qubits=args.aer_blocking_qubits)
+    else:
+        result = _DISPATCH[args.backend](args.molecule, args.max_iters,
+                                         args.seed, args.out_dir)
     _save(result, args.out_dir, args.backend, args.molecule)
     print(f"[baseline] done: wall={result['wall_seconds']:.2f}s "
           f"({result['wall_per_iter']:.4f}s/iter) "

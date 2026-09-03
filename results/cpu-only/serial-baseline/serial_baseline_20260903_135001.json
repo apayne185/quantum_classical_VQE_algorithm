@@ -1,0 +1,18 @@
+{
+  "hostname": "5dd0c9971f8b",
+  "timestamp": "20260903_135001",
+  "molecules": {
+    "H2": {
+      "energy": -1.1348957494296141,
+      "fci": -1.1372838344885023,
+      "error": 0.002388085058888212,
+      "wall_time": 7.849379586999987,
+      "iterations": 200,
+      "best_iter": 126,
+      "num_qubits": 4,
+      "num_pauli": 15,
+      "num_params": 24,
+      "ansatz_tier": "hwe_adaptive"
+    }
+  }
+}
