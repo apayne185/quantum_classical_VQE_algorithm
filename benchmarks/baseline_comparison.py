@@ -290,6 +290,21 @@ def _run_aer_mpi(molecule, max_iters, seed, out_dir, aer_blocking_qubits=None):
             print(f"[aer-mpi] --aer-blocking-qubits={aer_blocking_qubits} "
                   f"clamped to {blocking_qubits} (must be in [1, n_qubits-1])",
                   flush=True)
+
+    # Safety guardrail: 2^(n_qubits - blocking_qubits) chunks means aggressive
+    # splitting explodes fast. Empirically observed: blocking_qubits <= n-4 on
+    # a 20q problem locked the terminal for 45+ min with no completion signal
+    # (2026-09-03 session hang). Refuse to launch if the chunk count exceeds
+    # a sane cap; user must lower splitting to proceed.
+    n_chunks = 2 ** (n_qubits - blocking_qubits)
+    MAX_CHUNKS = 64  # 6 splits max; anything more has never won in our measurements
+    if n_chunks > MAX_CHUNKS:
+        raise ValueError(
+            f"[aer-mpi] refusing to launch: blocking_qubits={blocking_qubits} on "
+            f"{n_qubits}q problem = {n_chunks} chunks (max {MAX_CHUNKS}). "
+            f"Extreme splitting has hung the terminal in past runs with no signal. "
+            f"Use blocking_qubits >= {n_qubits - 6} (i.e. <= {MAX_CHUNKS} chunks)."
+        )
     device_label = "cpu-aer"
     aer_opts = {"method": "statevector",
                 "blocking_enable": True,
