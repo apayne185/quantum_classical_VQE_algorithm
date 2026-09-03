@@ -79,9 +79,9 @@ def print_summary(runs):
 
 # PLOTTING 
 
-MOLECULES = ["H2", "LiH", "BeH2", "H2O", "NH3"]
-MOL_LABELS = {"H2": "H₂", "LiH": "LiH", "BeH2": "BeH₂", "H2O": "H₂O", "NH3": "NH₃"}
-COLORS = {"H2": "#1f77b4", "LiH": "#ff7f0e", "BeH2": "#2ca02c", "H2O": "#d62728", "NH3": "#9467bd"}
+MOLECULES = ["H2", "LiH", "BeH2", "H2O", "NH3", "N2"]
+MOL_LABELS = {"H2": "H₂", "LiH": "LiH", "BeH2": "BeH₂", "H2O": "H₂O", "NH3": "NH₃", "N2": "N₂"}
+COLORS = {"H2": "#1f77b4", "LiH": "#ff7f0e", "BeH2": "#2ca02c", "H2O": "#d62728", "NH3": "#9467bd", "N2": "#8c564b"}
 
 
 def _ensure_dirs():

@@ -32,7 +32,7 @@ sys.path.insert(0, _root)
 sys.path.insert(0, os.path.join(_root, "build"))
 
 BACKENDS = ("hpchybrid", "lightning", "aer-mpi")
-DEFAULT_MOLECULES = ("H2", "LiH", "BeH2", "H2O")
+DEFAULT_MOLECULES = ("H2", "LiH", "BeH2", "H2O", "NH3", "N2")
 
 
 def _parse_args():
@@ -95,15 +95,21 @@ def _run_hpchybrid(molecule, max_iters, seed, out_dir):
 
 # ------------------------------------------------------------------ lightning
 
-def _lightning_ansatz(num_qubits, params, reps):
-    """Port EfficientSU2(entanglement='linear', reps=reps) to Pennylane.
+def _lightning_ansatz(num_qubits, params, reps, entanglement="full"):
+    """Port EfficientSU2 to Pennylane matching the Qiskit path GATE-FOR-GATE.
 
-    EfficientSU2 default rotation blocks are RY + RZ. Linear entanglement
-    is a CNOT ladder (0->1, 1->2, ..., n-2->n-1). Layer count is reps+1
-    rotation layers separated by reps entanglement layers.
+    Ansatz-parity note (fixed 2026-09-03): earlier versions of this
+    function used entanglement="linear" (n-1 CNOTs per layer) with reps
+    taken directly from the registry, while the Qiskit path used
+    entanglement="full" (n(n-1)/2 CNOTs per layer) with reps expanded
+    to adaptive_reps=min(reps+1,3) via build_ansatz(). Result was Lightning
+    running a ~25% smaller ansatz on ~85% fewer entangling gates than
+    hpchybrid at n=14, invalidating the wall-clock comparison. Both dimensions
+    are now caller-controlled and must be set to match the Qiskit path.
 
-    Parameter layout matches Qiskit's ordering: for L=reps+1 rotation
-    layers, block i uses params[2*i*n : 2*(i+1)*n] as (n RYs, then n RZs).
+    Parameter layout matches Qiskit's EfficientSU2 ordering: for L=reps+1
+    rotation blocks, block i uses params[2*i*n : 2*(i+1)*n] as (n RYs,
+    then n RZs).
     """
     import pennylane as qml
     idx = 0
@@ -113,8 +119,15 @@ def _lightning_ansatz(num_qubits, params, reps):
         for q in range(num_qubits):
             qml.RZ(params[idx], wires=q); idx += 1
         if layer < reps:
-            for q in range(num_qubits - 1):
-                qml.CNOT(wires=[q, q + 1])
+            if entanglement == "full":
+                for i in range(num_qubits):
+                    for j in range(i + 1, num_qubits):
+                        qml.CNOT(wires=[i, j])
+            elif entanglement == "linear":
+                for q in range(num_qubits - 1):
+                    qml.CNOT(wires=[q, q + 1])
+            else:
+                raise ValueError(f"unknown entanglement pattern: {entanglement!r}")
 
 
 def _run_lightning(molecule, max_iters, seed, out_dir):
@@ -142,8 +155,20 @@ def _run_lightning(molecule, max_iters, seed, out_dir):
     problem.prepare()
 
     n_qubits = problem.num_qubits
-    reps = problem.reps
-    n_params = 2 * n_qubits * (reps + 1)  # matches EfficientSU2 linear rotation-block count
+
+    # Mirror src/api/problems.py:build_ansatz() hwe_adaptive tier so the
+    # Lightning ansatz is gate-for-gate identical to the Qiskit path.
+    # (Previously used problem.reps + linear entanglement, which under-
+    # sized the Lightning ansatz by ~25% params and ~85% CNOT gates,
+    # invalidating the wall-clock comparison. Now: same adaptive_reps
+    # formula and same entanglement threshold as build_ansatz.)
+    adaptive_reps = min(problem.reps + 1, 3)
+    entanglement = "full" if n_qubits <= 20 else "linear"
+    n_params = problem.num_params  # already set by build_ansatz via prepare()
+    assert n_params == 2 * n_qubits * (adaptive_reps + 1), (
+        f"Lightning ansatz param count {n_params} does not match Qiskit "
+        f"EfficientSU2(reps={adaptive_reps}) prediction "
+        f"{2 * n_qubits * (adaptive_reps + 1)} -- ansatz parity broken")
 
     # Prefer LightningGPU when the wheel is present, else the CPU fallback.
     device_label = "cpu-lightning.qubit"
@@ -174,7 +199,7 @@ def _run_lightning(molecule, max_iters, seed, out_dir):
 
     @qml.qnode(dev, diff_method="parameter-shift")
     def energy(params):
-        _lightning_ansatz(n_qubits, params, reps)
+        _lightning_ansatz(n_qubits, params, adaptive_reps, entanglement=entanglement)
         return qml.expval(H)
 
     # SPSA loop matching src/api/interface.py:vqe_optimize hyperparams so
