@@ -272,6 +272,42 @@ exponentially worse as n grows:
 Details: `docs/GPU_EXPECTATION_FIX.md` "Crossover measurement" section
 + committed `results/baseline_comparison_gpuexpect/paper_table.md`.
 
+**Serial baseline path-parity re-run (~$0.10, ~5 min on ANY host, no GPU needed)**:
+
+The serial baseline (`benchmarks/serial_baseline.py`) previously
+re-implemented its own ansatz-construction logic, which diverged from
+the distributed stack at two molecules:
+- H2: guard `if n_qubits > 4 else reps` gave reps=1 (16 params) here
+  while the main path gave reps=2 (24 params).
+- LiH: this file used registry `reps=1` while the main path routed
+  through MoleculeResolver._recommended_reps() which returns 2
+  (adaptive_reps=3 → 96 params). The paper's "72 vs 96" figure
+  therefore came from the same accidental drift, not a deliberate
+  design choice.
+
+Fixed 2026-09-03: serial_baseline.py now routes through
+MoleculeResolver → ChemistryProblem → prepare(), which is the same
+code path baseline_comparison.py and local_test_run.py already use.
+Both sides of the serial-vs-distributed comparison now use bit-identical
+ansatz objects (same Qiskit circuit, same n_params, same gate count).
+
+Rerun after the fix (any Docker-capable host, single CPU, no MPI, no
+GPU needed):
+
+```bash
+docker run --rm -v $(pwd)/results:/workspace/results \
+    vqe-mpi-gpu python3 benchmarks/serial_baseline.py
+```
+
+Produces `results/cpu-only/serial-baseline/serial_baseline_<ts>.json`
+with all 6 molecules. Compare `wall_time` against the distributed A100
+runs to update the paper's serial-vs-distributed speedup table.
+
+Paper text update needed after rerun: the "72 vs 96 for LiH" sentence
+should be replaced with "all molecules use identical ansatz
+construction between serial and distributed paths (same n_params, same
+gate count) after the 2026-09-03 path-parity fix."
+
 **Still needs a cloud-GPU session (~$5, ~90 min):**
 
 1. **Retry CO2 with the new fixes** (commit a6e46aa) —
