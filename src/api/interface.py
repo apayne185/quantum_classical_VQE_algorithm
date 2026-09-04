@@ -465,17 +465,36 @@ class HPCHybridStack:
         local_terms = self.partition(problem.pauli_terms)
 
         # Two evaluation paths:
-        # - GPU path (default when _gpu_sv): use Aer's save_expectation_value
-        #   instruction so the Hamiltonian expectation runs on GPU inside the
-        #   same run() as the SV build. No 2^n GPU->CPU copy, no CPU-side
-        #   numpy expectation. Beats Lightning-GPU on H2O in benchmark parity.
+        # - GPU path: Aer's save_expectation_value instruction runs the
+        #   expectation on GPU inside the same run() as the SV build. No 2^n
+        #   GPU->CPU copy, no CPU-side numpy expectation. Beats legacy by 1.5x
+        #   at NP=1 (validated 2026-09-01: H2O 22.99s -> 15.24s).
         # - Legacy path: build SV, copy to CPU, expectation_value in numpy.
-        #   Kept for A/B comparison and as fallback if the GPU path errors.
-        #   Opt out of the GPU path via VQE_LEGACY_EXPECT=1.
+        #   Slower at NP=1 but scales cleanly under MPI.
+        #
+        # DEFAULT POLICY (fixed 2026-09-04 after measured MPI regression):
+        #   - NP=1: GPU-native path (proven faster)
+        #   - NP>=2: legacy path (GPU-native has a 3.6x per-iter regression
+        #     under MPI on H2O; root cause = per-rank Aer transpile cost of
+        #     save_expectation_value amplifies when multiple ranks contend
+        #     for the same GPU. See docs/GPU_EXPECTATION_FIX.md for the full
+        #     measurement + a note on the tabled fix in FUTURE_WORK.md #7.2).
+        #
+        # Explicit override:
+        #   VQE_LEGACY_EXPECT=1   -> force legacy path (was original opt-out)
+        #   VQE_GPU_EXPECT_MPI=1  -> force GPU-native even under MPI
+        #                            (for A/B measurement + future validation
+        #                            of a fix for the transpile regression)
+        _env = lambda k: os.environ.get(k, "").strip() in {"1", "yes", "true"}
+        _force_legacy = _env("VQE_LEGACY_EXPECT")
+        _force_gpu_under_mpi = _env("VQE_GPU_EXPECT_MPI")
+        _mpi_safe_default = (self.size == 1) or _force_gpu_under_mpi
+
         _use_gpu_expect = (
             self._gpu_sv
             and len(local_terms) > 0
-            and os.environ.get("VQE_LEGACY_EXPECT", "").strip() not in {"1", "yes", "true"}
+            and not _force_legacy
+            and _mpi_safe_default
         )
 
         if _use_gpu_expect:
@@ -611,16 +630,23 @@ class HPCHybridStack:
 
         local_terms = self.partition(problem.pauli_terms)
 
-        # Same GPU-native vs legacy dispatch as _evaluate_distributed_statevector.
-        # The IBM path uses this "T_accel" work to mask QPU RTT (the thesis's
-        # masking metric M = T_accel / T_comm) -- keeping it on the GPU reduces
-        # T_accel without touching T_comm, which improves the masking ratio.
-        # If T_accel drops below T_comm the masking claim weakens, but at
-        # 14q + 1086 Pauli terms this is not a risk (T_comm is 32-60s QPU RTT).
+        # Same GPU-native vs legacy dispatch as _evaluate_distributed_statevector,
+        # including the MPI-safe default policy fixed 2026-09-04:
+        # GPU-native at NP=1, legacy at NP>=2 (avoids the per-rank Aer transpile
+        # regression that showed 3.6x slowdown on H2O at NP=2). See the
+        # equivalent block in _evaluate_distributed_statevector for the full
+        # rationale. VQE_LEGACY_EXPECT=1 forces legacy; VQE_GPU_EXPECT_MPI=1
+        # forces GPU-native regardless of rank count.
+        _env = lambda k: os.environ.get(k, "").strip() in {"1", "yes", "true"}
+        _force_legacy = _env("VQE_LEGACY_EXPECT")
+        _force_gpu_under_mpi = _env("VQE_GPU_EXPECT_MPI")
+        _mpi_safe_default = (self.size == 1) or _force_gpu_under_mpi
+
         _use_gpu_expect = (
             self._gpu_sv
             and len(local_terms) > 0
-            and os.environ.get("VQE_LEGACY_EXPECT", "").strip() not in {"1", "yes", "true"}
+            and not _force_legacy
+            and _mpi_safe_default
         )
 
         if _use_gpu_expect:
