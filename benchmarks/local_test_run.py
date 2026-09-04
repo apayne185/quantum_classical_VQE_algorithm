@@ -149,7 +149,23 @@ def run_finance_local(stack:HPCHybridStack):
 
 
 def run_scaling_local(stack: HPCHybridStack):
-    if stack.rank == 0: print(f"\n RUNNING SCALING (with P={stack.size} ranks) ")
+    """Small extra scaling probe: LiH at 10 iters, fixed, always.
+
+    NOTE (2026-09-04): this is NOT the paper's strong-scaling data
+    source. The paper's per-molecule per-P wall-clock table is built
+    from the MAIN benchmark loop above (line ~260), which iterates
+    over env-controlled MOLECULES and respects MAX_ITERS. Each
+    invocation of local_test_run.py at a given P writes one JSON to
+    results/<hw_slug>/simulator/simulator_<ts>.json containing all
+    molecules' wall times at THAT P; `make scaling` loops P externally.
+
+    This function stays as a legacy sanity probe: a quick LiH+10-iter
+    run per P, written as a small .txt for eyeball comparison. Fixed
+    LiH + 10 iters is intentional -- it is not meant to reflect
+    convergence, only per-iter throughput at a canonical mid-size
+    molecule.
+    """
+    if stack.rank == 0: print(f"\n RUNNING SCALING PROBE (LiH, 10 iters, P={stack.size} -- diagnostic only, see simulator/*.json for paper data)")
 
     problem = make_problem("LiH")
     if problem is None:
