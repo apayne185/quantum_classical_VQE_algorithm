@@ -166,6 +166,12 @@ class HPCHybridStack:
 
     def vqe_optimize(self, problem: QuantumProblem, max_iterations:int=100, tolerance:float=1.6e-3, restart_from:str | None = None, checkpoint_dir: str = "checkpoints", start_iter: int = 0, seed: int | None = None) -> tuple[np.ndarray, list[float]]:
         self._below_fci_warned = False
+        # Reset best-physical-energy trackers per molecule -- otherwise a
+        # multi-molecule run leaks the previous molecule's cached value into
+        # the current one when its trajectory drops below FCI.
+        for _attr in ("_best_physical_energy", "_best_physical_theta", "_best_physical_iter"):
+            if hasattr(self, _attr):
+                delattr(self, _attr)
         if seed is not None:
             np.random.seed(seed)
         comm = self.comm

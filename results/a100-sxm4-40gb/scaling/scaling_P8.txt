@@ -1,1 +1,1 @@
-P=8 T_total=2.5096 final_E=-3.249789 tier=hwe_adaptive qubits=12 iters=10
+P=8 T_total=0.7386 final_E=-1.289499 tier=hwe_adaptive qubits=12 iters=10
