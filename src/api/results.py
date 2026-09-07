@@ -16,7 +16,24 @@ def _git_commit():
         return "unknown"
 
 
-def save_results(data: dict, backend: str, results_dir: str = "results", hw=None) -> str:
+def _hw_attr(hw, name, default):
+    if hw is None:
+        return default
+    v = getattr(hw, name, None)
+    return v if v is not None else default
+
+
+def _hpc_cuda_build():
+    # Read the compile-time CUDA flag from the C++ bridge. Safe on Python-only
+    # builds -- returns None if the module can't be imported.
+    try:
+        import hpc_core
+        return bool(hpc_core.cuda_build())
+    except Exception:
+        return None
+
+
+def save_results(data: dict, backend: str, results_dir: str = "results", hw=None, stack=None) -> str:
     # Save run results as JSON, returns the file path.
     # Files are organized results/<hardware-slug>/<backend-subdir>/ so runs
     # from different GPUs (or CPU-only) are never mixed in the same directory.
@@ -43,6 +60,10 @@ def save_results(data: dict, backend: str, results_dir: str = "results", hw=None
         "gpu_name": hw.gpu_name if hw is not None else "",
         "gpu_class": hw.gpu_class if hw is not None else "",
         "hostname": hw.hostname if hw is not None else "",
+        "precision": getattr(stack, "precision", None) or _hw_attr(hw, "override_precision", "auto"),
+        "cuda_build": _hpc_cuda_build(),
+        "mpi_thread_level": getattr(stack, "provided_thread_level", None),
+        "gpu_sv_available": getattr(stack, "_gpu_sv", None),
         **data,
     }
 
