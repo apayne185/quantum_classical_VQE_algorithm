@@ -195,6 +195,6 @@ if __name__ == "__main__":
                 "seed": SEED,
                 "max_iters": MAX_ITERS,
                 "chemistry": chem_result,
-            }, backend=BACKEND, hw=stack.hw)
+            }, backend=BACKEND, hw=stack.hw, stack=stack)
 
     close_log()

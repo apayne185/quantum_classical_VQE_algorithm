@@ -3,6 +3,8 @@
 #include <vector>
 #include <mpi.h>
 #include <cmath>
+#include <cstdlib>
+#include <string>
 
 #ifdef HAVE_CUDA
 #include <cuda_runtime.h>
@@ -104,10 +106,28 @@ static double compute_expectation_cuda(const std::vector<double>& theta, const s
 
 
 StackResult route_workload(HybridWorkload& wl) {
-    StackResult res; 
+    StackResult res;
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    // The local-compute path below uses a mean-field approximation that is
+    // exact only for diagonal Hamiltonians and product states. Not valid for
+    // entangled HWE circuits, so it is not used for any published results.
+    // Gate behind an explicit opt-in so accidental use is impossible.
+    const char* allow_mf = std::getenv("VQE_ALLOW_MEANFIELD");
+    const bool meanfield_allowed = (allow_mf != nullptr &&
+        (std::string(allow_mf) == "1" || std::string(allow_mf) == "yes" || std::string(allow_mf) == "true"));
+    if (!meanfield_allowed) {
+        if (rank == 0) {
+            fprintf(stderr,
+                "[Dispatcher] ERROR: C++ local-compute path is diagnostic-only "
+                "(mean-field approximation, not valid for entangled circuits). "
+                "Use the Python simulator/GPU expectation path instead. "
+                "Set VQE_ALLOW_MEANFIELD=1 to bypass this guard (research only).\n");
+        }
+        MPI_Abort(MPI_COMM_WORLD, 2);
+    }
 
     if (size > 1 && size % 2 != 0) {
         if (rank == 0) {

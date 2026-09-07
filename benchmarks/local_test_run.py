@@ -310,7 +310,7 @@ if __name__ == "__main__":
                 "molecules": results,
                 "scaling": scaling_result,
                 "weak_scaling": weak_scaling_result,
-            }, backend=BACKEND, hw=stack.hw)
+            }, backend=BACKEND, hw=stack.hw, stack=stack)
 
     close_log()
 
