@@ -279,9 +279,12 @@ if __name__ == "__main__":
                         "history": history,
                     }
 
-        # Finance problem - kept in codebase but excluded from chemistry-focused benchmarks (additional work, will be extended in future)
-        # finance_result = run_finance_local(stack)
-        
+        # Finance problem - opt-in via RUN_FINANCE=1. Demonstrates the same
+        # middleware running a non-chemistry workload (portfolio QUBO -> Ising).
+        finance_result = None
+        if os.environ.get("RUN_FINANCE", "").strip() in {"1", "yes", "true"}:
+            finance_result = run_finance_local(stack)
+
         scaling_result = run_scaling_local(stack)
         weak_scaling_result = run_weak_scaling(stack)
 
@@ -310,6 +313,7 @@ if __name__ == "__main__":
                 "molecules": results,
                 "scaling": scaling_result,
                 "weak_scaling": weak_scaling_result,
+                "finance": finance_result,
             }, backend=BACKEND, hw=stack.hw, stack=stack)
 
     close_log()
