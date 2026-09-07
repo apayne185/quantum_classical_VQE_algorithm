@@ -404,7 +404,7 @@ class FinanceProblem(QuantumProblem):
         # Run the same correlation-score / tier selection used for chemistry
         # so every problem gets one uniform "[Ansatz] ... corr_score=..." log
         # line -- lets the paper's tier claim be verified from any run's log.
-        self.diagnostics = compute_correlation_score(self.pauli_terms)
+        self.diagnostics = estimate_correlation_strength(self.pauli_terms)
         self.ansatz_tier = self.diagnostics["recommended_tier"]
 
         ansatz, n_params = build_ansatz(n, self.ansatz_tier, reps=1)
