@@ -400,12 +400,22 @@ class FinanceProblem(QuantumProblem):
                     pauli_terms.append((op, zizj_coeff))
 
         self.pauli_terms = pauli_terms
-        ansatz = EfficientSU2(n, reps=1).decompose()
+
+        # Run the same correlation-score / tier selection used for chemistry
+        # so every problem gets one uniform "[Ansatz] ... corr_score=..." log
+        # line -- lets the paper's tier claim be verified from any run's log.
+        self.diagnostics = estimate_correlation_strength(self.pauli_terms)
+        self.ansatz_tier = self.diagnostics["recommended_tier"]
+
+        ansatz, n_params = build_ansatz(n, self.ansatz_tier, reps=1)
         self.circuit_qasm = qasm3.dumps(ansatz)
         self.ansatz_circuit = ansatz
-        self.num_params = ansatz.num_parameters
+        self.num_params = n_params
 
-        print(f"[Finance] Prepared {len(self.pauli_terms)} Pauli terms for {n}-asset portfolio ({self.num_qubits} qubits,  {self.num_params} params)  ")  
-        
-        self._prepared = True 
+        tier_label = ANSATZ_TIERS.get(self.ansatz_tier, {}).get("label", self.ansatz_tier)
+        print(f"[Finance] Prepared {len(self.pauli_terms)} Pauli terms for {n}-asset portfolio ({self.num_qubits} qubits,  {self.num_params} params)  ")
+        print(f"[Ansatz] {tier_label} (auto) | corr_score={self.diagnostics['correlation_score']:.3f} | off_diag_ratio={self.diagnostics['off_diag_ratio']:.3f}")
+        print(f"[Reason] {self.diagnostics['reasoning']}")
+
+        self._prepared = True
 
