@@ -1,0 +1,118 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.6.3
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+hpc_core and interface imported.
+[    0.00s] Log started
+[Config] GPU=requested
+[Config] Molecules: ['N2']
+[Config] Resolver: max_qubits=30, cache=.pubchem_cache/
+[Stack] GPU statevector (cuStateVec) available
+[hw] NVIDIA A100-SXM4-40GB (datacenter, 40.0 GB, fp64:fp32≈0.500) | libs: aer-gpu, cuquantum | MPI=1 | backend=custatevec
+[Stack]  Initialized 1 MPI rank(s), GPU=enabled, SV_backend=GPU (cuStateVec), backend='simulator'
+
+
+--- RUNNING CHEMISTRY TASK N2 ---
+[Resolver] 'N2' found in local registry 
+[Chemistry:N2] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:N2] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:N2] [+   6.5s] Hamiltonian: 2951 Pauli terms, 20 qubits
+[Chemistry:N2] [+   6.5s] FCI ground-truth via PySCF
+[Chemistry:N2] [+   6.8s] build_ansatz(tier=hwe_adaptive, reps=2) -- this is the slow one at high n
+[Chemistry:N2] [+   6.8s] QASM3 serialization (160 params, 730 gates)
+[Chemistry:N2] [+   6.8s] prepare() complete
+[Chemistry:N2] 2951 Pauli terms, 20 qubits, 160 params, reps=2. FCI reference: -107.6482 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.501 | off_diag_ratio=0.005
+[Reason] score=0.501 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.005, zz_frac=0.993). Adaptive HWE with full entanglement recommended.
+[Stack] Precision: fp64 for 20-qubit problem (GPU fits up to ~30 qubits at this precision)
+[iter 0001] start 11:47:48 (20q, 2951 Pauli terms, 160 params)
+Iter 0001/1 | E: -5.917477 | Δ: inf | M: 425503.4690 | iter= 17.40s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+
+[N2] Ansatz tier:hwe_adaptive
+[N2] Corr score: 0.501 
+[N2] Final energy: -5.917477 Ha 
+[N2] Reference FCI : -107.648184 Ha 
+[N2] Absolute error: +101.7307 Ha 
+[N2] Iterations run: 1 (best at iter 1)
+[N2] Wall time: 17.40s (includes QPU queue + RTT) 
+[N2] Time/iter: 17.40 s 
+[N2] Source: registry 
+[N2] Active electrons: 10 
+[N2] Estimated qubits: 16 
+[N2] Note: Frozen 4 core electrons. Active space: 10 electrons, 16 qubits 
+
+ RUNNING SCALING (with P=1 ranks) 
+[Resolver] 'LiH' found in local registry 
+[Chemistry:LiH] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:LiH] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:LiH] [+   1.5s] Hamiltonian: 631 Pauli terms, 12 qubits
+[Chemistry:LiH] [+   1.5s] FCI ground-truth via PySCF
+[Chemistry:LiH] [+   1.6s] build_ansatz(tier=hwe_adaptive, reps=2) -- this is the slow one at high n
+[Chemistry:LiH] [+   1.6s] QASM3 serialization (96 params, 294 gates)
+[Chemistry:LiH] [+   1.6s] prepare() complete
+[Chemistry:LiH] 631 Pauli terms, 12 qubits, 96 params, reps=2. FCI reference: -7.8825 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.979). Adaptive HWE with full entanglement recommended.
+[Stack] Precision: fp64 for 12-qubit problem (GPU fits up to ~30 qubits at this precision)
+Iter 0001/10 | E: -0.413278 | Δ: inf | M: 2921.8486 | iter=  0.09s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0002/10 | E: -1.045669 | Δ: 6.32e-01 | M: 2808.5338 | iter=  0.09s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0003/10 | E: -1.073224 | Δ: 2.76e-02 | M: 3177.7285 | iter=  0.09s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0004/10 | E: -1.764932 | Δ: 6.92e-01 | M: 3210.0167 | iter=  0.09s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0005/10 | E: -3.110726 | Δ: 1.35e+00 | M: 2997.3144 | iter=  0.09s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/scaling/checkpoint_iter_0005.npy. 
+Iter 0006/10 | E: -3.182812 | Δ: 7.21e-02 | M: 3001.6823 | iter=  0.09s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0007/10 | E: -3.258159 | Δ: 7.53e-02 | M: 2736.8540 | iter=  0.08s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0008/10 | E: -3.362795 | Δ: 1.05e-01 | M: 2407.9055 | iter=  0.08s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0009/10 | E: -3.378844 | Δ: 1.60e-02 | M: 2517.8552 | iter=  0.08s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0010/10 | E: -3.365285 | Δ: 1.36e-02 | M: 2716.6735 | iter=  0.08s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/scaling/checkpoint_iter_0010.npy. 
+[Scaling] P=1 T_total=0.8674 final_E=-3.365285 tier=hwe_adaptive qubits=12 iters=10
+
+ RUNNING WEAK SCALING (P=1, molecule=H2)
+[Resolver] 'H2' found in local registry 
+[Chemistry:H2] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:H2] [+   0.0s] second_q_op() + JW mapping
+[Chemistry:H2] [+   0.1s] Hamiltonian: 15 Pauli terms, 4 qubits
+[Chemistry:H2] [+   0.1s] FCI ground-truth via PySCF
+[Chemistry:H2] [+   0.1s] build_ansatz(tier=hwe_adaptive, reps=1) -- this is the slow one at high n
+[Chemistry:H2] [+   0.1s] QASM3 serialization (24 params, 36 gates)
+[Chemistry:H2] [+   0.1s] prepare() complete
+[Chemistry:H2] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[Stack] Precision: fp64 for 4-qubit problem (GPU fits up to ~30 qubits at this precision)
+Iter 0001/10 | E: -0.022782 | Δ: inf | M: 401.7887 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0002/10 | E: -0.022273 | Δ: 5.09e-04 | M: 475.1745 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0003/10 | E: -0.022499 | Δ: 2.26e-04 | M: 425.6188 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0004/10 | E: -0.036720 | Δ: 1.42e-02 | M: 430.9307 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0005/10 | E: -0.025059 | Δ: 1.17e-02 | M: 442.6249 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/weak_scaling/checkpoint_iter_0005.npy. 
+Iter 0006/10 | E: -0.034659 | Δ: 9.60e-03 | M: 429.0850 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0007/10 | E: -0.033084 | Δ: 1.58e-03 | M: 440.4093 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0008/10 | E: -0.028795 | Δ: 4.29e-03 | M: 419.0810 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0009/10 | E: -0.027231 | Δ: 1.56e-03 | M: 444.7501 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0010/10 | E: -0.037614 | Δ: 1.04e-02 | M: 452.9458 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/weak_scaling/checkpoint_iter_0010.npy. 
+[Weak Scaling] P=1 mol=H2 terms=15 terms/rank=15 T_total=0.0633 T/iter=0.0063 final_E=-0.037614
+
+
+
+---ALL LOCAL BENCHMARKS COMPLETE ----
+Ranks used : 1
+GPU : True
+Backend : simulator 
+Molecule   Energy (Ha)      Error (Ha)     Ansatz               Corr   Iters    Time(s)    T/iter(s) 
+N2         -5.917477        +101.7307 Ha   HWE (adaptive)       0.501  1        17.40      17.3973   
+[Results] Saved to results/a100-sxm4-40gb/simulator/simulator_20260907_114808.json
+[   27.36s] Log closed

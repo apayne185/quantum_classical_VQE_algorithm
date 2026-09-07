@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-09-07T11:48:08.640729",
+  "backend": "simulator",
+  "git_commit": "unknown",
+  "gpu_name": "NVIDIA A100-SXM4-40GB",
+  "gpu_class": "datacenter",
+  "hostname": "132-145-129-97",
+  "precision": "fp64",
+  "cuda_build": true,
+  "mpi_thread_level": 3,
+  "gpu_sv_available": true,
+  "mpi_ranks": 1,
+  "gpu": true,
+  "seed": 42,
+  "molecules": {
+    "N2": {
+      "energy": -5.917476615441823,
+      "tier": "hwe_adaptive",
+      "score": 0.5012668103612478,
+      "fci": -107.64818429172524,
+      "iters": 1,
+      "wall_time": 17.397312238000268,
+      "history": [
+        -5.917476615441823
+      ]
+    }
+  },
+  "scaling": {
+    "ranks": 1,
+    "wall_time": 0.867381056999875,
+    "final_energy": -3.36528474528101,
+    "tier": "hwe_adaptive",
+    "qubits": 12,
+    "iterations": 10
+  },
+  "weak_scaling": {
+    "ranks": 1,
+    "molecule": "H2",
+    "pauli_terms": 15,
+    "terms_per_rank": 15.0,
+    "wall_time": 0.06326627599992207,
+    "time_per_iter": 0.006326627599992207,
+    "final_energy": -0.03761425556027463,
+    "iterations": 10
+  },
+  "finance": null
+}

@@ -1,0 +1,50 @@
+[    0.00s] Log started
+[Config] GPU=requested
+[Config] Molecules: ['H2']
+[Config] Resolver: max_qubits=30, cache=.pubchem_cache/
+[Stack] GPU statevector (cuStateVec) available
+[hw] NVIDIA A100-SXM4-40GB (datacenter, 40.0 GB, fp64:fp32≈0.500) | libs: aer-gpu, cuquantum | MPI=1 | backend=custatevec
+[Stack]  Initialized 1 MPI rank(s), GPU=enabled, SV_backend=GPU (cuStateVec), backend='simulator'
+
+
+--- RUNNING CHEMISTRY TASK H2 ---
+[Resolver] 'H2' found in local registry 
+[Chemistry:H2] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:H2] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:H2] [+   0.1s] Hamiltonian: 15 Pauli terms, 4 qubits
+[Chemistry:H2] [+   0.1s] FCI ground-truth via PySCF
+[Chemistry:H2] [+   0.3s] build_ansatz(tier=hwe_adaptive, reps=1) -- this is the slow one at high n
+[Chemistry:H2] [+   0.3s] QASM3 serialization (24 params, 36 gates)
+[Chemistry:H2] [+   0.3s] prepare() complete
+[Chemistry:H2] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[Stack] Precision: fp64 for 4-qubit problem (GPU fits up to ~30 qubits at this precision)
+Iter 0001/10 | E: -0.036757 | Δ: inf | M: 628.8165 | iter=  0.02s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0002/10 | E: -0.034451 | Δ: 2.31e-03 | M: 401.3113 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0003/10 | E: -0.045015 | Δ: 1.06e-02 | M: 405.8791 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0004/10 | E: -0.029154 | Δ: 1.59e-02 | M: 416.8402 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0005/10 | E: -0.051905 | Δ: 2.28e-02 | M: 389.8975 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0005.npy. 
+Iter 0006/10 | E: -0.057849 | Δ: 5.94e-03 | M: 381.9531 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0007/10 | E: -0.064292 | Δ: 6.44e-03 | M: 391.1691 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0008/10 | E: -0.060893 | Δ: 3.40e-03 | M: 351.5539 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0009/10 | E: -0.066076 | Δ: 5.18e-03 | M: 387.4881 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0010/10 | E: -0.086044 | Δ: 2.00e-02 | M: 408.5970 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0010.npy. 
+
+[H2] Ansatz tier:hwe_adaptive
+[H2] Corr score: 0.342 
+[H2] Final energy: -0.086044 Ha 
+[H2] Reference FCI : -1.137284 Ha 
+[H2] Absolute error: +1.0512 Ha 
+[H2] Iterations run: 10 (best at iter 10)
+[H2] Wall time: 0.07s (includes QPU queue + RTT) 
+[H2] Time/iter: 0.01 s 
+[H2] Source: registry 
+[H2] Active electrons: 2 
+[H2] Estimated qubits: 4 
+
+
+
+--- RUNNING FINANCE (4-Assest Portfolio QUBO) TASK ---
