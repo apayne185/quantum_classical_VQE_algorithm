@@ -77,6 +77,19 @@ def test_problem_layer(stack: HPCHybridStack):
 
 def test_dispatcher_layer(stack: HPCHybridStack, problem: ChemistryProblem):
     section("LAYER 3: C++ Dispatcher (single dispatch)")
+
+    # The C++ dispatcher's local-compute path uses a mean-field approximation
+    # that is guarded behind VQE_ALLOW_MEANFIELD=1 (see dispatcher.cpp). It is
+    # diagnostic-only, not used for any published result, and calling it
+    # without the opt-in triggers MPI_Abort. Skip the invocation unless the
+    # user has explicitly opted in.
+    if os.environ.get("VQE_ALLOW_MEANFIELD", "").strip() not in {"1", "yes", "true"}:
+        if stack.rank == 0:
+            print("Layer 3 dispatcher.execute() is guarded behind VQE_ALLOW_MEANFIELD=1")
+            print("(mean-field approximation, diagnostic-only). Skipping single-dispatch call.")
+            print("[LAYER 3] SKIPPED (opt-in guard active)")
+        return
+
     num_params = problem.num_params
     theta= np.random.uniform(0, 2 * np.pi, num_params)
     ck = 0.1
