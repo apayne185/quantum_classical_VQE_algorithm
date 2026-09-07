@@ -1,1 +1,1 @@
-P=2 mol=LiH terms=631 terms/rank=316 T_total=0.4858 T/iter=0.0486 final_E=-3.888914
+P=2 mol=LiH terms=631 terms/rank=316 T_total=0.4924 T/iter=0.0492 final_E=-2.129162
