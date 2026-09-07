@@ -1,0 +1,62 @@
+{
+  "hostname": "reconstructed_from_log",
+  "timestamp": "20260904_legacy_p1_reconstructed",
+  "mpi_ranks": 1,
+  "seed": 42,
+  "backend": "simulator",
+  "gpu": true,
+  "path": "GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)",
+  "molecules": {
+    "H2": {
+      "energy": -1.134896,
+      "fci": -1.137284,
+      "error": 0.0024,
+      "iters": 200,
+      "best_iter": 126,
+      "wall_time": 1.04,
+      "num_qubits": 4,
+      "num_pauli": 15
+    },
+    "LiH": {
+      "energy": -7.546284,
+      "fci": -7.882472,
+      "error": 0.3362,
+      "iters": 768,
+      "best_iter": 768,
+      "wall_time": 55.0,
+      "num_qubits": 12,
+      "num_pauli": 631
+    },
+    "BeH2": {
+      "energy": -15.555709,
+      "fci": -15.595118,
+      "error": 0.0394,
+      "iters": 896,
+      "best_iter": 261,
+      "wall_time": 106.61,
+      "num_qubits": 14,
+      "num_pauli": 666
+    },
+    "H2O": {
+      "energy": -74.792123,
+      "fci": -75.012437,
+      "error": 0.2203,
+      "iters": 896,
+      "best_iter": 37,
+      "wall_time": 165.87,
+      "num_qubits": 14,
+      "num_pauli": 1086
+    },
+    "NH3": {
+      "energy": -74.792123,
+      "fci": -55.51827,
+      "error": 19.2739,
+      "iters": 1024,
+      "best_iter": 37,
+      "wall_time": 1264.63,
+      "num_qubits": 16,
+      "num_pauli": 3057
+    }
+  },
+  "_note": "Reconstructed from results/scaling/scaling_legacy_p1.log. N2 was killed mid-iter (started at iter 231/1280, ETA 4h30m). Only 5 molecules present."
+}
