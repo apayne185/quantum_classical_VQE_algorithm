@@ -19,7 +19,7 @@ Designed as reusable middleware: `HardwareProfile.detect()` auto-selects the bes
 ### Path A — Docker (recommended for reviewers, local development, cloud GPUs)
 
 ```bash
-git clone <repo-url> && cd quantum_classical_VQE_algorithm
+git clone <repo-url> && cd qatabasis
 make build                           # ~10 min first time; CUDA 12.6 + OpenMPI + Python 3.11 image
 make trial NP=2                      # 7-layer diagnostic; passes 7/7 on any laptop (CPU fallback)
 make run NP=2                        # Full 4-molecule benchmark (simulator)
@@ -190,7 +190,7 @@ The GPU accelerated experiments used [Lambda Cloud](https://lambdalabs.com/servi
    ```
 4. **Clone and run** the stack. The Docker image handles all CUDA/driver dependencies:
    ```bash
-   git clone <repo-url> && cd quantum_classical_VQE_algorithm
+   git clone <repo-url> && cd qatabasis
    make build && make run NP=4           #  GPU is auto detected inside container
    ```
 5. Verify GPU detection in the output:
@@ -430,7 +430,7 @@ Every result in this repository can be regenerated from the committed raw JSON f
 ### Verify the code from a clean install (~15 min)
 
 ```bash
-git clone <repo-url> && cd quantum_classical_VQE_algorithm
+git clone <repo-url> && cd qatabasis
 docker --version                              # any recent Docker Desktop
 make build                                    # ~10 min, builds Qiskit Aer from source
 make trial NP=2                               # ~5 min, expect: Tests passed: 7 / 7

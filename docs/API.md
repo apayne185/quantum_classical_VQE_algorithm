@@ -456,8 +456,8 @@ registry pattern; see [`docs/FUTURE_WORK.md`](FUTURE_WORK.md) for details.
 
 ### Tutorial 1 — Run a benchmark on your laptop (Docker, no GPU required)
 
-    git clone https://github.com/apayne185/quantum_classical_VQE_algorithm.git
-    cd quantum_classical_VQE_algorithm
+    git clone https://github.com/apayne185/qatabasis.git
+    cd qatabasis
     make build              # ~10 min first time
     make trial NP=2         # ~5 min, expect: Tests passed: 7 / 7
     make run NP=2           # full 4-molecule benchmark
@@ -472,8 +472,8 @@ Same commands, different host. On Lambda Cloud or any host with the
 NVIDIA Container Toolkit installed:
 
     ssh ubuntu@<gpu-instance-ip>
-    git clone https://github.com/apayne185/quantum_classical_VQE_algorithm.git
-    cd quantum_classical_VQE_algorithm
+    git clone https://github.com/apayne185/qatabasis.git
+    cd qatabasis
     sudo make build
     sudo make trial NP=2
 
