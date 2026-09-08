@@ -10,7 +10,7 @@ sys.path.insert(0, _root)
 sys.path.insert(0, os.path.join(_root, "build"))
 
 try:
-    from src.api.interface import HPCHybridStack
+    from src.api.interface import QatabasisStack
     from src.api.problems import ChemistryProblem, FinanceProblem
     from src.api.results import save_results
     from src.api.log import init_log, log, close_log
@@ -57,7 +57,7 @@ def check_credentials():
 
 
 
-def run_chemistry_ibm(stack: HPCHybridStack):
+def run_chemistry_ibm(stack: QatabasisStack):
     if stack.rank == 0: print("\n--- RUNNING IBM QPU CHEMISTRY TASK (H2 Ground State) ----")
 
     problem = ChemistryProblem.from_name("H2")
@@ -101,7 +101,7 @@ def run_chemistry_ibm(stack: HPCHybridStack):
 
 
 
-def run_finance_ibm(stack: HPCHybridStack):
+def run_finance_ibm(stack: QatabasisStack):
     if stack.rank == 0:
         print("\n--- RUNNING FINANCE (4-Asset Portfolio QUBO) on IBM QPU ---")
         print("[WARNING] This uses QPU time. Each iteration submits a real job.")
@@ -136,7 +136,7 @@ def run_finance_ibm(stack: HPCHybridStack):
 
 
 
-def run_scaling_ibm(stack: HPCHybridStack):
+def run_scaling_ibm(stack: QatabasisStack):
     if stack.rank == 0:
         print(f"\n[Scaling-IBM] Running with P={stack.size} ranks ...")
         print("[WARNING] This uses QPU time.")
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     check_credentials()
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # Detected once here purely to route the log file; HPCHybridStack below
+    # Detected once here purely to route the log file; QatabasisStack below
     # re-detects for its own use (cheap, avoids threading hw through init_log).
     _hw_slug = HardwareProfile.detect().results_slug()
     os.makedirs(f"results/{_hw_slug}/ibm", exist_ok=True)
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     print("[Config] WARNING: This run submits real jobs to IBM Quantum.")
     print(" Each iteration incurs QPU time. Monitor usage at  https://quantum.cloud.ibm.com \n\n")
 
-    with HPCHybridStack(use_gpu=USE_GPU, backend=BACKEND) as stack:
+    with QatabasisStack(use_gpu=USE_GPU, backend=BACKEND) as stack:
         chem_result = run_chemistry_ibm(stack)
         # Disabled for now to conserve IBM open access QPU time
         # finance_result = run_finance_ibm(stack)

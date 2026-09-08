@@ -127,9 +127,9 @@ weak-scaling:
 	    $(IMAGE_NAME) \
 	    mpirun --allow-run-as-root -np $$p python3 -c \
 	    "import sys,os; sys.path.insert(0,'.'); sys.path.insert(0,'build'); \
-	     from src.api.interface import HPCHybridStack; \
+	     from src.api.interface import QatabasisStack; \
 	     from benchmarks.local_test_run import run_weak_scaling; \
-	     stack = HPCHybridStack(use_gpu=os.environ.get('USE_GPU','no')=='yes', backend='simulator'); \
+	     stack = QatabasisStack(use_gpu=os.environ.get('USE_GPU','no')=='yes', backend='simulator'); \
 	     run_weak_scaling(stack); stack.finalize()" \
 	    > results/scaling/weak_scaling_p$$p.log 2>&1; \
 	  echo "  P=$$p done."; \
