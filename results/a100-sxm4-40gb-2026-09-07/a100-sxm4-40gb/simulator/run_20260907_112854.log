@@ -1,0 +1,82 @@
+[    0.00s] Log started
+[Config] GPU=requested
+[Config] Molecules: ['H2', 'LiH', 'BeH2', 'H2O', 'NH3']
+[Config] Resolver: max_qubits=30, cache=.pubchem_cache/
+[Resolver] 'H2' found in local registry 
+[Chemistry:H2] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:H2] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:H2] [+   0.1s] Hamiltonian: 15 Pauli terms, 4 qubits
+[Chemistry:H2] [+   0.1s] FCI ground-truth via PySCF
+[Chemistry:H2] [+   0.3s] build_ansatz(tier=hwe_adaptive, reps=1) -- this is the slow one at high n
+[Chemistry:H2] [+   0.3s] QASM3 serialization (24 params, 36 gates)
+[Chemistry:H2] [+   0.3s] prepare() complete
+[Chemistry:H2] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[Resolver] 'LiH' found in local registry 
+[Chemistry:LiH] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:LiH] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:LiH] [+   1.4s] Hamiltonian: 631 Pauli terms, 12 qubits
+[Chemistry:LiH] [+   1.4s] FCI ground-truth via PySCF
+[Chemistry:LiH] [+   1.5s] build_ansatz(tier=hwe_adaptive, reps=2) -- this is the slow one at high n
+[Chemistry:LiH] [+   1.5s] QASM3 serialization (96 params, 294 gates)
+[Chemistry:LiH] [+   1.5s] prepare() complete
+[Chemistry:LiH] 631 Pauli terms, 12 qubits, 96 params, reps=2. FCI reference: -7.8825 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.979). Adaptive HWE with full entanglement recommended.
+[Resolver] 'BeH2' found in local registry 
+[Chemistry:BeH2] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:BeH2] [+   0.0s] second_q_op() + JW mapping
+[Chemistry:BeH2] [+   1.5s] Hamiltonian: 666 Pauli terms, 14 qubits
+[Chemistry:BeH2] [+   1.5s] FCI ground-truth via PySCF
+[Chemistry:BeH2] [+   1.6s] build_ansatz(tier=hwe_adaptive, reps=2) -- this is the slow one at high n
+[Chemistry:BeH2] [+   1.6s] QASM3 serialization (112 params, 385 gates)
+[Chemistry:BeH2] [+   1.6s] prepare() complete
+[Chemistry:BeH2] 666 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -15.5951 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.501 | off_diag_ratio=0.004
+[Reason] score=0.501 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.004, zz_frac=0.977). Adaptive HWE with full entanglement recommended.
+[Resolver] 'H2O' found in local registry 
+[Chemistry:H2O] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:H2O] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:H2O] [+   2.3s] Hamiltonian: 1086 Pauli terms, 14 qubits
+[Chemistry:H2O] [+   2.3s] FCI ground-truth via PySCF
+[Chemistry:H2O] [+   2.4s] build_ansatz(tier=hwe_adaptive, reps=2) -- this is the slow one at high n
+[Chemistry:H2O] [+   2.4s] QASM3 serialization (112 params, 385 gates)
+[Chemistry:H2O] [+   2.4s] prepare() complete
+[Chemistry:H2O] 1086 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -75.0124 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.986). Adaptive HWE with full entanglement recommended.
+[Resolver] 'NH3' found in local registry 
+[Chemistry:NH3] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:NH3] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:NH3] [+   6.5s] Hamiltonian: 3057 Pauli terms, 16 qubits
+[Chemistry:NH3] [+   6.5s] FCI ground-truth via PySCF
+[Chemistry:NH3] [+   6.6s] build_ansatz(tier=hwe_adaptive, reps=2) -- this is the slow one at high n
+[Chemistry:NH3] [+   6.6s] QASM3 serialization (128 params, 488 gates)
+[Chemistry:NH3] [+   6.6s] prepare() complete
+[Chemistry:NH3] 3057 Pauli terms, 16 qubits, 128 params, reps=2. FCI reference: -55.5183 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.501 | off_diag_ratio=0.005
+[Reason] score=0.501 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.005, zz_frac=0.994). Adaptive HWE with full entanglement recommended.
+[Resolver] 'LiH' found in local registry 
+[Chemistry:LiH] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:LiH] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:LiH] [+   1.5s] Hamiltonian: 631 Pauli terms, 12 qubits
+[Chemistry:LiH] [+   1.5s] FCI ground-truth via PySCF
+[Chemistry:LiH] [+   1.6s] build_ansatz(tier=hwe_adaptive, reps=2) -- this is the slow one at high n
+[Chemistry:LiH] [+   1.6s] QASM3 serialization (96 params, 294 gates)
+[Chemistry:LiH] [+   1.6s] prepare() complete
+[Chemistry:LiH] 631 Pauli terms, 12 qubits, 96 params, reps=2. FCI reference: -7.8825 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.979). Adaptive HWE with full entanglement recommended.
+[Resolver] 'H2O' found in local registry 
+[Chemistry:H2O] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:H2O] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:H2O] [+   2.5s] Hamiltonian: 1086 Pauli terms, 14 qubits
+[Chemistry:H2O] [+   2.5s] FCI ground-truth via PySCF
+[Chemistry:H2O] [+   2.6s] build_ansatz(tier=hwe_adaptive, reps=2) -- this is the slow one at high n
+[Chemistry:H2O] [+   2.6s] QASM3 serialization (112 params, 385 gates)
+[Chemistry:H2O] [+   2.6s] prepare() complete
+[Chemistry:H2O] 1086 Pauli terms, 14 qubits, 112 params, reps=2. FCI reference: -75.0124 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.986). Adaptive HWE with full entanglement recommended.
+[  431.81s] Log closed

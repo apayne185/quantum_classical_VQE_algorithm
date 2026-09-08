@@ -1,0 +1,365 @@
+[    0.00s] Log started
+[Config] GPU=requested
+[Config] Molecules: ['H2', 'LiH', 'BeH2', 'H2O', 'NH3']
+[Config] Resolver: max_qubits=30, cache=.pubchem_cache/
+[Stack] GPU statevector (cuStateVec) available
+[hw] NVIDIA A100-SXM4-40GB (datacenter, 40.0 GB, fp64:fp32≈0.500) | libs: aer-gpu, cuquantum | MPI=1 | backend=custatevec
+[Stack]  Initialized 1 MPI rank(s), GPU=enabled, SV_backend=GPU (cuStateVec), backend='simulator'
+
+
+--- RUNNING CHEMISTRY TASK H2 ---
+[Resolver] 'H2' found in local registry 
+[Chemistry:H2] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:H2] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:H2] [+   0.1s] Hamiltonian: 15 Pauli terms, 4 qubits
+[Chemistry:H2] [+   0.1s] FCI ground-truth via PySCF
+[Chemistry:H2] [+   0.3s] build_ansatz(tier=hwe_adaptive, reps=1) -- this is the slow one at high n
+[Chemistry:H2] [+   0.3s] QASM3 serialization (24 params, 36 gates)
+[Chemistry:H2] [+   0.4s] prepare() complete
+[Chemistry:H2] 15 Pauli terms, 4 qubits, 24 params, reps=1. FCI reference: -1.1373 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.342 | off_diag_ratio=0.056
+[Reason] score=0.342 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.056, zz_frac=0.667). Adaptive HWE with full entanglement recommended.
+[Stack] Precision: fp64 for 4-qubit problem (GPU fits up to ~30 qubits at this precision)
+Iter 0001/200 | E: -0.036757 | Δ: inf | M: 557.9944 | iter=  0.02s | ETA: 0m03s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0002/200 | E: -0.034346 | Δ: 2.41e-03 | M: 384.8011 | iter=  0.01s | ETA: 0m03s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0003/200 | E: -0.041786 | Δ: 7.44e-03 | M: 388.9435 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0004/200 | E: -0.022947 | Δ: 1.88e-02 | M: 389.3673 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0005/200 | E: -0.039845 | Δ: 1.69e-02 | M: 402.8517 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0005.npy. 
+Iter 0006/200 | E: -0.032940 | Δ: 6.91e-03 | M: 440.9318 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0007/200 | E: -0.038593 | Δ: 5.65e-03 | M: 423.2121 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0008/200 | E: -0.034324 | Δ: 4.27e-03 | M: 353.9272 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0009/200 | E: -0.038720 | Δ: 4.40e-03 | M: 406.0208 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0010/200 | E: -0.038716 | Δ: 4.22e-06 | M: 437.4380 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0010.npy. 
+Iter 0011/200 | E: -0.041388 | Δ: 2.67e-03 | M: 417.2138 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0012/200 | E: -0.039931 | Δ: 1.46e-03 | M: 421.5224 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0013/200 | E: -0.046354 | Δ: 6.42e-03 | M: 428.4962 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0014/200 | E: -0.041947 | Δ: 4.41e-03 | M: 415.4000 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0015/200 | E: -0.049653 | Δ: 7.71e-03 | M: 397.0473 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 15: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0015.npy. 
+Iter 0016/200 | E: -0.047697 | Δ: 1.96e-03 | M: 415.6480 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0017/200 | E: -0.045866 | Δ: 1.83e-03 | M: 416.0905 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0018/200 | E: -0.051388 | Δ: 5.52e-03 | M: 419.4361 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0019/200 | E: -0.055030 | Δ: 3.64e-03 | M: 395.5693 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0020/200 | E: -0.056306 | Δ: 1.28e-03 | M: 428.3692 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 20: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0020.npy. 
+Iter 0021/200 | E: -0.055543 | Δ: 7.63e-04 | M: 419.8626 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0022/200 | E: -0.061926 | Δ: 6.38e-03 | M: 425.7231 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0023/200 | E: -0.061371 | Δ: 5.56e-04 | M: 387.7839 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0024/200 | E: -0.052939 | Δ: 8.43e-03 | M: 441.7623 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0025/200 | E: -0.057413 | Δ: 4.47e-03 | M: 413.5242 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 25: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0025.npy. 
+Iter 0026/200 | E: -0.072205 | Δ: 1.48e-02 | M: 427.1983 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0027/200 | E: -0.082031 | Δ: 9.83e-03 | M: 432.8107 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0028/200 | E: -0.088259 | Δ: 6.23e-03 | M: 425.2504 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0029/200 | E: -0.083477 | Δ: 4.78e-03 | M: 415.9126 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0030/200 | E: -0.087601 | Δ: 4.12e-03 | M: 421.1483 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 30: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0030.npy. 
+Iter 0031/200 | E: -0.095204 | Δ: 7.60e-03 | M: 386.8225 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0032/200 | E: -0.104732 | Δ: 9.53e-03 | M: 422.3249 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0033/200 | E: -0.105180 | Δ: 4.48e-04 | M: 263.1219 | iter=  0.01s | ETA: 0m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0034/200 | E: -0.107591 | Δ: 2.41e-03 | M: 397.3798 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0035/200 | E: -0.117344 | Δ: 9.75e-03 | M: 413.6875 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 35: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0035.npy. 
+Iter 0036/200 | E: -0.125186 | Δ: 7.84e-03 | M: 426.0938 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0037/200 | E: -0.123267 | Δ: 1.92e-03 | M: 426.1632 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0038/200 | E: -0.137322 | Δ: 1.41e-02 | M: 409.8870 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0039/200 | E: -0.152753 | Δ: 1.54e-02 | M: 403.5324 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0040/200 | E: -0.157060 | Δ: 4.31e-03 | M: 413.8136 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 40: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0040.npy. 
+Iter 0041/200 | E: -0.157721 | Δ: 6.61e-04 | M: 414.3597 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0042/200 | E: -0.156961 | Δ: 7.60e-04 | M: 431.8934 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0043/200 | E: -0.162177 | Δ: 5.22e-03 | M: 372.4100 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0044/200 | E: -0.179111 | Δ: 1.69e-02 | M: 439.7274 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0045/200 | E: -0.188373 | Δ: 9.26e-03 | M: 445.1556 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 45: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0045.npy. 
+Iter 0046/200 | E: -0.200790 | Δ: 1.24e-02 | M: 439.7522 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0047/200 | E: -0.197062 | Δ: 3.73e-03 | M: 444.9364 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0048/200 | E: -0.189798 | Δ: 7.26e-03 | M: 442.9319 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0049/200 | E: -0.205025 | Δ: 1.52e-02 | M: 439.8994 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0050/200 | E: -0.234639 | Δ: 2.96e-02 | M: 415.3423 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 50: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0050.npy. 
+Iter 0051/200 | E: -0.230608 | Δ: 4.03e-03 | M: 391.7480 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0052/200 | E: -0.238507 | Δ: 7.90e-03 | M: 424.3887 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0053/200 | E: -0.245525 | Δ: 7.02e-03 | M: 414.8980 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0054/200 | E: -0.237356 | Δ: 8.17e-03 | M: 442.6049 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0055/200 | E: -0.259306 | Δ: 2.19e-02 | M: 414.3724 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 55: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0055.npy. 
+Iter 0056/200 | E: -0.275362 | Δ: 1.61e-02 | M: 428.1253 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0057/200 | E: -0.272275 | Δ: 3.09e-03 | M: 409.5346 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0058/200 | E: -0.292185 | Δ: 1.99e-02 | M: 416.8282 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0059/200 | E: -0.302573 | Δ: 1.04e-02 | M: 430.8036 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0060/200 | E: -0.349488 | Δ: 4.69e-02 | M: 428.9645 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 60: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0060.npy. 
+Iter 0061/200 | E: -0.377147 | Δ: 2.77e-02 | M: 416.8330 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0062/200 | E: -0.377085 | Δ: 6.25e-05 | M: 437.0587 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0063/200 | E: -0.378766 | Δ: 1.68e-03 | M: 349.3208 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0064/200 | E: -0.397378 | Δ: 1.86e-02 | M: 454.3346 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0065/200 | E: -0.428638 | Δ: 3.13e-02 | M: 421.0722 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 65: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0065.npy. 
+Iter 0066/200 | E: -0.428725 | Δ: 8.65e-05 | M: 453.9685 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0067/200 | E: -0.456223 | Δ: 2.75e-02 | M: 416.1095 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0068/200 | E: -0.477559 | Δ: 2.13e-02 | M: 346.6383 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0069/200 | E: -0.481686 | Δ: 4.13e-03 | M: 417.5621 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0070/200 | E: -0.489568 | Δ: 7.88e-03 | M: 391.4816 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 70: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0070.npy. 
+Iter 0071/200 | E: -0.488210 | Δ: 1.36e-03 | M: 411.3092 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0072/200 | E: -0.492942 | Δ: 4.73e-03 | M: 420.5678 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0073/200 | E: -0.555441 | Δ: 6.25e-02 | M: 414.5648 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0074/200 | E: -0.558116 | Δ: 2.67e-03 | M: 405.4314 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0075/200 | E: -0.557646 | Δ: 4.70e-04 | M: 424.2134 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 75: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0075.npy. 
+Iter 0076/200 | E: -0.555519 | Δ: 2.13e-03 | M: 413.5418 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0077/200 | E: -0.569376 | Δ: 1.39e-02 | M: 424.3381 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0078/200 | E: -0.593032 | Δ: 2.37e-02 | M: 343.1677 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0079/200 | E: -0.586227 | Δ: 6.81e-03 | M: 442.1080 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0080/200 | E: -0.591151 | Δ: 4.92e-03 | M: 429.2643 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 80: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0080.npy. 
+Iter 0081/200 | E: -0.608018 | Δ: 1.69e-02 | M: 440.1265 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0082/200 | E: -0.603117 | Δ: 4.90e-03 | M: 430.8442 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0083/200 | E: -0.603431 | Δ: 3.14e-04 | M: 447.8909 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0084/200 | E: -0.623809 | Δ: 2.04e-02 | M: 436.3036 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0085/200 | E: -0.618667 | Δ: 5.14e-03 | M: 185.1307 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 85: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0085.npy. 
+Iter 0086/200 | E: -0.648739 | Δ: 3.01e-02 | M: 412.4689 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0087/200 | E: -0.645768 | Δ: 2.97e-03 | M: 414.5906 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0088/200 | E: -0.648330 | Δ: 2.56e-03 | M: 417.5296 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0089/200 | E: -0.652072 | Δ: 3.74e-03 | M: 422.2388 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0090/200 | E: -0.663115 | Δ: 1.10e-02 | M: 415.3953 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 90: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0090.npy. 
+Iter 0091/200 | E: -0.667072 | Δ: 3.96e-03 | M: 420.9948 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0092/200 | E: -0.686643 | Δ: 1.96e-02 | M: 419.4855 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0093/200 | E: -0.717692 | Δ: 3.10e-02 | M: 353.1075 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0094/200 | E: -0.725276 | Δ: 7.58e-03 | M: 475.6039 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0095/200 | E: -0.760465 | Δ: 3.52e-02 | M: 216.5136 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 95: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0095.npy. 
+Iter 0096/200 | E: -0.760575 | Δ: 1.10e-04 | M: 406.3937 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0097/200 | E: -0.792131 | Δ: 3.16e-02 | M: 434.5542 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0098/200 | E: -0.811251 | Δ: 1.91e-02 | M: 444.8767 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0099/200 | E: -0.834872 | Δ: 2.36e-02 | M: 428.8731 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0100/200 | E: -0.866477 | Δ: 3.16e-02 | M: 433.0590 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 100: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0100.npy. 
+Iter 0101/200 | E: -0.858003 | Δ: 8.47e-03 | M: 431.9846 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0102/200 | E: -0.907781 | Δ: 4.98e-02 | M: 429.3686 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0103/200 | E: -0.914757 | Δ: 6.98e-03 | M: 411.5987 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0104/200 | E: -0.910524 | Δ: 4.23e-03 | M: 412.8491 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0105/200 | E: -0.916545 | Δ: 6.02e-03 | M: 364.0040 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 105: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0105.npy. 
+Iter 0106/200 | E: -0.913122 | Δ: 3.42e-03 | M: 393.3318 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0107/200 | E: -0.935058 | Δ: 2.19e-02 | M: 194.4093 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0108/200 | E: -0.939233 | Δ: 4.17e-03 | M: 413.7918 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0109/200 | E: -0.938823 | Δ: 4.09e-04 | M: 401.8589 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0110/200 | E: -0.951156 | Δ: 1.23e-02 | M: 419.6338 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 110: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0110.npy. 
+Iter 0111/200 | E: -0.972435 | Δ: 2.13e-02 | M: 431.0616 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0112/200 | E: -1.014662 | Δ: 4.22e-02 | M: 417.0661 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0113/200 | E: -1.021855 | Δ: 7.19e-03 | M: 253.0095 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0114/200 | E: -1.039026 | Δ: 1.72e-02 | M: 422.3474 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0115/200 | E: -1.078631 | Δ: 3.96e-02 | M: 435.3978 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 115: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0115.npy. 
+Iter 0116/200 | E: -1.074066 | Δ: 4.57e-03 | M: 218.5202 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0117/200 | E: -1.080843 | Δ: 6.78e-03 | M: 416.8888 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0118/200 | E: -1.077193 | Δ: 3.65e-03 | M: 433.7724 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0119/200 | E: -1.098943 | Δ: 2.18e-02 | M: 469.2072 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0120/200 | E: -1.113970 | Δ: 1.50e-02 | M: 415.2728 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 120: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0120.npy. 
+Iter 0121/200 | E: -1.120281 | Δ: 6.31e-03 | M: 392.1664 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0122/200 | E: -1.117180 | Δ: 3.10e-03 | M: 428.2973 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0123/200 | E: -1.131374 | Δ: 1.42e-02 | M: 388.2720 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0124/200 | E: -1.130586 | Δ: 7.89e-04 | M: 414.0339 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0125/200 | E: -1.134508 | Δ: 3.92e-03 | M: 421.1435 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 125: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0125.npy. 
+Iter 0126/200 | E: -1.134896 | Δ: 3.87e-04 | M: 424.9230 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+NOTE: Energy -1.1695 crossed below FCI -1.1373 at iter 127 - HWE ansatz leaving physical sector (expected limitation)
+Iter 0127/200 | E: -1.169454 | Δ: 3.46e-02 | M: 417.1471 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0128/200 | E: -1.161551 | Δ: 7.90e-03 | M: 408.9521 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0129/200 | E: -1.165341 | Δ: 3.79e-03 | M: 408.9767 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0130/200 | E: -1.162592 | Δ: 2.75e-03 | M: 411.6387 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 130: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0130.npy. 
+Iter 0131/200 | E: -1.166031 | Δ: 3.44e-03 | M: 337.0563 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0132/200 | E: -1.172081 | Δ: 6.05e-03 | M: 432.5462 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0133/200 | E: -1.169426 | Δ: 2.66e-03 | M: 446.4806 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0134/200 | E: -1.178971 | Δ: 9.54e-03 | M: 433.5519 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0135/200 | E: -1.182285 | Δ: 3.31e-03 | M: 445.6301 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 135: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0135.npy. 
+Iter 0136/200 | E: -1.177917 | Δ: 4.37e-03 | M: 430.4904 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0137/200 | E: -1.179370 | Δ: 1.45e-03 | M: 450.7094 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0138/200 | E: -1.186667 | Δ: 7.30e-03 | M: 431.4426 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0139/200 | E: -1.188373 | Δ: 1.71e-03 | M: 423.5290 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0140/200 | E: -1.187870 | Δ: 5.03e-04 | M: 412.5203 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 140: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0140.npy. 
+Iter 0141/200 | E: -1.212090 | Δ: 2.42e-02 | M: 310.7351 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0142/200 | E: -1.214721 | Δ: 2.63e-03 | M: 413.2824 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0143/200 | E: -1.219015 | Δ: 4.29e-03 | M: 405.7159 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0144/200 | E: -1.230619 | Δ: 1.16e-02 | M: 427.4054 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0145/200 | E: -1.231294 | Δ: 6.75e-04 | M: 411.2051 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 145: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0145.npy. 
+Iter 0146/200 | E: -1.238420 | Δ: 7.13e-03 | M: 346.3815 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0147/200 | E: -1.240041 | Δ: 1.62e-03 | M: 414.1514 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0148/200 | E: -1.253496 | Δ: 1.35e-02 | M: 423.5532 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0149/200 | E: -1.265603 | Δ: 1.21e-02 | M: 398.4219 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0150/200 | E: -1.270863 | Δ: 5.26e-03 | M: 459.6891 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 150: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0150.npy. 
+Iter 0151/200 | E: -1.268570 | Δ: 2.29e-03 | M: 438.8233 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0152/200 | E: -1.276877 | Δ: 8.31e-03 | M: 436.6610 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0153/200 | E: -1.284514 | Δ: 7.64e-03 | M: 434.9473 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0154/200 | E: -1.295406 | Δ: 1.09e-02 | M: 444.2459 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0155/200 | E: -1.297339 | Δ: 1.93e-03 | M: 182.3856 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 155: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0155.npy. 
+Iter 0156/200 | E: -1.296740 | Δ: 5.99e-04 | M: 412.1682 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0157/200 | E: -1.302708 | Δ: 5.97e-03 | M: 418.4397 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0158/200 | E: -1.304841 | Δ: 2.13e-03 | M: 421.7605 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0159/200 | E: -1.314083 | Δ: 9.24e-03 | M: 405.3129 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0160/200 | E: -1.323153 | Δ: 9.07e-03 | M: 416.3737 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 160: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0160.npy. 
+Iter 0161/200 | E: -1.325430 | Δ: 2.28e-03 | M: 401.5192 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0162/200 | E: -1.331394 | Δ: 5.96e-03 | M: 416.9402 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0163/200 | E: -1.330747 | Δ: 6.47e-04 | M: 411.0102 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0164/200 | E: -1.332724 | Δ: 1.98e-03 | M: 316.9542 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0165/200 | E: -1.333137 | Δ: 4.13e-04 | M: 455.4322 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 165: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0165.npy. 
+Iter 0166/200 | E: -1.331896 | Δ: 1.24e-03 | M: 407.9501 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0167/200 | E: -1.335423 | Δ: 3.53e-03 | M: 407.3267 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0168/200 | E: -1.342308 | Δ: 6.89e-03 | M: 431.2443 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0169/200 | E: -1.351245 | Δ: 8.94e-03 | M: 437.2014 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0170/200 | E: -1.355412 | Δ: 4.17e-03 | M: 437.6243 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 170: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0170.npy. 
+Iter 0171/200 | E: -1.353259 | Δ: 2.15e-03 | M: 446.6345 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0172/200 | E: -1.356363 | Δ: 3.10e-03 | M: 474.9449 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0173/200 | E: -1.357287 | Δ: 9.24e-04 | M: 410.5297 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0174/200 | E: -1.359004 | Δ: 1.72e-03 | M: 366.9853 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0175/200 | E: -1.353181 | Δ: 5.82e-03 | M: 423.8718 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 175: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0175.npy. 
+Iter 0176/200 | E: -1.363325 | Δ: 1.01e-02 | M: 415.3615 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0177/200 | E: -1.366474 | Δ: 3.15e-03 | M: 445.0042 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0178/200 | E: -1.367146 | Δ: 6.72e-04 | M: 448.1326 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0179/200 | E: -1.367449 | Δ: 3.03e-04 | M: 424.4952 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0180/200 | E: -1.371866 | Δ: 4.42e-03 | M: 406.2767 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 180: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0180.npy. 
+Iter 0181/200 | E: -1.377779 | Δ: 5.91e-03 | M: 416.3460 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0182/200 | E: -1.385216 | Δ: 7.44e-03 | M: 348.2367 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0183/200 | E: -1.383623 | Δ: 1.59e-03 | M: 438.7454 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0184/200 | E: -1.381520 | Δ: 2.10e-03 | M: 438.5486 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0185/200 | E: -1.388368 | Δ: 6.85e-03 | M: 438.2111 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 185: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0185.npy. 
+Iter 0186/200 | E: -1.387086 | Δ: 1.28e-03 | M: 457.0072 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0187/200 | E: -1.390614 | Δ: 3.53e-03 | M: 389.5896 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0188/200 | E: -1.386489 | Δ: 4.12e-03 | M: 427.6571 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0189/200 | E: -1.396734 | Δ: 1.02e-02 | M: 386.7069 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0190/200 | E: -1.397083 | Δ: 3.50e-04 | M: 418.0561 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 190: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0190.npy. 
+Iter 0191/200 | E: -1.394238 | Δ: 2.85e-03 | M: 474.7509 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0192/200 | E: -1.403216 | Δ: 8.98e-03 | M: 413.1967 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0193/200 | E: -1.402394 | Δ: 8.21e-04 | M: 403.0213 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0194/200 | E: -1.407194 | Δ: 4.80e-03 | M: 410.9064 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0195/200 | E: -1.408051 | Δ: 8.57e-04 | M: 405.9321 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 195: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0195.npy. 
+Iter 0196/200 | E: -1.415914 | Δ: 7.86e-03 | M: 421.4003 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0197/200 | E: -1.415213 | Δ: 7.01e-04 | M: 380.2995 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0198/200 | E: -1.409566 | Δ: 5.65e-03 | M: 470.0865 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0199/200 | E: -1.420202 | Δ: 1.06e-02 | M: 428.1403 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0200/200 | E: -1.420053 | Δ: 1.48e-04 | M: 398.4767 | iter=  0.01s | ETA: 0m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 200: Global theta state checkpointed at path checkpoints/H2/checkpoint_iter_0200.npy. 
+[VQE] Best physical energy: -1.134896 Ha (error: 0.0024 Ha) at iter 126
+[VQE] Final energy -1.420053 is below FCI - reporting best physical result
+
+[H2] Ansatz tier:hwe_adaptive
+[H2] Corr score: 0.342 
+[H2] Best physical energy: -1.134896 Ha 
+[H2] Reference FCI : -1.137284 Ha 
+[H2] Absolute error: +0.0024 Ha 
+[H2] Iterations run: 200 (best at iter 126)
+[H2] Wall time: 1.16s (includes QPU queue + RTT) 
+[H2] Time/iter: 0.01 s 
+[H2] Source: registry 
+[H2] Active electrons: 2 
+[H2] Estimated qubits: 4 
+
+
+--- RUNNING CHEMISTRY TASK LiH ---
+[Resolver] 'LiH' found in local registry 
+[Chemistry:LiH] [+   0.0s] driver.run() -- PySCF electronic structure
+[Chemistry:LiH] [+   0.1s] second_q_op() + JW mapping
+[Chemistry:LiH] [+   1.5s] Hamiltonian: 631 Pauli terms, 12 qubits
+[Chemistry:LiH] [+   1.5s] FCI ground-truth via PySCF
+[Chemistry:LiH] [+   1.6s] build_ansatz(tier=hwe_adaptive, reps=2) -- this is the slow one at high n
+[Chemistry:LiH] [+   1.6s] QASM3 serialization (96 params, 294 gates)
+[Chemistry:LiH] [+   1.6s] prepare() complete
+[Chemistry:LiH] 631 Pauli terms, 12 qubits, 96 params, reps=2. FCI reference: -7.8825 Ha 
+[Ansatz] HWE (adaptive) (auto) | corr_score=0.502 | off_diag_ratio=0.007
+[Reason] score=0.502 in [0.25, 0.55). Moderate correlation (off_diag_ratio=0.007, zz_frac=0.979). Adaptive HWE with full entanglement recommended.
+[Stack] Precision: fp64 for 12-qubit problem (GPU fits up to ~30 qubits at this precision)
+Iter 0001/768 | E: -0.446148 | Δ: inf | M: 5050.2705 | iter=  0.08s | ETA: 1m04s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0002/768 | E: -0.454823 | Δ: 8.67e-03 | M: 5770.7231 | iter=  0.08s | ETA: 1m04s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0003/768 | E: -0.412540 | Δ: 4.23e-02 | M: 3052.7611 | iter=  0.09s | ETA: 1m04s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0004/768 | E: -0.399932 | Δ: 1.26e-02 | M: 5935.1946 | iter=  0.09s | ETA: 1m06s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0005/768 | E: -0.415982 | Δ: 1.60e-02 | M: 5476.3253 | iter=  0.08s | ETA: 1m03s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 5: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0005.npy. 
+Iter 0006/768 | E: -0.413792 | Δ: 2.19e-03 | M: 6004.7662 | iter=  0.08s | ETA: 1m03s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0007/768 | E: -0.411301 | Δ: 2.49e-03 | M: 5177.5249 | iter=  0.08s | ETA: 1m03s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0008/768 | E: -0.411249 | Δ: 5.21e-05 | M: 6242.1790 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0009/768 | E: -0.412543 | Δ: 1.29e-03 | M: 6081.8241 | iter=  0.08s | ETA: 1m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0010/768 | E: -0.404811 | Δ: 7.73e-03 | M: 2812.1836 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 10: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0010.npy. 
+Iter 0011/768 | E: -0.403208 | Δ: 1.60e-03 | M: 5570.4141 | iter=  0.08s | ETA: 0m59s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0012/768 | E: -0.428774 | Δ: 2.56e-02 | M: 5345.2334 | iter=  0.08s | ETA: 1m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0013/768 | E: -0.406082 | Δ: 2.27e-02 | M: 5224.9799 | iter=  0.09s | ETA: 1m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0014/768 | E: -0.411147 | Δ: 5.06e-03 | M: 6061.3190 | iter=  0.08s | ETA: 1m02s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0015/768 | E: -0.406957 | Δ: 4.19e-03 | M: 4109.3886 | iter=  0.08s | ETA: 1m02s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 15: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0015.npy. 
+Iter 0016/768 | E: -0.412794 | Δ: 5.84e-03 | M: 5740.8179 | iter=  0.08s | ETA: 1m02s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0017/768 | E: -0.417260 | Δ: 4.47e-03 | M: 5869.3747 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0018/768 | E: -0.450204 | Δ: 3.29e-02 | M: 4759.2524 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0019/768 | E: -0.447903 | Δ: 2.30e-03 | M: 5233.6789 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0020/768 | E: -0.427132 | Δ: 2.08e-02 | M: 4123.3858 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 20: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0020.npy. 
+Iter 0021/768 | E: -0.441780 | Δ: 1.46e-02 | M: 5102.0948 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0022/768 | E: -0.439151 | Δ: 2.63e-03 | M: 5948.3433 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0023/768 | E: -0.454437 | Δ: 1.53e-02 | M: 5237.4170 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0024/768 | E: -0.459132 | Δ: 4.70e-03 | M: 4423.7428 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0025/768 | E: -0.450987 | Δ: 8.14e-03 | M: 2743.8244 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 25: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0025.npy. 
+Iter 0026/768 | E: -0.458987 | Δ: 8.00e-03 | M: 5519.2941 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0027/768 | E: -0.466759 | Δ: 7.77e-03 | M: 6363.0696 | iter=  0.09s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0028/768 | E: -0.457552 | Δ: 9.21e-03 | M: 5650.1805 | iter=  0.08s | ETA: 1m01s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0029/768 | E: -0.482201 | Δ: 2.46e-02 | M: 6243.9338 | iter=  0.08s | ETA: 1m00s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0030/768 | E: -0.482023 | Δ: 1.78e-04 | M: 3156.0377 | iter=  0.08s | ETA: 0m59s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 30: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0030.npy. 
+Iter 0031/768 | E: -0.557966 | Δ: 7.59e-02 | M: 6178.8425 | iter=  0.08s | ETA: 0m59s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0032/768 | E: -0.587280 | Δ: 2.93e-02 | M: 5341.9185 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0033/768 | E: -0.602909 | Δ: 1.56e-02 | M: 5497.2915 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0034/768 | E: -0.604303 | Δ: 1.39e-03 | M: 6472.3607 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0035/768 | E: -0.608470 | Δ: 4.17e-03 | M: 5533.7212 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 35: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0035.npy. 
+Iter 0036/768 | E: -0.603876 | Δ: 4.59e-03 | M: 6636.0299 | iter=  0.08s | ETA: 0m59s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0037/768 | E: -0.598694 | Δ: 5.18e-03 | M: 2829.6034 | iter=  0.08s | ETA: 0m59s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0038/768 | E: -0.624113 | Δ: 2.54e-02 | M: 5807.3261 | iter=  0.08s | ETA: 0m59s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0039/768 | E: -0.664522 | Δ: 4.04e-02 | M: 6228.1303 | iter=  0.08s | ETA: 0m59s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0040/768 | E: -0.657312 | Δ: 7.21e-03 | M: 6506.1370 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 40: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0040.npy. 
+Iter 0041/768 | E: -0.661108 | Δ: 3.80e-03 | M: 6256.2571 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0042/768 | E: -0.665507 | Δ: 4.40e-03 | M: 5544.8344 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0043/768 | E: -0.690731 | Δ: 2.52e-02 | M: 4934.9798 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0044/768 | E: -0.703530 | Δ: 1.28e-02 | M: 6073.4843 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0045/768 | E: -0.731756 | Δ: 2.82e-02 | M: 2760.1209 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 45: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0045.npy. 
+Iter 0046/768 | E: -0.754687 | Δ: 2.29e-02 | M: 5957.2546 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0047/768 | E: -0.777216 | Δ: 2.25e-02 | M: 5631.1275 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0048/768 | E: -0.870031 | Δ: 9.28e-02 | M: 5495.4574 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0049/768 | E: -0.893982 | Δ: 2.40e-02 | M: 4266.1994 | iter=  0.09s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0050/768 | E: -0.959624 | Δ: 6.56e-02 | M: 6936.8069 | iter=  0.09s | ETA: 0m59s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 50: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0050.npy. 
+Iter 0051/768 | E: -0.981075 | Δ: 2.15e-02 | M: 6280.5186 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0052/768 | E: -0.979279 | Δ: 1.80e-03 | M: 6415.7510 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0053/768 | E: -0.979249 | Δ: 2.99e-05 | M: 3458.0185 | iter=  0.08s | ETA: 0m58s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0054/768 | E: -0.984459 | Δ: 5.21e-03 | M: 4467.3150 | iter=  0.08s | ETA: 0m57s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0055/768 | E: -0.971795 | Δ: 1.27e-02 | M: 4685.2954 | iter=  0.09s | ETA: 0m57s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 55: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0055.npy. 
+Iter 0056/768 | E: -1.110052 | Δ: 1.38e-01 | M: 3919.6818 | iter=  0.08s | ETA: 0m57s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0057/768 | E: -1.129452 | Δ: 1.94e-02 | M: 5352.3537 | iter=  0.08s | ETA: 0m59s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0058/768 | E: -1.162319 | Δ: 3.29e-02 | M: 5471.8057 | iter=  0.11s | ETA: 0m59s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0059/768 | E: -1.183668 | Δ: 2.13e-02 | M: 7500.2505 | iter=  0.13s | ETA: 1m02s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+Iter 0060/768 | E: -1.191993 | Δ: 8.33e-03 | M: 5418.9558 | iter=  0.13s | ETA: 1m18s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
+[RESILIENCE] Iteration 60: Global theta state checkpointed at path checkpoints/LiH/checkpoint_iter_0060.npy. 
+Iter 0061/768 | E: -1.205678 | Δ: 1.37e-02 | M: 5437.2256 | iter=  0.13s | ETA: 1m32s | Path: GPU-cuStateVec+cpu-expect MPI-distributed (1 ranks)
