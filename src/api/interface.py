@@ -45,7 +45,7 @@ except ImportError as e:
     print(f"[Stack] qiskit-aer not available ({e}) - GPU statevector disabled", file=sys.stderr)
 
 
-class HPCHybridStack:
+class QatabasisStack:
     def __init__(self, use_gpu: bool | None = None, backend:str = 'simulator'):
         # Hardware auto-detection (GPU vendor/class, libs, MPI). Researchers
         # override via VQE_PRECISION / VQE_BACKEND / USE_GPU env vars.
@@ -709,3 +709,8 @@ class HPCHybridStack:
         used_path = "IBM QPU + Classical SV (async)"
 
         return e_plus, e_minus, masking_metric, used_path
+
+
+# Backward-compatibility alias: this class was renamed from HPCHybridStack
+# to QatabasisStack in the Qatabasis rebrand. Legacy imports still work.
+HPCHybridStack = QatabasisStack

@@ -11,7 +11,7 @@ sys.path.insert(0, _root)
 sys.path.insert(0, os.path.join(_root, "build"))
 
 try:
-    from src.api.interface import HPCHybridStack
+    from src.api.interface import QatabasisStack
     from src.api.problems import ChemistryProblem, FinanceProblem, ANSATZ_TIERS
     from src.api.molecule_resolver import (MoleculeResolver, MoleculeTooBigError, ResolutionError)
     from src.api.results import save_results
@@ -56,7 +56,7 @@ def make_problem(molecule_input: str, force_tier: str|None= None)-> ChemistryPro
 
 
 
-def run_chemistry_local(stack: HPCHybridStack, molecule_input: str, force_tier: str | None= None): 
+def run_chemistry_local(stack: QatabasisStack, molecule_input: str, force_tier: str | None= None): 
     if stack.rank == 0: print(f"\n\n--- RUNNING CHEMISTRY TASK {molecule_input} ---")
 
     problem = make_problem(molecule_input, force_tier=force_tier)
@@ -115,7 +115,7 @@ def run_chemistry_local(stack: HPCHybridStack, molecule_input: str, force_tier: 
 
 
 
-def run_finance_local(stack:HPCHybridStack):
+def run_finance_local(stack:QatabasisStack):
     if stack.rank == 0: print("\n\n\n--- RUNNING FINANCE (4-Assest Portfolio QUBO) TASK ---")
     np.random.seed(42)
     n_assets = 4
@@ -148,7 +148,7 @@ def run_finance_local(stack:HPCHybridStack):
 
 
 
-def run_scaling_local(stack: HPCHybridStack):
+def run_scaling_local(stack: QatabasisStack):
     if stack.rank == 0: print(f"\n RUNNING SCALING (with P={stack.size} ranks) ")
 
     problem = make_problem("LiH")
@@ -182,7 +182,7 @@ def run_scaling_local(stack: HPCHybridStack):
     return result
 
 
-def run_weak_scaling(stack: HPCHybridStack):
+def run_weak_scaling(stack: QatabasisStack):
     # Molecule scales with P so per-rank Pauli term count stays relatively constant
     weak_scaling_map = {
         1: "H2",        # 15 terms / 1 rank  =15 terms/rank
@@ -244,7 +244,7 @@ if __name__ == "__main__":
         MOLECULES = sys.argv[1:]
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # Detected once here purely to route the log file; HPCHybridStack below
+    # Detected once here purely to route the log file; QatabasisStack below
     # re-detects for its own use (cheap, avoids threading hw through init_log).
     _hw_slug = HardwareProfile.detect().results_slug()
     os.makedirs(f"results/{_hw_slug}/simulator", exist_ok=True)
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     print(f"[Config] Resolver: max_qubits=30, cache=.pubchem_cache/")
 
 
-    with HPCHybridStack(use_gpu=USE_GPU, backend=BACKEND) as stack:
+    with QatabasisStack(use_gpu=USE_GPU, backend=BACKEND) as stack:
         results = {}
         for mol in MOLECULES:
             history, problem, t_total = run_chemistry_local(stack, mol)

@@ -52,7 +52,7 @@ import os
 import json
 import numpy as np
 from datetime import datetime
-from src.api.interface import HPCHybridStack
+from src.api.interface import QatabasisStack
 from src.api.problems import ChemistryProblem
 from src.api.log import init_log, close_log
 from src.api.hardware import HardwareProfile
@@ -60,7 +60,7 @@ from src.api.hardware import HardwareProfile
 # Auto-save all terminal output to a log file
 _ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 # Detected once here purely to route the log/JSON output by hardware;
-# HPCHybridStack below re-detects for its own use (cheap, avoids threading
+# QatabasisStack below re-detects for its own use (cheap, avoids threading
 # hw through init_log which runs before the stack exists).
 _hw_slug = HardwareProfile.detect().results_slug()
 os.makedirs(f"results/{_hw_slug}/simulator", exist_ok=True)
@@ -105,7 +105,7 @@ BACKEND = "simulator"       # "simulator" = exact statevector (noiseless, fast) 
 
 
 # Execution ---------------------------------
-with HPCHybridStack(backend=BACKEND) as stack:
+with QatabasisStack(backend=BACKEND) as stack:
 
     # All ranks prepare the problem (needed for MPI-distributed evaluation)
     problem.prepare()

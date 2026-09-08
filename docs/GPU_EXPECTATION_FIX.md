@@ -5,7 +5,7 @@ wall-clock validation before merge.
 
 **Motivation**: baseline comparison from the 2026-08-31 session showed
 Pennylane Lightning-GPU winning wall-clock at BeH2 (1.61×) and H2O
-(1.79×) vs HPCHybridStack on the same A100. Root cause identified in
+(1.79×) vs QatabasisStack on the same A100. Root cause identified in
 `_evaluate_distributed_statevector`: after Aer built the statevector on
 GPU, the code pulled the full 2^n array to CPU via `get_statevector`,
 wrapped it in `qiskit.quantum_info.Statevector`, and computed the Pauli

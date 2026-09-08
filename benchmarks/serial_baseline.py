@@ -18,7 +18,7 @@ distributed stack uses (via MoleculeResolver + prepare()), so the
 ansatz object is literally the same code path — no risk of drift
 between the two comparison sides. What still differs is only the
 execution model: serial CPU Statevector here, vs distributed
-MPI + GPU cuStateVec in HPCHybridStack.
+MPI + GPU cuStateVec in QatabasisStack.
 """
 import os
 import sys
@@ -62,7 +62,7 @@ def serial_vqe(mol_name, problem, seed=42):
         sv = Statevector(bound)
         return float(sv.expectation_value(pauli_op).real)
 
-    # SPSA hyperparams match HPCHybridStack (fair comparison).
+    # SPSA hyperparams match QatabasisStack (fair comparison).
     # min_iters formula matched to interface.py:vqe_optimize() exactly
     # (fixed 2026-09-04) so the serial vs distributed comparison is not
     # confounded by different convergence-check timing. Old formula was

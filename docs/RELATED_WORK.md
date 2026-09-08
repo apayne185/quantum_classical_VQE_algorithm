@@ -1,6 +1,6 @@
 # Related Work — Positioning vs. Existing Quantum–HPC Software Stacks
 
-Positioning of this stack (referred to below as **HPCHybridStack**) against
+Positioning of this stack (referred to below as **QatabasisStack**) against
 comparable quantum–HPC middleware. Framed against the openQSE Reference
 Architecture from Shehata & Austin (2026), *"Quantum–HPC Software Stacks and the
 openQSE Reference Architecture: A Survey"*, plus two widely used single-vendor
@@ -25,13 +25,13 @@ Shehata & Austin propose five reference layers:
 4. **Runtime / Execution** — simulator backends, physical-device drivers.
 5. **Hardware Abstraction** — device catalogs, calibration data, error models.
 
-Mapping of HPCHybridStack:
+Mapping of QatabasisStack:
 
-| openQSE layer | HPCHybridStack component |
+| openQSE layer | QatabasisStack component |
 |---|---|
 | Application | `ChemistryProblem`, `FinanceProblem`, `benchmarks/*.py` |
 | Compilation | Qiskit Nature (JW mapping) + `AnsatzBuilder` (HWE / UCCSD tiers) |
-| Orchestration | `HPCHybridStack.run()`, MPI Pauli-term distribution (`hpc_core`) |
+| Orchestration | `QatabasisStack.run()`, MPI Pauli-term distribution (`hpc_core`) |
 | Runtime | Qiskit Aer statevector (CPU/GPU/cuStateVec), IBM Runtime EstimatorV2 |
 | Hardware Abstraction | `HardwareProfile.detect()`, `_GPU_DATABASE`, `results_slug()` |
 
@@ -43,7 +43,7 @@ positioning point below.
 
 ## Comparison table
 
-| Feature / Property | HPCHybridStack (this repo) | JHPC-Quantum | Quantum Brilliance (Qristal) | Tierkreis (Quantinuum) | Pennylane Lightning | Qiskit Aer MPI |
+| Feature / Property | QatabasisStack (this repo) | JHPC-Quantum | Quantum Brilliance (Qristal) | Tierkreis (Quantinuum) | Pennylane Lightning | Qiskit Aer MPI |
 |---|---|---|---|---|---|---|
 | **Primary intent** | End-to-end VQE benchmark middleware | HPC-integrated hybrid workflow platform | Full SDK (compiler + runtime + hardware) | Higher-order dataflow orchestrator for hybrid workflows | Single-node high-perf simulator | Multi-node distributed simulator |
 | **Scope** | Middleware (thin) | Full framework | Full SDK | Orchestration only | Simulator only | Simulator only |
@@ -120,7 +120,7 @@ interface.
 **We do that they don't:**
 - **Concrete VQE end-to-end path** — Tierkreis is orchestration only; the user
   still has to write the ansatz builder, expectation-value pipeline, optimizer
-  loop, MPI dispatch. HPCHybridStack ships all of that.
+  loop, MPI dispatch. QatabasisStack ships all of that.
 - **HPC-first design** — MPI is a first-class execution mode (`mpirun -np N`),
   not a plugin. Tierkreis defers all HPC concerns to backends.
 - **Hardware auto-detection + auto precision** at the middleware layer.
@@ -149,7 +149,7 @@ plugs into Pennylane.
 
 **Baseline comparison plan**: `docs/BASELINE_COMPARISON.md` will define an
 apples-to-apples wall-clock comparison for H2/LiH/BeH2/H2O across
-HPCHybridStack (Aer-GPU) vs Pennylane Lightning-GPU on the same A100.
+QatabasisStack (Aer-GPU) vs Pennylane Lightning-GPU on the same A100.
 
 ### Qiskit Aer MPI
 
@@ -174,7 +174,7 @@ per-rank-replicated mode we use today.
 - Reproducible **cross-hardware benchmark suite**.
 
 **Baseline comparison plan**: `docs/BASELINE_COMPARISON.md` will also cover
-HPCHybridStack (Aer-GPU, replicated) vs Aer MPI (distributed) on the same
+QatabasisStack (Aer-GPU, replicated) vs Aer MPI (distributed) on the same
 molecules — this directly measures the cost of our current architectural
 choice.
 
@@ -183,7 +183,7 @@ choice.
 ## Summary — the paper positioning
 
 <!-- paper -->
-HPCHybridStack occupies a niche not filled by any of the surveyed stacks: a
+QatabasisStack occupies a niche not filled by any of the surveyed stacks: a
 **thin, benchmark-oriented middleware** that ships an end-to-end VQE pipeline
 (chemistry problem → JW mapping → HWE/UCCSD ansatz → SPSA/Aer/IBM execution →
 statistical reporting) with automatic hardware detection and a proven

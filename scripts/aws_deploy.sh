@@ -75,17 +75,17 @@ rsync -az \
     --exclude=build \
     --exclude='*.pyc' \
     -e "ssh -i $AWS_KEY -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-    "$REPO_ROOT/" ubuntu@"$PUBLIC_IP":~/quantum_classical_VQE_algorithm/
+    "$REPO_ROOT/" ubuntu@"$PUBLIC_IP":~/qatabasis/
 
 echo "[deploy] running install_native.sh on the instance..."
 ssh -i "$AWS_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
     ubuntu@"$PUBLIC_IP" \
-    "cd ~/quantum_classical_VQE_algorithm && bash install_native.sh"
+    "cd ~/qatabasis && bash install_native.sh"
 
 echo "[deploy] running smoke test (make pytest)..."
 ssh -i "$AWS_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
     ubuntu@"$PUBLIC_IP" \
-    "cd ~/quantum_classical_VQE_algorithm && conda run -n hybrid-vqe make pytest" \
+    "cd ~/qatabasis && conda run -n hybrid-vqe make pytest" \
     || echo "[deploy] WARNING: pytest did not exit 0 — investigate before running the workload."
 
 cat <<EOF
@@ -94,13 +94,13 @@ cat <<EOF
 
 Follow-up:
   ssh -i $AWS_KEY ubuntu@$PUBLIC_IP
-  cd ~/quantum_classical_VQE_algorithm
+  cd ~/qatabasis
   conda activate hybrid-vqe
   make run NP=2 MOLECULES="H2 LiH BeH2 H2O"
 
 Before terminating (do this every time):
   rsync -av -e "ssh -i $AWS_KEY" \\
-      ubuntu@$PUBLIC_IP:~/quantum_classical_VQE_algorithm/results/ \\
+      ubuntu@$PUBLIC_IP:~/qatabasis/results/ \\
       results/
 
 Terminate when done:

@@ -13,7 +13,7 @@
 
 set -eo pipefail
 
-REPO_ROOT="${REPO_ROOT:-$HOME/quantum_classical_VQE_algorithm}"
+REPO_ROOT="${REPO_ROOT:-$HOME/qatabasis}"
 ENV_PATH="${ENV_PATH:-/scratch/$USER/hybrid-vqe}"
 NP="${NP:-2}"
 

@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     import hpc_core    
-    from src.api.interface import HPCHybridStack
+    from src.api.interface import QatabasisStack
     from src.api.problems import ChemistryProblem, FinanceProblem
 except ImportError as exc:  
     print(f"[FAIL] Import error: {exc}")
@@ -28,7 +28,7 @@ def section(title: str):
 
 
 
-def test_mpi_layer(stack: HPCHybridStack):
+def test_mpi_layer(stack: QatabasisStack):
     section("LAYER 1: MPI Bridge")
     if stack.rank == 0:
         print(f"Total MPI ranks: {stack.size}")
@@ -44,7 +44,7 @@ def test_mpi_layer(stack: HPCHybridStack):
 
 
 
-def test_problem_layer(stack: HPCHybridStack):
+def test_problem_layer(stack: QatabasisStack):
     section("LAYER 2: Problem Preparation")
 
     if stack.rank == 0:
@@ -75,7 +75,7 @@ def test_problem_layer(stack: HPCHybridStack):
 
 
 
-def test_dispatcher_layer(stack: HPCHybridStack, problem: ChemistryProblem):
+def test_dispatcher_layer(stack: QatabasisStack, problem: ChemistryProblem):
     section("LAYER 3: C++ Dispatcher (single dispatch)")
 
     # The C++ dispatcher's local-compute path uses a mean-field approximation
@@ -118,7 +118,7 @@ def test_dispatcher_layer(stack: HPCHybridStack, problem: ChemistryProblem):
 
 
 
-def test_vqe_loop(stack: HPCHybridStack):
+def test_vqe_loop(stack: QatabasisStack):
     section("LAYER 4: VQE Loop (H2, 10 iterations)")
 
     problem = ChemistryProblem("H 0 0 0; H 0 0 0.74")
@@ -151,7 +151,7 @@ def test_vqe_loop(stack: HPCHybridStack):
 
 
 # FINANCE PROBLEM (extensibility demonstration, not in chemistry focused benchmarks)
-def test_finance_layer(stack: HPCHybridStack):
+def test_finance_layer(stack: QatabasisStack):
     section("LAYER 5: Finance QUBO (4 assets, 10 iterations)")
     np.random.seed(0)
     n= 4
@@ -173,7 +173,7 @@ def test_finance_layer(stack: HPCHybridStack):
 
 
 
-def test_checkpoint_resilience(stack: HPCHybridStack):
+def test_checkpoint_resilience(stack: QatabasisStack):
     section("LAYER 6: Checkpoint Resilience")
 
     # Dedicated test directory to avoid conflicts with old checkpoints
@@ -233,7 +233,7 @@ def test_checkpoint_resilience(stack: HPCHybridStack):
 
 
 
-def test_latency_spiking(stack: HPCHybridStack):
+def test_latency_spiking(stack: QatabasisStack):
     # STRESS TEST 1 -  QPU Latency Spiking, injects random delays (0.5-2.0s) into a subset of MPI ranks' evaluation
     # simulate cloud QPU congestion. 
     section("STRESS TEST: QPU Latency Spiking")
@@ -274,7 +274,7 @@ def test_latency_spiking(stack: HPCHybridStack):
         print("[STRESS TEST: Latency Spiking] OK")
 
 
-def test_dropout_recovery(stack: HPCHybridStack):
+def test_dropout_recovery(stack: QatabasisStack):
     # STRESS TEST 2 - Network Drop-Out Recovery, runs 10 iterations (checkpointing at iter 5,10), then simulates crash by deleting the final state. 
     section("STRESS TEST: Drop-Out Recovery")
     import shutil
@@ -325,7 +325,7 @@ def test_dropout_recovery(stack: HPCHybridStack):
         print("[STRESS TEST: Drop-Out Recovery] OK")
 
 
-def print_summary(stack: HPCHybridStack, passed: list, failed: list):
+def print_summary(stack: QatabasisStack, passed: list, failed: list):
     section("TRIAL RUN SUMMARY")
     if stack.rank != 0:  
         return 
@@ -359,7 +359,7 @@ if __name__ == "__main__":
     passed = []
     failed = []
 
-    with HPCHybridStack(use_gpu=USE_GPU, backend="simulator") as stack:
+    with QatabasisStack(use_gpu=USE_GPU, backend="simulator") as stack:
 
         tests = [
             ("MPI Bridge", lambda: test_mpi_layer(stack)),   

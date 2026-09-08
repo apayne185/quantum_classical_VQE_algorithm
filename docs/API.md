@@ -11,7 +11,7 @@ extend with a new molecule), see the **Tutorials** section at the bottom.
 
 - [Configuration contract (environment variables)](#configuration-contract-environment-variables)
 - [Core classes](#core-classes)
-  - [`HPCHybridStack`](#hpchybridstack)
+  - [`QatabasisStack`](#qatabasisstack)
   - [`HardwareProfile`](#hardwareprofile)
   - [`ChemistryProblem`](#chemistryproblem)
   - [`MoleculeResolver`](#moleculeresolver)
@@ -64,7 +64,7 @@ Example — IBM Quantum run with credentials loaded from `.env`:
 
 ## Core classes
 
-### `HPCHybridStack`
+### `QatabasisStack`
 
 Main entry point for VQE runs. Manages MPI initialization, hardware
 detection, checkpoint I/O, SPSA optimizer state, and dispatch to the
@@ -75,7 +75,7 @@ Location: [`src/api/interface.py`](../src/api/interface.py)
 
 #### Constructor
 
-    HPCHybridStack(use_gpu: bool | None = None, backend: str = 'simulator')
+    QatabasisStack(use_gpu: bool | None = None, backend: str = 'simulator')
 
 **Parameters:**
 
@@ -148,7 +148,7 @@ Called automatically in the `__exit__` handler when used as a context manager.
 
 **Usage pattern (recommended):**
 
-    with HPCHybridStack(backend='simulator') as stack:
+    with QatabasisStack(backend='simulator') as stack:
         theta, history = stack.vqe_optimize(problem, max_iterations=200, seed=42)
     # finalize() runs automatically here
 
@@ -165,7 +165,7 @@ Location: [`src/api/hardware.py`](../src/api/hardware.py)
 #### `HardwareProfile.detect() -> HardwareProfile`
 
 Class method. Runs all probes and returns a populated instance. Called
-once by `HPCHybridStack.__init__`.
+once by `QatabasisStack.__init__`.
 
 Probes:
 
@@ -433,7 +433,7 @@ the file.
 ### Add a new quantum backend
 
 Currently the backend contract is a single `if/elif` chain in
-`HPCHybridStack.vqe_optimize()`:
+`QatabasisStack.vqe_optimize()`:
 
     if self.backend == "simulator":
         e_plus, e_minus, M, path = self._evaluate_distributed_statevector(...)
@@ -456,8 +456,8 @@ registry pattern; see [`docs/FUTURE_WORK.md`](FUTURE_WORK.md) for details.
 
 ### Tutorial 1 — Run a benchmark on your laptop (Docker, no GPU required)
 
-    git clone https://github.com/apayne185/quantum_classical_VQE_algorithm.git
-    cd quantum_classical_VQE_algorithm
+    git clone https://github.com/apayne185/qatabasis.git
+    cd qatabasis
     make build              # ~10 min first time
     make trial NP=2         # ~5 min, expect: Tests passed: 7 / 7
     make run NP=2           # full 4-molecule benchmark
@@ -472,8 +472,8 @@ Same commands, different host. On Lambda Cloud or any host with the
 NVIDIA Container Toolkit installed:
 
     ssh ubuntu@<gpu-instance-ip>
-    git clone https://github.com/apayne185/quantum_classical_VQE_algorithm.git
-    cd quantum_classical_VQE_algorithm
+    git clone https://github.com/apayne185/qatabasis.git
+    cd qatabasis
     sudo make build
     sudo make trial NP=2
 

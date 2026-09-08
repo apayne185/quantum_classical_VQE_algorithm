@@ -1,4 +1,4 @@
-"""Baseline comparison entry point: HPCHybridStack vs Pennylane Lightning-GPU
+"""Baseline comparison entry point: QatabasisStack vs Pennylane Lightning-GPU
 vs Qiskit Aer MPI on the same VQE problem.
 
 Design and rationale: docs/BASELINE_COMPARISON.md.
@@ -59,13 +59,13 @@ def _parse_args():
 # ------------------------------------------------------------------ hpchybrid
 
 def _run_hpchybrid(molecule, max_iters, seed, out_dir):
-    """Time HPCHybridStack (Aer-GPU, per-rank replicated statevector).
+    """Time QatabasisStack (Aer-GPU, per-rank replicated statevector).
 
     Mirrors benchmarks/local_test_run.py's flow but strips the multi-molecule
     loop and stamps a `baseline_backend` field so aggregation does not
-    collide with real HPCHybridStack runs.
+    collide with real QatabasisStack runs.
     """
-    from src.api.interface import HPCHybridStack
+    from src.api.interface import QatabasisStack
     from src.api.molecule_resolver import MoleculeResolver
 
     resolver = MoleculeResolver(max_qubits=30, allow_network=True,
@@ -73,7 +73,7 @@ def _run_hpchybrid(molecule, max_iters, seed, out_dir):
     problem = resolver.resolve(molecule, freeze_core=True).to_chemistry_problem()
     problem.prepare()
 
-    stack = HPCHybridStack(backend="simulator")
+    stack = QatabasisStack(backend="simulator")
 
     t0 = time.perf_counter()
     _theta, history = stack.vqe_optimize(problem, max_iterations=max_iters, seed=seed)
@@ -138,7 +138,7 @@ def _lightning_ansatz(num_qubits, params, reps, entanglement="full"):
 
 def _run_lightning(molecule, max_iters, seed, out_dir):
     """Pennylane LightningGPU (falls back to lightning.qubit CPU if GPU
-    device not installed). Uses HPCHybridStack's problem construction so
+    device not installed). Uses QatabasisStack's problem construction so
     the Hamiltonian is bit-for-bit identical; only the simulator backend
     and SPSA implementation differ.
     """

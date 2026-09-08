@@ -277,7 +277,7 @@ dedicated evaluation budget.
 
 ### What is deferred
 
-Currently `HPCHybridStack.vqe_optimize()` dispatches by a hard-coded
+Currently `QatabasisStack.vqe_optimize()` dispatches by a hard-coded
 `if/elif` chain:
 
     if self.backend == "simulator":  ...
@@ -315,7 +315,7 @@ non-IBM backend is added. For this paper, IBM is the only QPU tested.
 
 2. Refactor existing IBM code into `src/api/qpu_plugins/ibm.py`
 3. Registry: `REGISTRY = {"ibm_cloud": IBMBackend, ...}`
-4. `HPCHybridStack.__init__` looks up backend via registry
+4. `QatabasisStack.__init__` looks up backend via registry
 
 Once done, adding IonQ (via `qiskit-ionq` or Braket SDK) is a ~100 LOC
 file. A follow-up paper could demonstrate "same code, four vendors."

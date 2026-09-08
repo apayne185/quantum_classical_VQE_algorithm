@@ -202,9 +202,9 @@ class HardwareProfile:
         statevector construction itself, only the Pauli-term summation --
         see CLAUDE.md gap H). A single-simulation budget silently ignores
         that and can look like it "fits" when it doesn't once a second rank
-        is sharing the card. Pass the real HPCHybridStack.size here, not
+        is sharing the card. Pass the real QatabasisStack.size here, not
         self.mpi_size (populated at HardwareProfile.detect() time, which
-        happens *before* MPI is initialized in HPCHybridStack.__init__, so
+        happens *before* MPI is initialized in QatabasisStack.__init__, so
         it's unreliable -- almost always stale at 1).
         """
         # fp64 statevector: 16 bytes/amplitude (complex128)

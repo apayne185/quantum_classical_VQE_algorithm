@@ -19,7 +19,7 @@ Designed as reusable middleware: `HardwareProfile.detect()` auto-selects the bes
 ### Path A — Docker (recommended for reviewers, local development, cloud GPUs)
 
 ```bash
-git clone <repo-url> && cd quantum_classical_VQE_algorithm
+git clone <repo-url> && cd qatabasis
 make build                           # ~10 min first time; CUDA 12.6 + OpenMPI + Python 3.11 image
 make trial NP=2                      # 7-layer diagnostic; passes 7/7 on any laptop (CPU fallback)
 make run NP=2                        # Full 4-molecule benchmark (simulator)
@@ -125,13 +125,13 @@ CUDA Kernels (src/classical/cuda/)
 
 ### Data Flow
 
-`ChemistryProblem.from_registry("LiH")` -> PySCF driver -> Jordan-Wigner mapping -> Pauli Hamiltonian (631 terms)  + HWE-adaptive ansatz (96 params) -> `HPCHybridStack.vqe_optimize()` -> SPSA loop distributes $\theta^\pm$ across P ranks -> each rank evaluates its Pauli partition -> `MPI_Allreduce` sums energies -> gradient update -> repeat until convergence.
+`ChemistryProblem.from_registry("LiH")` -> PySCF driver -> Jordan-Wigner mapping -> Pauli Hamiltonian (631 terms)  + HWE-adaptive ansatz (96 params) -> `QatabasisStack.vqe_optimize()` -> SPSA loop distributes $\theta^\pm$ across P ranks -> each rank evaluates its Pauli partition -> `MPI_Allreduce` sums energies -> gradient update -> repeat until convergence.
 
 ### Key Classes
 
 | Class | File | Role |
 |-------|------|------|
-| `HPCHybridStack` | `src/api/interface.py` | Main entry point: MPI init, SPSA optimizer, checkpoint management, GPU/QPU routing |
+| `QatabasisStack` | `src/api/interface.py` | Main entry point: MPI init, SPSA optimizer, checkpoint management, GPU/QPU routing |
 | `ChemistryProblem` | `src/api/problems.py` | Molecular Hamiltonian via PySCF + Jordan-Wigner, auto selects from ansatz tier |
 | `MoleculeResolver` | `src/api/molecule_resolver.py` | Registry -> raw geometry -> SMILES -> PubChem cascade |
 | `HybridWorkload` | `include/stack_types.h` | C++ dispatcher interface contract |
@@ -190,7 +190,7 @@ The GPU accelerated experiments used [Lambda Cloud](https://lambdalabs.com/servi
    ```
 4. **Clone and run** the stack. The Docker image handles all CUDA/driver dependencies:
    ```bash
-   git clone <repo-url> && cd quantum_classical_VQE_algorithm
+   git clone <repo-url> && cd qatabasis
    make build && make run NP=4           #  GPU is auto detected inside container
    ```
 5. Verify GPU detection in the output:
@@ -430,7 +430,7 @@ Every result in this repository can be regenerated from the committed raw JSON f
 ### Verify the code from a clean install (~15 min)
 
 ```bash
-git clone <repo-url> && cd quantum_classical_VQE_algorithm
+git clone <repo-url> && cd qatabasis
 docker --version                              # any recent Docker Desktop
 make build                                    # ~10 min, builds Qiskit Aer from source
 make trial NP=2                               # ~5 min, expect: Tests passed: 7 / 7
@@ -533,7 +533,7 @@ All dependencies are included in the Docker image, therefore no local installati
 ```
 src/
   api/                 # Python API layer
-    interface.py       # HPCHybridStack - MPI init, SPSA, checkpoints, GPU/QPU routing
+    interface.py       # QatabasisStack - MPI init, SPSA, checkpoints, GPU/QPU routing
     problems.py        # QuantumProblem, ChemistryProblem, FinanceProblem, ansatz selection
     molecule_resolver.py  # Registry -> geometry -> SMILES -> PubChem cascade
     results.py         # Structured JSON persistence

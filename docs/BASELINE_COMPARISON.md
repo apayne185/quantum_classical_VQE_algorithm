@@ -1,4 +1,4 @@
-# Baseline Comparison — HPCHybridStack vs Pennylane Lightning-GPU vs Qiskit Aer MPI
+# Baseline Comparison — QatabasisStack vs Pennylane Lightning-GPU vs Qiskit Aer MPI
 
 Apples-to-apples wall-clock comparison of the three most relevant VQE
 execution paths for our target problem set. Motivated by reviewer question 1
@@ -18,7 +18,7 @@ Three execution paths against the same VQE problem:
 
 | Label | Backend | Distributed statevector? | Notes |
 |---|---|---|---|
-| `hpchybrid-aer-gpu` | Qiskit Aer GPU + HPCHybridStack MPI | No (per-rank replicated) | Our current path — Pauli-term parallelism only |
+| `hpchybrid-aer-gpu` | Qiskit Aer GPU + QatabasisStack MPI | No (per-rank replicated) | Our current path — Pauli-term parallelism only |
 | `lightning-gpu-mpi` | Pennylane LightningGPU + Lightning-MPI | Yes (cuStateVec multi-GPU) | Baseline #1 |
 | `aer-mpi-distributed` | Qiskit Aer with `blocking_enable=True` | Yes (Aer's own MPI mode) | Baseline #2 |
 
@@ -65,7 +65,7 @@ Per (backend, molecule):
 Output: one JSON per (backend, molecule) run into
 `results/baseline_comparison/<backend>/<molecule>_<timestamp>.json`, with the
 existing `save_results()` schema plus a `baseline_backend` field so
-`aggregate_seeds.py` doesn't collide with real HPCHybridStack runs.
+`aggregate_seeds.py` doesn't collide with real QatabasisStack runs.
 
 ## Expected outcomes (predictions to falsify)
 
@@ -117,7 +117,7 @@ Estimated cost: ~$5 on a 1-hour Lambda A100 instance.
 
 `benchmarks/baseline_comparison.py` — CLI switches backends via a
 `--backend={hpchybrid,lightning,aer-mpi}` flag. Currently only the
-`hpchybrid` path is fully wired (imports HPCHybridStack); the other two raise
+`hpchybrid` path is fully wired (imports QatabasisStack); the other two raise
 `NotImplementedError` with an explicit message pointing at the pip install
 step. The stub structure is intentional — locks in the CLI contract and the
 result schema now so the actual cloud-GPU run is a one-liner later.
